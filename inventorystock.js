@@ -33,12 +33,12 @@ const DB_PATH = 'Anadi_inventory_data';
 // --- DATA & CONFIG ---
 const CATALOG = {
     edible: [
-        { id: 'ED-MILK', name: 'Raw Milk', unit: 'L' },
-        { id: 'ED-CURD', name: 'Fresh Curd', unit: 'Kg' },
+        { id: 'ED-MILK', name: 'Milk', unit: 'L' },
+        { id: 'ED-CURD', name: 'Curd', unit: 'Kg' },
         { id: 'ED-BUTTERMILK', name: 'Buttermilk', unit: 'L' },
-        { id: 'ED-W-BUTTER', name: 'White Butter', unit: 'Kg' },
+        { id: 'ED-W-BUTTER', name: 'WhiteButter', unit: 'Kg' },
         { id: 'ED-PANEER', name: 'Paneer', unit: 'Kg' },
-        { id: 'ED-GHEE', name: 'Desi Ghee', unit: 'Kg' }
+        { id: 'ED-GHEE', name: 'Ghee', unit: 'Kg' }
     ],
     byprod: [
         { id: 'BY-DHOOP', name: 'Dhoop Sticks', unit: 'Box' },
@@ -298,25 +298,56 @@ window.handleAddStock = function() {
     const pId = document.getElementById('in-product').value;
     const qty = parseFloat(document.getElementById('in-qty').value);
     const price = parseFloat(document.getElementById('in-price').value) || 0;
+    const isVip = document.getElementById('in-vip').checked;
+
+    // --- NEW: DATES ---
+    const mfgDate = document.getElementById('in-mfg').value;
+    const hasExp = document.getElementById('in-has-exp').checked;
+    let expDate = '---';
+
+    if(hasExp) {
+        expDate = document.getElementById('in-exp').value;
+        if(!expDate) return alert("Please select an Expiry Date!");
+    }
+    // ------------------
 
     if(!qty || qty <= 0) return alert("Please enter valid quantity");
+    if(!mfgDate) return alert("MFG Date is required");
 
     if(!appState.stock[pId]) appState.stock[pId] = 0;
     appState.stock[pId] += qty;
     
     const pName = getProductName(pId);
+    let batchNo = generateBatchNumber(pName);
+    if (isVip) batchNo = '👑' + batchNo;
+
     const totalVal = qty * price;
-    const note = price > 0 ? `Purchase (₹${totalVal})` : 'Stock Update';
+    
+    // Note me dates bhi save kar rahe hain taaki logs me dikhe
+    // Format: VIP | Price | Batch | MFG | EXP
+    const vipNote = isVip ? '[VIP] ' : '';
+    const note = JSON.stringify({
+        msg: price > 0 ? `Purchase (₹${totalVal})` : `Stock Update`,
+        batch: batchNo,
+        mfg: mfgDate,
+        exp: expDate
+    });
     
     addLog('Stock In', pName, `+${qty}`, note);
     saveDataToFirebase();
-    generateLabel(pId, pName, qty);
     
+    // QR Generation me dates bhejein
+    generateLabel(pId, pName, qty, batchNo, isVip, mfgDate, expDate);
+    
+    // Reset Form
     document.getElementById('in-qty').value = '';
     document.getElementById('in-price').value = '';
+    document.getElementById('in-vip').checked = false;
+    document.getElementById('in-has-exp').checked = false;
+    toggleExpiryInput(); // Disable exp input again
+    setDefaultDate(); // Reset MFG to today
     document.getElementById('in-total-display').innerText = '₹ 0';
 };
-
 window.printLabel = function() {
     const content = document.getElementById('print-area').innerHTML;
     const win = window.open('', '', 'height=500,width=500');
@@ -458,24 +489,79 @@ function getProductName(id) {
     const found = all.find(x => x.id === id);
     return found ? found.name : 'Unknown';
 }
+// --- BATCH NUMBER GENERATOR ---
+// Format: Name ke first 4 letters + 6 Unique Digits (Time based)
+function generateBatchNumber(productName) {
+    // 1. Naam se spaces hataye aur first 4 letters lein
+    const cleanName = productName.replace(/[^a-zA-Z]/g, '').toUpperCase();
+    const prefix = cleanName.substring(0, 4);
 
-function generateLabel(id, name, qty) {
-    const qrData = JSON.stringify({ id: id, type: 'gau-erp-item' });
+    // 2. Unique Number Generate karein
+    // Date.now() millisecond timestamp deta hai, uske last 6 digits kabhi repeat nahi honge
+    const uniqueSuffix = Date.now().toString().slice(-6);
+
+    // Output example: GHEE849201
+    return `${prefix}${uniqueSuffix}`;
+}
+// Function me 'batchNo' parameter add kiya gaya hai
+// Function me 'isVip' parameter add kiya
+function generateLabel(id, name, qty, batchNo, isVip, mfg, exp) {
+    const cleanBatch = batchNo ? batchNo.replace(/👑/g, '') : '';
+    
+    // Date Compression (2025-01-27 -> 250127) to save QR space
+    const shortMfg = mfg.replace(/-/g, '').slice(2); 
+    const shortExp = exp === 'N/A' ? '0' : exp.replace(/-/g, '').slice(2);
+
+    const qrData = JSON.stringify({ 
+        id: id, 
+        t: 'i', // item
+        b: cleanBatch,
+        v: isVip ? 1 : 0,
+        m: shortMfg, // MFG Date
+        e: shortExp  // EXP Date
+    });
+
     const target = document.getElementById('lbl-qr-target');
     target.innerHTML = ''; 
 
-    new QRCode(target, {
-        text: qrData,
-        width: 128,
-        height: 128,
-        colorDark : "#000000",
-        colorLight : "#ffffff",
-        correctLevel : QRCode.CorrectLevel.H
-    });
+    try {
+        new QRCode(target, {
+            text: qrData,
+            width: 128,
+            height: 128,
+            colorDark : isVip ? "#ca8a04" : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.L
+        });
+    } catch (e) { alert("Error generating QR"); return; }
 
-    document.getElementById('lbl-name').innerText = name;
+    // --- VISUAL LABEL UPDATE ---
+    const displayName = isVip ? '👑 ' + name : name;
+    const nameEl = document.getElementById('lbl-name');
+    nameEl.innerText = displayName;
+    
+    if(isVip) nameEl.classList.add('text-yellow-600');
+    else nameEl.classList.remove('text-yellow-600');
+
     document.getElementById('lbl-id').innerText = id;
     document.getElementById('lbl-qty').innerText = 'Qty: ' + qty;
+    
+    const batchEl = document.getElementById('lbl-batch');
+    if(batchEl) {
+        // Label par dates dikhana (Format: BATCH | MFG | EXP)
+        batchEl.innerHTML = `
+            <div>BATCH: ${batchNo}</div>
+            <div style="font-size: 10px; margin-top: 2px; font-weight: normal;">
+                MFG: ${mfg} <br> EXP: ${exp}
+            </div>
+        `;
+        
+        if(isVip) {
+            batchEl.className = "bg-yellow-100 text-yellow-800 border border-yellow-400 px-2 py-1 rounded text-xs font-mono font-bold tracking-widest block";
+        } else {
+            batchEl.className = "bg-slate-100 text-slate-800 border border-slate-300 px-2 py-1 rounded text-xs font-mono font-bold tracking-widest block";
+        }
+    }
 
     document.getElementById('qr-container').classList.add('hidden');
     document.getElementById('print-area').classList.remove('hidden');
@@ -486,29 +572,56 @@ function onScanSuccess(decodedText, decodedResult) {
     if(!document.getElementById('scan-result-active').classList.contains('hidden')) return;
     try {
         const data = JSON.parse(decodedText);
+        // Data me batch check karein
         if(data.type === 'gau-erp-item' && data.id) {
             speakSuccess(); 
-            showScanResult(data.id);
+            // Batch number pass karein (agar QR me hai to)
+            showScanResult(data.id, data.batch);
         }
     } catch (e) { }
 }
-
 function onScanFailure(error) {}
-
-function showScanResult(id) {
+// Function signature me batchNo add karein
+function showScanResult(id, batchNo) {
     const pName = getProductName(id);
     const currentStock = appState.stock[id] || 0;
     
+    // Check karein agar batch me Crown symbol hai
+    const isVipBatch = batchNo && batchNo.includes('👑');
+
     document.getElementById('scan-result-active').classList.remove('hidden');
-    document.getElementById('res-name').innerText = pName;
+    
+    // VIP hai to Name aur Style badle
+    if(isVipBatch) {
+        document.getElementById('res-name').innerHTML = `<span class="text-yellow-600">👑 VIP</span> ${pName}`;
+        // Special Sound Effect (Optional)
+        // speakVIPAlert(); 
+    } else {
+        document.getElementById('res-name').innerText = pName;
+    }
+
     document.getElementById('res-stock').innerText = currentStock;
-    document.getElementById('res-type').innerText = id.startsWith('ED') ? 'Edible' : 'By-Prod';
+    
+    const typeLabel = document.getElementById('res-type');
+    if(batchNo) {
+        typeLabel.innerText = `${batchNo}`;
+        // VIP Tag Styling
+        if(isVipBatch) {
+            typeLabel.className = "text-[10px] uppercase font-bold px-2 py-1 rounded bg-yellow-500 text-white shadow-md animate-pulse";
+        } else {
+            typeLabel.className = "text-[10px] uppercase font-bold bg-yellow-100 text-yellow-800 px-2 py-1 rounded";
+        }
+    } else {
+        typeLabel.innerText = id.startsWith('ED') ? 'Edible' : 'By-Prod';
+        typeLabel.className = "text-[10px] uppercase font-bold bg-slate-100 px-2 py-1 rounded text-slate-500";
+    }
     
     const input = document.getElementById('res-qty-input');
     input.dataset.id = id;
     input.value = 1;
     input.focus();
 }
+
 
 function resetScannerUI() {
     document.getElementById('scan-result-active').classList.add('hidden');
@@ -534,32 +647,80 @@ function renderLogs() {
     if(!tbody) return;
     
     tbody.innerHTML = '';
+    
+    // Logs ko loop karein (Top 20 dikhayenge)
     (appState.logs || []).slice(0, 20).forEach(log => {
         const typeColor = log.type === 'Stock In' ? 'text-green-600' : 'text-red-600';
         
-        let displayDate = '';
-        if(log.date) {
+        // 1. Transaction Date Format (YYYY-MM-DD -> DD-MM-YYYY)
+        let transDate = log.date || '-';
+        if(log.date && log.date.includes('-')) {
             const parts = log.date.split('-');
-            displayDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        } else {
-            displayDate = 'Old Data';
+            // Ensure parts exist before swapping
+            if(parts.length === 3) {
+                transDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
         }
+        
+        // 2. Parse Note Data (Batch, MFG, EXP)
+        let noteObj = {};
+        let displayBatch = '-';
+        let displayMfg = '-';
+        let displayExp = '-';
+        
+        try {
+            if(log.notes && log.notes.startsWith('{')) {
+                noteObj = JSON.parse(log.notes);
+                displayBatch = noteObj.batch || '-';
+                displayMfg = noteObj.mfg || '-';
+                displayExp = noteObj.exp || '-';
+            } else {
+                displayBatch = log.notes; // Old data fallback
+            }
+        } catch(e) { displayBatch = log.notes; }
 
+        // 3. Render Row
         tbody.innerHTML += `
-            <tr class="border-b border-slate-50 hover:bg-slate-50 transition">
+            <tr class="border-b border-slate-50 hover:bg-slate-50 transition text-sm">
+                
+                <!-- Column 1: Transaction Info (Product, Time, Batch, Type) -->
                 <td class="p-3">
-                    <div class="font-bold text-slate-700">${log.product}</div>
-                    <div class="text-xs text-slate-500 mt-1">
-                        <span class="bg-slate-100 px-1 rounded border border-slate-200 font-mono text-slate-600">📅 ${displayDate}</span>
-                        <span class="mx-1">|</span> 
-                        <span>⏰ ${log.time}</span>
+                    <div class="font-bold text-slate-800 text-base">${log.product}</div>
+                    
+                    <!-- NEW: Date & Time Row -->
+                    <div class="flex items-center gap-3 text-[11px] text-slate-400 mt-1 font-mono">
+                        <span class="flex items-center gap-1">
+                            <i class="fa-regular fa-calendar"></i> ${transDate}
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <i class="fa-regular fa-clock"></i> ${log.time}
+                        </span>
                     </div>
-                    <div class="text-xs mt-1">
-                        <span class="${typeColor} font-bold uppercase tracking-wide" style="font-size: 0.65rem;">${log.type}</span>
+
+                    <!-- Batch Badge -->
+                    <div class="text-[10px] text-slate-500 font-mono mt-1 bg-slate-100 border border-slate-200 inline-block px-1 rounded">
+                        ${displayBatch}
+                    </div>
+
+                    <!-- Transaction Type (Stock In/Out) -->
+                    <div class="text-xs mt-1 font-bold ${typeColor} uppercase tracking-wider">
+                        ${log.type}
                     </div>
                 </td>
-                <td class="p-3 text-right align-top">
-                    <span class="font-mono font-bold text-lg text-slate-800">${log.qty}</span>
+                
+                <!-- Column 2: MFG / EXP Dates -->
+                <td class="p-3 align-top">
+                    <div class="text-xs text-slate-600">
+                        <span class="font-bold text-slate-400 text-[10px]">MFG:</span> ${displayMfg}
+                    </div>
+                    <div class="text-xs text-red-500 mt-1">
+                        <span class="font-bold text-slate-400 text-[10px]">EXP:</span> ${displayExp}
+                    </div>
+                </td>
+
+                <!-- Column 3: Quantity -->
+                <td class="p-3 text-right font-bold text-lg text-slate-800 align-top">
+                    ${log.qty}
                 </td>
             </tr>
         `;
@@ -731,3 +892,87 @@ function startMagicLogoEffect() {
 
     }, 300); // Har 300ms (0.3 second) me ek naya item niklega
 }
+
+// --- MANUAL ENTRY LOGIC ---
+window.handleManualCode = function() {
+    const code = document.getElementById('manual-code').value.trim().toUpperCase();
+    
+    if(!code) return alert("Please enter a Product ID or Batch Number!");
+
+    // Hamare paas Catalog aur Stock hai. Hamein match dhundhna hai.
+    const allItems = [...CATALOG.edible, ...CATALOG.byprod];
+    
+    let foundId = null;
+    let foundBatch = null;
+
+    // 1. Direct ID Check (Example: ED-MILK)
+    const exactIdMatch = allItems.find(item => item.id === code);
+    
+    if (exactIdMatch) {
+        foundId = exactIdMatch.id;
+    } 
+    else {
+        // 2. Batch Number Check (Example: MILK123456)
+        // Hamara logic tha: First 4 letters of Name + Numbers
+        // To hum check karenge ki Input kis Product Name ke 4 letters se start hota hai
+        
+        const batchMatch = allItems.find(item => {
+            // Product Name se spaces hatao aur uppercase karo
+            const cleanName = item.name.replace(/[^a-zA-Z]/g, '').toUpperCase();
+            const prefix = cleanName.substring(0, 4); // First 4 letters (e.g., MILK, DESI)
+            
+            // Check agar code iss prefix se start hota hai
+            return code.startsWith(prefix);
+        });
+
+        if (batchMatch) {
+            foundId = batchMatch.id;
+            foundBatch = code; // Input ko hi batch maan lenge
+        }
+    }
+
+    // 3. Result Process Karna
+    if (foundId) {
+        // Scanner ko stop karo (agar chal raha ho)
+        stopScanner();
+        
+        // Result Show karo (Jaisa QR scan karne par hota hai)
+        showScanResult(foundId, foundBatch);
+        
+        // Input box clear kar do
+        document.getElementById('manual-code').value = '';
+    } else {
+        alert("Product not found! Please check the ID or Batch Number.");
+    }
+};
+// --- DATE HELPERS ---
+
+// Page load hone par MFG date ko 'Today' set karein
+function setDefaultDate() {
+    const today = new Date().toISOString().split('T')[0];
+    const mfgInput = document.getElementById('in-mfg');
+    if(mfgInput) mfgInput.value = today;
+}
+
+// Expiry Checkbox ka logic
+window.toggleExpiryInput = function() {
+    const checkbox = document.getElementById('in-has-exp');
+    const input = document.getElementById('in-exp');
+    
+    if(checkbox.checked) {
+        input.disabled = false;
+        input.classList.remove('bg-slate-200', 'text-slate-400');
+        input.classList.add('bg-slate-50', 'text-slate-800');
+    } else {
+        input.disabled = true;
+        input.value = ''; // Reset date
+        input.classList.add('bg-slate-200', 'text-slate-400');
+        input.classList.remove('bg-slate-50', 'text-slate-800');
+    }
+};
+
+// App start hone par date set karein
+document.addEventListener('DOMContentLoaded', () => {
+    setDefaultDate(); 
+    // ... baaki existing code ...
+});
