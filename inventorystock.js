@@ -362,41 +362,84 @@ window.printLabel = function() {
 };
 
 window.startScanner = function() {
+    // UI Update
     document.getElementById('scan-result-placeholder').classList.add('hidden');
-    const statusEl = document.getElementById('scanner-status');
+    document.getElementById('scan-result-active').classList.add('hidden'); // Ensure result is hidden initially
     
+    // Scanner Status
+    const statusEl = document.getElementById('scanner-status');
+    if(statusEl) statusEl.innerText = "Starting...";
+
+    // Init Scanner
+    if(html5QrcodeScanner) {
+        // Agar pehle se chal raha hai to clear karein
+        html5QrcodeScanner.clear().then(() => initCamera());
+    } else {
+        initCamera();
+    }
+};
+
+function initCamera() {
     html5QrcodeScanner = new Html5Qrcode("reader");
-    const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+    
+    // Config for Faster Scanning
+    const config = { 
+        fps: 20, // Fast scanning (20 frames per second)
+        qrbox: { width: 250, height: 250 }, // Scanning area size
+        aspectRatio: 1.0,
+        disableFlip: false 
+    };
 
     html5QrcodeScanner.start(
-        { facingMode: "environment" }, 
+        { facingMode: "environment" }, // Back Camera
         config,
-        onScanSuccess,
-        onScanFailure
+        onScanSuccess, // Success function
+        (errorMessage) => { 
+            // Parsing error ignore karein (Scanning process ka part hai)
+        }
     ).then(() => {
-        statusEl.innerText = "On";
-        statusEl.classList.remove('bg-red-500/80');
-        statusEl.classList.add('bg-green-500/80');
+        const statusEl = document.getElementById('scanner-status');
+        if(statusEl) {
+            statusEl.innerText = "On";
+            statusEl.classList.remove('bg-red-500/80');
+            statusEl.classList.add('bg-green-500/80');
+        }
     }).catch(err => {
-        console.error(err);
-        alert("Camera Error: Check permissions or use HTTPS.");
+        console.error("Camera Error:", err);
+        alert("Camera start failed. Please check permissions.");
+        resetScannerUI(); // Wapas button dikhao
     });
-};
+}
 
 window.stopScanner = function() {
     if(html5QrcodeScanner) {
+        // Stop returns a promise
         html5QrcodeScanner.stop().then(() => {
             html5QrcodeScanner.clear();
             html5QrcodeScanner = null;
-            resetScannerUI();
-            const statusEl = document.getElementById('scanner-status');
-            if(statusEl) {
-                statusEl.innerText = "Off";
-                statusEl.classList.add('bg-red-500/80');
-                statusEl.classList.remove('bg-green-500/80');
-            }
-        }).catch(err => console.log(err));
+        }).catch(err => console.log("Stop failed", err));
     }
+    
+    // Status update
+    const statusEl = document.getElementById('scanner-status');
+    if(statusEl) {
+        statusEl.innerText = "Off";
+        statusEl.classList.add('bg-red-500/80');
+        statusEl.classList.remove('bg-green-500/80');
+    }
+};
+
+window.resetScannerUI = function() {
+    // Camera band karein
+    stopScanner();
+
+    // UI wapas pehle jaisa karein
+    document.getElementById('scan-result-active').classList.add('hidden');
+    document.getElementById('scan-result-placeholder').classList.remove('hidden');
+    document.getElementById('res-qty-input').value = '';
+    
+    // Reader div ko saaf karein (taaki freeze frame na dikhe)
+    document.getElementById('reader').innerHTML = '';
 };
 
 window.processDispatch = function() {
@@ -569,57 +612,91 @@ function generateLabel(id, name, qty, batchNo, isVip, mfg, exp) {
 }
 
 function onScanSuccess(decodedText, decodedResult) {
-    if(!document.getElementById('scan-result-active').classList.contains('hidden')) return;
+    console.log("Scanned:", decodedText); // Debugging
+
     try {
         const data = JSON.parse(decodedText);
-        // Data me batch check karein
-        if(data.type === 'gau-erp-item' && data.id) {
-            speakSuccess(); 
-            // Batch number pass karein (agar QR me hai to)
-            showScanResult(data.id, data.batch);
+        
+        let id = null;
+        let batch = null;
+        let isVip = false;
+
+        // 1. Check New Short Format
+        if (data.t === 'i' || data.t === 'item') {
+            id = data.id;
+            batch = data.b;
+            isVip = (data.v === 1);
         }
-    } catch (e) { }
+        // 2. Check Old Format
+        else if (data.type === 'gau-erp-item') {
+            id = data.id;
+            batch = data.batch;
+            isVip = data.vip;
+        }
+
+        if (id) {
+            // SUCCESS!
+            speakSuccess();
+            
+            // Camera ko PAUSE karein (Stop karne me time lagta hai, Pause fast hai)
+            if(html5QrcodeScanner) {
+                html5QrcodeScanner.pause(); 
+            }
+
+            // UI Show karein
+            showScanResult(id, batch, isVip);
+        }
+    } catch (e) {
+        console.log("Invalid QR Data, keeping camera open.");
+    }
 }
 function onScanFailure(error) {}
 // Function signature me batchNo add karein
-function showScanResult(id, batchNo) {
+function showScanResult(id, batchNo, isVip) {
     const pName = getProductName(id);
     const currentStock = appState.stock[id] || 0;
     
-    // Check karein agar batch me Crown symbol hai
-    const isVipBatch = batchNo && batchNo.includes('👑');
-
+    // UI Elements show karo
+    document.getElementById('scan-result-placeholder').classList.add('hidden');
     document.getElementById('scan-result-active').classList.remove('hidden');
-    
-    // VIP hai to Name aur Style badle
-    if(isVipBatch) {
-        document.getElementById('res-name').innerHTML = `<span class="text-yellow-600">👑 VIP</span> ${pName}`;
-        // Special Sound Effect (Optional)
-        // speakVIPAlert(); 
+
+    // 1. Name Set karo (VIP styling ke saath)
+    const nameEl = document.getElementById('res-name');
+    if(isVip) {
+        nameEl.innerHTML = `<span class="text-yellow-600 mr-1">👑</span> ${pName}`;
+        nameEl.classList.add('text-yellow-700');
     } else {
-        document.getElementById('res-name').innerText = pName;
+        nameEl.innerText = pName;
+        nameEl.classList.remove('text-yellow-700');
     }
 
+    // 2. Stock dikhao
     document.getElementById('res-stock').innerText = currentStock;
     
+    // 3. Type/Batch Label Set karo
     const typeLabel = document.getElementById('res-type');
+    
     if(batchNo) {
-        typeLabel.innerText = `${batchNo}`;
-        // VIP Tag Styling
-        if(isVipBatch) {
-            typeLabel.className = "text-[10px] uppercase font-bold px-2 py-1 rounded bg-yellow-500 text-white shadow-md animate-pulse";
+        typeLabel.innerText = `BATCH: ${batchNo}`;
+        
+        if(isVip) {
+            // VIP Style
+            typeLabel.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-yellow-100 text-yellow-800 border border-yellow-400";
         } else {
-            typeLabel.className = "text-[10px] uppercase font-bold bg-yellow-100 text-yellow-800 px-2 py-1 rounded";
+            // Normal Style
+            typeLabel.className = "text-[10px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-300 px-2 py-1 rounded";
         }
     } else {
+        // Fallback agar batch nahi hai
         typeLabel.innerText = id.startsWith('ED') ? 'Edible' : 'By-Prod';
         typeLabel.className = "text-[10px] uppercase font-bold bg-slate-100 px-2 py-1 rounded text-slate-500";
     }
     
+    // 4. Input Focus
     const input = document.getElementById('res-qty-input');
     input.dataset.id = id;
     input.value = 1;
-    input.focus();
+    setTimeout(() => input.focus(), 100); // Thoda delay taaki keyboard open ho jaye mobile me
 }
 
 
@@ -899,50 +976,42 @@ window.handleManualCode = function() {
     
     if(!code) return alert("Please enter a Product ID or Batch Number!");
 
-    // Hamare paas Catalog aur Stock hai. Hamein match dhundhna hai.
     const allItems = [...CATALOG.edible, ...CATALOG.byprod];
     
     let foundId = null;
     let foundBatch = null;
 
-    // 1. Direct ID Check (Example: ED-MILK)
+    // Direct ID Check
     const exactIdMatch = allItems.find(item => item.id === code);
     
     if (exactIdMatch) {
         foundId = exactIdMatch.id;
     } 
     else {
-        // 2. Batch Number Check (Example: MILK123456)
-        // Hamara logic tha: First 4 letters of Name + Numbers
-        // To hum check karenge ki Input kis Product Name ke 4 letters se start hota hai
+        // Batch Number Check
+        // Note: Manual entry se hume ye nahi pata chalega ki wo VIP hai ya nahi, 
+        // jab tak hum Firebase me har batch ka data save na karein.
+        // Filhal hum isVip ko false maan lenge manual entry ke liye.
         
         const batchMatch = allItems.find(item => {
-            // Product Name se spaces hatao aur uppercase karo
             const cleanName = item.name.replace(/[^a-zA-Z]/g, '').toUpperCase();
-            const prefix = cleanName.substring(0, 4); // First 4 letters (e.g., MILK, DESI)
-            
-            // Check agar code iss prefix se start hota hai
+            const prefix = cleanName.substring(0, 4); 
             return code.startsWith(prefix);
         });
 
         if (batchMatch) {
             foundId = batchMatch.id;
-            foundBatch = code; // Input ko hi batch maan lenge
+            foundBatch = code; 
         }
     }
 
-    // 3. Result Process Karna
     if (foundId) {
-        // Scanner ko stop karo (agar chal raha ho)
         stopScanner();
-        
-        // Result Show karo (Jaisa QR scan karne par hota hai)
-        showScanResult(foundId, foundBatch);
-        
-        // Input box clear kar do
+        // Manual entry me VIP status pata nahi chalta, isliye false bhej rahe hain
+        showScanResult(foundId, foundBatch, false); 
         document.getElementById('manual-code').value = '';
     } else {
-        alert("Product not found! Please check the ID or Batch Number.");
+        alert("Product not found! Check ID or Batch No.");
     }
 };
 // --- DATE HELPERS ---
