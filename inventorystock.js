@@ -437,33 +437,39 @@ window.stopScanner = function() {
 };
 
 window.resetScannerUI = function() {
-    // Camera band karein
-    stopScanner();
-
-    // UI wapas pehle jaisa karein
-    document.getElementById('scan-result-active').classList.add('hidden');
-    document.getElementById('scan-result-placeholder').classList.remove('hidden');
-    document.getElementById('res-qty-input').value = '';
-    
-    // Reader div ko saaf karein (taaki freeze frame na dikhe)
-    document.getElementById('reader').innerHTML = '';
+    // Cancel dabane par camera band nahi karenge, bas wapas resume karenge
+    continueScanning(); 
 };
 
 window.processDispatch = function() {
     const input = document.getElementById('res-qty-input');
     const id = input.dataset.id;
     const qtyToRemove = parseFloat(input.value);
-    const currentStock = appState.stock[id] || 0;
+    
+    // Validation
+    if(!id || !appState.stock[id]) return alert("Product Error");
+    const currentStock = appState.stock[id];
 
     if(!qtyToRemove || qtyToRemove <= 0) return alert("Invalid Qty");
     if(qtyToRemove > currentStock) return alert(`Low Stock! Max: ${currentStock}`);
 
+    // 1. Stock Update
     appState.stock[id] -= qtyToRemove;
-    addLog('Dispatch', getProductName(id), `-${qtyToRemove}`, 'Sale');
+    
+    // 2. Log Entry
+    const pName = getProductName(id);
+    addLog('Dispatch', pName, `-${qtyToRemove}`, 'Scan Dispatch');
     saveDataToFirebase();
     
-    alert("Dispatched Successfully!");
-    resetScannerUI();
+    // 3. FAST FEEDBACK (No Alert Box)
+    if ('speechSynthesis' in window) {
+        const msg = new SpeechSynthesisUtterance("Dispatched");
+        msg.rate = 1.5; 
+        window.speechSynthesis.speak(msg);
+    }
+    
+    // 4. INSTANT RESUME FOR NEXT SCAN
+    continueScanning(); 
 };
 
 window.clearSystem = function() {
@@ -1051,3 +1057,23 @@ document.addEventListener('DOMContentLoaded', () => {
     setDefaultDate(); 
     // ... baaki existing code ...
 });
+function continueScanning() {
+    // 1. UI Reset (Form chupao, wapas scanning screen dikhao)
+    document.getElementById('scan-result-active').classList.add('hidden');
+    document.getElementById('scan-result-placeholder').classList.remove('hidden');
+    
+    // Input clear karo
+    document.getElementById('res-qty-input').value = '';
+
+    // 2. Resume Camera (Pause hatana)
+    if(html5QrcodeScanner) {
+        try {
+            html5QrcodeScanner.resume();
+            console.log("Camera Resumed");
+        } catch(e) {
+            console.log("Camera was not paused or error:", e);
+            // Agar resume fail ho (kabhi kabhi glitch hota hai), to restart kar do
+            startScanner(); 
+        }
+    }
+}
