@@ -380,34 +380,41 @@ window.startScanner = function() {
 };
 
 function initCamera() {
+    // Agar purana instance hai to band karein
+    if(html5QrcodeScanner) {
+        try { html5QrcodeScanner.clear(); } catch(e){}
+    }
+
     html5QrcodeScanner = new Html5Qrcode("reader");
     
-    // Config for Faster Scanning
+    // --- TURBO CONFIGURATION ---
     const config = { 
-        fps: 20, // Fast scanning (20 frames per second)
-        qrbox: { width: 250, height: 250 }, // Scanning area size
+        fps: 40, // Super Fast Scanning
+        qrbox: { width: 250, height: 250 },
         aspectRatio: 1.0,
-        disableFlip: false 
+        disableFlip: false,
+        // Crucial: Only scan QR Codes (Ignore Barcodes = 2x Speed)
+        formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
+        experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+        }
     };
 
     html5QrcodeScanner.start(
-        { facingMode: "environment" }, // Back Camera
+        { facingMode: "environment" }, 
         config,
-        onScanSuccess, // Success function
-        (errorMessage) => { 
-            // Parsing error ignore karein (Scanning process ka part hai)
-        }
+        onScanSuccess, 
+        (errorMessage) => { /* Ignore errors for speed */ }
     ).then(() => {
         const statusEl = document.getElementById('scanner-status');
         if(statusEl) {
-            statusEl.innerText = "On";
+            statusEl.innerText = "Turbo On";
             statusEl.classList.remove('bg-red-500/80');
-            statusEl.classList.add('bg-green-500/80');
+            statusEl.classList.add('bg-emerald-500', 'animate-pulse'); // Visual cue
         }
     }).catch(err => {
-        console.error("Camera Error:", err);
-        alert("Camera start failed. Please check permissions.");
-        resetScannerUI(); // Wapas button dikhao
+        alert("Camera Error: " + err);
+        resetScannerUI();
     });
 }
 
@@ -612,7 +619,18 @@ function generateLabel(id, name, qty, batchNo, isVip, mfg, exp) {
 }
 
 function onScanSuccess(decodedText, decodedResult) {
-    console.log("Scanned:", decodedText); // Debugging
+    // 1. INSTANT FREEZE (Millisecond response)
+    // Ye line sabse pehle aani chahiye
+    if(html5QrcodeScanner) {
+        html5QrcodeScanner.pause(true); 
+    }
+
+    // 2. Speak Immediately (Short text is faster)
+    if ('speechSynthesis' in window) {
+        const msg = new SpeechSynthesisUtterance("Done"); // "Done" is faster than "Scanning Complete"
+        msg.rate = 1.5; // Fast speaking rate
+        window.speechSynthesis.speak(msg);
+    }
 
     try {
         const data = JSON.parse(decodedText);
@@ -621,33 +639,30 @@ function onScanSuccess(decodedText, decodedResult) {
         let batch = null;
         let isVip = false;
 
-        // 1. Check New Short Format
+        // Data Parsing
         if (data.t === 'i' || data.t === 'item') {
             id = data.id;
             batch = data.b;
             isVip = (data.v === 1);
-        }
-        // 2. Check Old Format
-        else if (data.type === 'gau-erp-item') {
+        } else if (data.type === 'gau-erp-item') {
             id = data.id;
             batch = data.batch;
             isVip = data.vip;
         }
 
         if (id) {
-            // SUCCESS!
-            speakSuccess();
-            
-            // Camera ko PAUSE karein (Stop karne me time lagta hai, Pause fast hai)
-            if(html5QrcodeScanner) {
-                html5QrcodeScanner.pause(); 
-            }
-
-            // UI Show karein
+            // 3. Show UI Instantly
+            // setTimeout hata diya taaki delay na ho
             showScanResult(id, batch, isVip);
+        } else {
+            // Agar QR galat hai to wapas resume karo
+            html5QrcodeScanner.resume();
         }
+
     } catch (e) {
-        console.log("Invalid QR Data, keeping camera open.");
+        // Agar parsing error hai to wapas resume karo
+        console.error(e);
+        html5QrcodeScanner.resume();
     }
 }
 function onScanFailure(error) {}
@@ -656,11 +671,11 @@ function showScanResult(id, batchNo, isVip) {
     const pName = getProductName(id);
     const currentStock = appState.stock[id] || 0;
     
-    // UI Elements show karo
+    // UI toggle - No Animation classes for speed
     document.getElementById('scan-result-placeholder').classList.add('hidden');
     document.getElementById('scan-result-active').classList.remove('hidden');
 
-    // 1. Name Set karo (VIP styling ke saath)
+    // Name Update
     const nameEl = document.getElementById('res-name');
     if(isVip) {
         nameEl.innerHTML = `<span class="text-yellow-600 mr-1">👑</span> ${pName}`;
@@ -670,33 +685,28 @@ function showScanResult(id, batchNo, isVip) {
         nameEl.classList.remove('text-yellow-700');
     }
 
-    // 2. Stock dikhao
     document.getElementById('res-stock').innerText = currentStock;
     
-    // 3. Type/Batch Label Set karo
+    // Batch/Type Update
     const typeLabel = document.getElementById('res-type');
-    
     if(batchNo) {
-        typeLabel.innerText = `BATCH: ${batchNo}`;
-        
-        if(isVip) {
-            // VIP Style
-            typeLabel.className = "text-[10px] font-mono font-bold px-2 py-1 rounded bg-yellow-100 text-yellow-800 border border-yellow-400";
-        } else {
-            // Normal Style
-            typeLabel.className = "text-[10px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-300 px-2 py-1 rounded";
-        }
+        typeLabel.innerText = batchNo;
+        typeLabel.className = isVip 
+            ? "text-[10px] font-mono font-bold px-2 py-1 rounded bg-yellow-100 text-yellow-800 border border-yellow-400"
+            : "text-[10px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-300 px-2 py-1 rounded";
     } else {
-        // Fallback agar batch nahi hai
-        typeLabel.innerText = id.startsWith('ED') ? 'Edible' : 'By-Prod';
+        typeLabel.innerText = 'Standard';
         typeLabel.className = "text-[10px] uppercase font-bold bg-slate-100 px-2 py-1 rounded text-slate-500";
     }
     
-    // 4. Input Focus
+    // Input Setup
     const input = document.getElementById('res-qty-input');
     input.dataset.id = id;
-    input.value = 1;
-    setTimeout(() => input.focus(), 100); // Thoda delay taaki keyboard open ho jaye mobile me
+    input.value = 1; // Default 1
+    
+    // Auto Focus - Immediate
+    input.select(); // Value select kar lo taaki user direct type kare to replace ho jaye
+    input.focus();
 }
 
 
@@ -804,18 +814,14 @@ function renderLogs() {
     });
 }
 
-function speakSuccess() {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance();
-        msg.text = "QR Scanning Complete"; 
-        msg.volume = 1; 
-        msg.rate = 1;   
-        msg.pitch = 1;  
-        msg.lang = 'en-IN'; 
-        window.speechSynthesis.speak(msg);
-    }
-}
+// Beep Sound (Faster than Speech)
+const context = new (window.AudioContext || window.webkitAudioContext)();
+const osc = context.createOscillator();
+osc.type = "sine";
+osc.frequency.value = 800;
+osc.connect(context.destination);
+osc.start();
+setTimeout(() => osc.stop(), 100); // 100ms beep
 
 window.generatePDF = function() {
     const { jsPDF } = window.jspdf;
