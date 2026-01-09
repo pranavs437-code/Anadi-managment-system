@@ -74,6 +74,20 @@
                 height: 100vh;
             }
         }
+        /* Smooth Accordion Animation */
+.smooth-wrapper {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.3s ease-out; /* Speed and Smoothness */
+}
+
+.smooth-wrapper.open {
+    grid-template-rows: 1fr;
+}
+
+.smooth-inner {
+    overflow: hidden;
+}
     </style>
 </head>
 
@@ -185,6 +199,11 @@
                         class="nav-item px-6 py-4 cursor-pointer hover:bg-slate-700 border-l-4 border-transparent transition flex items-center gap-3">
                         <i class="fa-solid fa-clock-rotate-left w-6 text-yellow-400"></i> Logs
                     </li>
+                    <!-- Inside <aside> ... <ul class="space-y-1"> -->
+                    <li onclick="switchTab('products')"
+                        class="nav-item px-6 py-4 cursor-pointer hover:bg-slate-700 border-l-4 border-transparent transition flex items-center gap-3">
+                        <i class="fa-solid fa-tags w-6 text-purple-400"></i> Products
+                    </li>
                 </ul>
             </nav>
         </aside>
@@ -222,7 +241,8 @@
                 <button onclick="clearSystem()" class="text-xs text-red-500 hover:underline">Reset System</button>
             </header>
 
-            <div class="p-4 md:p-8 pb-24 md:pb-8"> <!-- Added padding bottom for mobile nav -->
+            <div class="p-4 md:p-8 pb-24 md:pb-8">
+                <!-- Added padding bottom for mobile nav -->
 
                 <!-- 1. INVENTORY DASHBOARD -->
                 <section id="inventory" class="tab-content fade-in">
@@ -281,108 +301,129 @@
                 <!-- 2. STOCK IN -->
 
                 <!-- 2. STOCK IN SECTION (FIXED LAYOUT) -->
-          <section id="stockin" class="tab-content hidden">
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                <section id="stockin" class="tab-content hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-        <!-- COLUMN 1: FORM -->
-        <div class="bg-white p-5 rounded-xl shadow-lg">
-            <h3 class="text-lg font-bold text-slate-700 mb-4 border-b pb-2">Add Stock</h3>
+                        <!-- COLUMN 1: FORM -->
+                        <div class="bg-white p-5 rounded-xl shadow-lg">
+                            <h3 class="text-lg font-bold text-slate-700 mb-4 border-b pb-2">Add Stock</h3>
 
-            <div class="space-y-4">
-                <!-- Category -->
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase">Category</label>
-                    <select id="in-cat" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 mt-1 outline-none" onchange="populateProductDropdown()">
-                        <option value="edible">Edible (Milk/Ghee)</option>
-                        <option value="byprod">By-Products (Dhoop/Khaad)</option>
-                    </select>
-                </div>
+                            <div class="space-y-4">
+                                <!-- Category -->
+                                <div>
+                                    <label class="text-xs font-bold text-slate-500 uppercase">Category</label>
+                                    <select id="in-cat"
+                                        class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 mt-1 outline-none"
+                                        onchange="populateProductDropdown()">
+                                        <option value="edible">Edible (Milk/Ghee)</option>
+                                        <option value="byprod">By-Products (Dhoop/Khaad)</option>
+                                    </select>
+                                </div>
 
-                <!-- Product -->
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase">Product</label>
-                    <select id="in-product" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 mt-1 outline-none"></select>
-                    
-                    <!-- VIP Checkbox -->
-                    <div class="mt-2 flex items-center gap-2">
-                        <input type="checkbox" id="in-vip" class="w-5 h-5 accent-yellow-500 cursor-pointer">
-                        <label for="in-vip" class="text-sm font-bold text-yellow-600 cursor-pointer">
-                            <i class="fa-solid fa-crown"></i> Mark as VIP Stock
-                        </label>
-                    </div>
-                </div>
+                                <!-- Product -->
+                                <div>
+                                    <label class="text-xs font-bold text-slate-500 uppercase">Product</label>
+                                    <select id="in-product"
+                                        class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 mt-1 outline-none"></select>
 
-                <!-- Dates -->
-                <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 uppercase">MFG Date</label>
-                        <input type="date" id="in-mfg" class="w-full bg-white border border-slate-300 rounded-lg p-2 mt-1 text-sm outline-none">
-                    </div>
-                    <div>
-                        <div class="flex justify-between items-center">
-                            <label class="text-xs font-bold text-slate-500 uppercase">Expiry</label>
-                            <div class="flex items-center gap-1">
-                                <input type="checkbox" id="in-has-exp" class="w-3 h-3 accent-red-500" onchange="toggleExpiryInput()">
-                                <label for="in-has-exp" class="text-[10px] text-slate-500 font-bold cursor-pointer">Set?</label>
+                                    <!-- VIP Checkbox -->
+                                    <div class="mt-2 flex items-center gap-2">
+                                        <input type="checkbox" id="in-vip"
+                                            class="w-5 h-5 accent-yellow-500 cursor-pointer">
+                                        <label for="in-vip" class="text-sm font-bold text-yellow-600 cursor-pointer">
+                                            <i class="fa-solid fa-crown"></i> Mark as VIP Stock
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Dates -->
+                                <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                    <div>
+                                        <label class="text-xs font-bold text-slate-500 uppercase">MFG Date</label>
+                                        <input type="date" id="in-mfg"
+                                            class="w-full bg-white border border-slate-300 rounded-lg p-2 mt-1 text-sm outline-none">
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between items-center">
+                                            <label class="text-xs font-bold text-slate-500 uppercase">Expiry</label>
+                                            <div class="flex items-center gap-1">
+                                                <input type="checkbox" id="in-has-exp" class="w-3 h-3 accent-red-500"
+                                                    onchange="toggleExpiryInput()">
+                                                <label for="in-has-exp"
+                                                    class="text-[10px] text-slate-500 font-bold cursor-pointer">Set?</label>
+                                            </div>
+                                        </div>
+                                        <input type="date" id="in-exp" disabled
+                                            class="w-full bg-slate-200 border border-slate-300 rounded-lg p-2 mt-1 text-sm outline-none text-slate-400">
+                                    </div>
+                                </div>
+
+                                <!-- Qty & Price -->
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-xs font-bold text-slate-500 uppercase">Qty</label>
+                                        <input type="number" id="in-qty"
+                                            class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 mt-1 outline-none"
+                                            placeholder="0" oninput="calculateTotal()">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-bold text-slate-500 uppercase">Unit Price (₹)</label>
+                                        <input type="number" id="in-price"
+                                            class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 mt-1 outline-none"
+                                            placeholder="Per Item" oninput="calculateTotal()">
+                                    </div>
+                                    <div
+                                        class="col-span-2 bg-slate-100 border border-slate-200 p-3 rounded-lg flex justify-between items-center mt-2">
+                                        <span class="text-xs font-bold text-slate-500 uppercase">Total:</span>
+                                        <span id="in-total-display" class="text-xl font-bold text-slate-800">₹ 0</span>
+                                    </div>
+                                </div>
+
+                                <button onclick="handleAddStock()"
+                                    class="w-full bg-brand text-white font-bold py-4 rounded-lg shadow-lg hover:bg-emerald-600 transition">
+                                    Add & Generate QR
+                                </button>
                             </div>
                         </div>
-                        <input type="date" id="in-exp" disabled class="w-full bg-slate-200 border border-slate-300 rounded-lg p-2 mt-1 text-sm outline-none text-slate-400">
+
+                        <!-- COLUMN 2: LABEL PREVIEW AREA -->
+                        <div class="bg-white p-5 rounded-xl shadow-lg flex flex-col items-center sticky top-4">
+                            <h3 class="text-sm font-bold text-slate-400 mb-2 uppercase tracking-widest text-center">
+                                Label Preview</h3>
+
+                            <!-- Placeholder State -->
+                            <div id="qr-container"
+                                class="w-full p-6 bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg mb-4 min-h-[250px] flex items-center justify-center text-slate-400 text-sm">
+                                Fill form to generate QR
+                            </div>
+
+                            <!-- PRINTABLE LABEL (Hidden initially) -->
+                            <div id="print-area"
+                                class="hidden text-left w-full max-w-[250px] mx-auto border p-4 rounded bg-white shadow-sm mb-4 relative overflow-hidden ring-1 ring-slate-200">
+                                <div class="absolute top-0 left-0 w-full h-2 bg-slate-800"></div>
+
+                                <!-- IDs JS is looking for: -->
+                                <div class="text-center font-bold text-lg uppercase tracking-wider truncate mt-2"
+                                    id="lbl-name">PRODUCT</div>
+                                <div class="flex justify-center my-3" id="lbl-qr-target"></div>
+                                <div class="text-center mb-2">
+                                    <span id="lbl-batch"
+                                        class="bg-slate-100 text-slate-800 border border-slate-300 px-2 py-1 rounded text-xs font-mono font-bold tracking-widest">BATCH:
+                                        ----</span>
+                                </div>
+                                <div class="flex justify-between text-xs text-slate-500 font-mono border-t pt-2">
+                                    <span id="lbl-id">ID:--</span>
+                                    <span id="lbl-qty">Qty:--</span>
+                                </div>
+                            </div>
+
+                            <button onclick="printLabel()" id="printBtn"
+                                class="hidden w-full bg-slate-800 text-white py-3 rounded-lg font-bold hover:bg-slate-900 transition">
+                                <i class="fa-solid fa-print mr-2"></i> Print Label
+                            </button>
+                        </div>
                     </div>
-                </div>
-
-                <!-- Qty & Price -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 uppercase">Qty</label>
-                        <input type="number" id="in-qty" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 mt-1 outline-none" placeholder="0" oninput="calculateTotal()">
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 uppercase">Unit Price (₹)</label>
-                        <input type="number" id="in-price" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 mt-1 outline-none" placeholder="Per Item" oninput="calculateTotal()">
-                    </div>
-                    <div class="col-span-2 bg-slate-100 border border-slate-200 p-3 rounded-lg flex justify-between items-center mt-2">
-                        <span class="text-xs font-bold text-slate-500 uppercase">Total:</span>
-                        <span id="in-total-display" class="text-xl font-bold text-slate-800">₹ 0</span>
-                    </div>
-                </div>
-
-                <button onclick="handleAddStock()" class="w-full bg-brand text-white font-bold py-4 rounded-lg shadow-lg hover:bg-emerald-600 transition">
-                    Add & Generate QR
-                </button>
-            </div>
-        </div>
-
-        <!-- COLUMN 2: LABEL PREVIEW AREA -->
-        <div class="bg-white p-5 rounded-xl shadow-lg flex flex-col items-center sticky top-4">
-            <h3 class="text-sm font-bold text-slate-400 mb-2 uppercase tracking-widest text-center">Label Preview</h3>
-
-            <!-- Placeholder State -->
-            <div id="qr-container" class="w-full p-6 bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg mb-4 min-h-[250px] flex items-center justify-center text-slate-400 text-sm">
-                Fill form to generate QR
-            </div>
-
-            <!-- PRINTABLE LABEL (Hidden initially) -->
-            <div id="print-area" class="hidden text-left w-full max-w-[250px] mx-auto border p-4 rounded bg-white shadow-sm mb-4 relative overflow-hidden ring-1 ring-slate-200">
-                <div class="absolute top-0 left-0 w-full h-2 bg-slate-800"></div>
-                
-                <!-- IDs JS is looking for: -->
-                <div class="text-center font-bold text-lg uppercase tracking-wider truncate mt-2" id="lbl-name">PRODUCT</div>
-                <div class="flex justify-center my-3" id="lbl-qr-target"></div>
-                <div class="text-center mb-2">
-                    <span id="lbl-batch" class="bg-slate-100 text-slate-800 border border-slate-300 px-2 py-1 rounded text-xs font-mono font-bold tracking-widest">BATCH: ----</span>
-                </div>
-                <div class="flex justify-between text-xs text-slate-500 font-mono border-t pt-2">
-                    <span id="lbl-id">ID:--</span>
-                    <span id="lbl-qty">Qty:--</span>
-                </div>
-            </div>
-
-            <button onclick="printLabel()" id="printBtn" class="hidden w-full bg-slate-800 text-white py-3 rounded-lg font-bold hover:bg-slate-900 transition">
-                <i class="fa-solid fa-print mr-2"></i> Print Label
-            </button>
-        </div>
-    </div>
-</section>
+                </section>
 
                 <!-- 3. SCANNER -->
                 <section id="scanner" class="tab-content hidden">
@@ -391,16 +432,16 @@
 
                             <!-- Camera Wrapper -->
                             <!-- Camera Wrapper -->
-<div class="relative bg-black h-[350px] md:h-[400px] overflow-hidden rounded-t-xl">
-    <!-- Ye ID honi chahiye -->
-    <div id="reader" class="w-full h-full"></div> 
-    
-    <!-- Status Overlay -->
-    <div class="absolute top-4 right-4 z-10">
-        <span id="scanner-status"
-            class="px-3 py-1 rounded-full bg-red-500/80 text-white text-xs font-bold backdrop-blur-sm">Off</span>
-    </div>
-</div>
+                            <div class="relative bg-black h-[350px] md:h-[400px] overflow-hidden rounded-t-xl">
+                                <!-- Ye ID honi chahiye -->
+                                <div id="reader" class="w-full h-full"></div>
+
+                                <!-- Status Overlay -->
+                                <div class="absolute top-4 right-4 z-10">
+                                    <span id="scanner-status"
+                                        class="px-3 py-1 rounded-full bg-red-500/80 text-white text-xs font-bold backdrop-blur-sm">Off</span>
+                                </div>
+                            </div>
 
                             <!-- Controls -->
                             <div class="p-5">
@@ -439,76 +480,216 @@
                                 </div>
 
                                 <!-- Active Result (Jab Product mil jaye) -->
-                                <div id="scan-result-active" class="hidden animate-slide-up">
-                                    <div class="flex justify-between items-start mb-4 border-b pb-4">
-                                        <div>
-                                            <h2 class="text-xl font-bold text-slate-800 leading-tight" id="res-name">
-                                                Product Name</h2>
-                                            <p class="text-sm text-slate-500 mt-1">Available: <span
-                                                    class="font-bold text-brand" id="res-stock">0</span></p>
-                                        </div>
-                                        <span id="res-type"
-                                            class="text-[10px] uppercase font-bold bg-slate-100 px-2 py-1 rounded text-slate-500">Type</span>
-                                    </div>
+                                <!-- Active Result (Dispatch Form) -->
+<div id="scan-result-active" class="hidden animate-slide-up">
+    
+    <!-- 1. Product Info Header -->
+    <div class="flex justify-between items-start mb-4 border-b pb-4">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800 leading-tight" id="res-name">Product Name</h2>
+            <p class="text-sm text-slate-500 mt-1">Available: <span class="font-bold text-brand" id="res-stock">0</span></p>
+        </div>
+        <span id="res-type" class="text-[10px] uppercase font-bold bg-slate-100 px-2 py-1 rounded text-slate-500">Type</span>
+    </div>
 
-                                    <div class="mb-4">
-                                        <label class="text-xs font-bold text-slate-500 uppercase">Dispatch Qty</label>
-                                        <div class="flex gap-2 mt-1">
-                                            <input type="number" id="res-qty-input"
-                                                class="flex-1 bg-slate-50 border-2 border-slate-300 rounded-lg p-3 text-lg font-bold outline-none focus:border-red-500"
-                                                placeholder="1">
-                                        </div>
-                                    </div>
+    <!-- 2. Customer Details Form (NEW ADDITION) -->
+    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 mb-4 space-y-3">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Customer Details</p>
+        
+        <!-- Name & Phone -->
+        <div class="grid grid-cols-2 gap-2">
+            <div>
+                <input type="text" id="res-cust-name" 
+                    class="w-full p-2 text-sm border border-slate-300 rounded outline-none focus:border-brand" 
+                    placeholder="Name">
+            </div>
+            <div>
+                <input type="tel" id="res-cust-phone" 
+                    class="w-full p-2 text-sm border border-slate-300 rounded outline-none focus:border-brand" 
+                    placeholder="Phone No">
+            </div>
+        </div>
+        
+        <!-- Address -->
+        <div>
+            <input type="text" id="res-cust-addr" 
+                class="w-full p-2 text-sm border border-slate-300 rounded outline-none focus:border-brand" 
+                placeholder="Address / Location">
+        </div>
+    </div>
 
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <button onclick="resetScannerUI()"
-                                            class="bg-slate-200 text-slate-700 font-bold py-3 rounded-lg hover:bg-slate-300 transition">Cancel</button>
-                                        <button onclick="processDispatch()"
-                                            class="bg-red-500 text-white font-bold py-3 rounded-lg shadow-lg hover:bg-red-600 transition">Dispatch</button>
-                                    </div>
-                                </div>
+    <!-- 3. Quantity Input -->
+    <div class="mb-4">
+        <label class="text-xs font-bold text-slate-500 uppercase">Dispatch Qty</label>
+        <div class="flex gap-2 mt-1">
+            <input type="number" id="res-qty-input"
+                class="flex-1 bg-white border-2 border-slate-300 rounded-lg p-3 text-lg font-bold outline-none focus:border-red-500 shadow-sm"
+                placeholder="1">
+        </div>
+    </div>
+
+    <!-- 4. Action Buttons -->
+    <div class="grid grid-cols-2 gap-3">
+        <button onclick="resetScannerUI()"
+            class="bg-slate-200 text-slate-700 font-bold py-3 rounded-lg hover:bg-slate-300 transition">Cancel</button>
+        <button onclick="processDispatch()"
+            class="bg-red-600 text-white font-bold py-3 rounded-lg shadow-lg hover:bg-red-700 transition">
+            Confirm Dispatch
+        </button>
+    </div>
+</div>
                             </div>
                         </div>
                     </div>
                 </section>
+                <!-- 5. PRODUCTS MANAGER SECTION -->
+                <section id="products" class="tab-content hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                <!-- 4. LOGS -->
-                <!-- PDF Export Section -->
+                        <!-- Add Product Form -->
+                        <div class="bg-white p-5 rounded-xl shadow-lg h-fit">
+                            <h3 class="text-lg font-bold text-slate-700 mb-4 border-b pb-2">Add New Item</h3>
+                            <div class="space-y-3">
 
-                <section id="logs" class="tab-content hidden">
-                    <div class="bg-white p-4 rounded-lg shadow mb-4 border border-slate-200">
-                        <h3 class="font-bold text-slate-700 mb-2">Export Report (PDF)</h3>
-                        <div class="flex flex-col md:flex-row gap-2 items-end">
-                            <div>
-                                <label class="text-xs text-slate-500 block mb-1">Start Date</label>
-                                <input type="date" id="pdf-start" class="border p-2 rounded w-full text-sm">
+                                <div>
+                                    <label class="text-xs font-bold text-slate-500 uppercase">Name</label>
+                                    <input type="text" id="new-prod-name"
+                                        class="w-full p-2 border rounded outline-none focus:border-brand"
+                                        placeholder="e.g. Desi Ghee">
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-xs font-bold text-slate-500 uppercase">Category</label>
+                                        <select id="new-prod-cat"
+                                            class="w-full p-2 border rounded outline-none bg-white">
+                                            <option value="edible">Edible</option>
+                                            <option value="byprod">By-Prod</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-bold text-slate-500 uppercase">Unit</label>
+                                        <select id="new-prod-unit"
+                                            class="w-full p-2 border rounded outline-none bg-white">
+                                            <option value="Kg">Kg</option>
+                                            <option value="L">L</option>
+                                            <option value="Pack">Pack</option>
+                                            <option value="Box">Box</option>
+                                            <option value="Bottle">Bottle</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <button onclick="handleAddNewProduct()"
+                                    class="w-full bg-purple-600 text-white font-bold py-2 rounded hover:bg-purple-700 transition">
+                                    <i class="fa-solid fa-plus mr-1"></i> Add Item
+                                </button>
                             </div>
-                            <div>
-                                <label class="text-xs text-slate-500 block mb-1">End Date</label>
-                                <input type="date" id="pdf-end" class="border p-2 rounded w-full text-sm">
+                        </div>
+
+                        <!-- Product List -->
+                        <div class="col-span-1 md:col-span-2 bg-white rounded-xl shadow-lg overflow-hidden">
+                            <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
+                                <h3 class="font-bold text-slate-700">All Products</h3>
+                                <span class="text-xs text-slate-400">Manage your catalog</span>
                             </div>
-                            <button onclick="generatePDF()"
-                                class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm w-full md:w-auto font-bold flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-file-pdf"></i> Download PDF
-                            </button>
+                            <div class="max-h-[500px] overflow-y-auto">
+                                <table class="w-full text-left">
+                                    <thead class="bg-slate-100 text-xs uppercase text-slate-600 sticky top-0">
+                                        <tr>
+                                            <th class="p-3">Name</th>
+                                            <th class="p-3">Details</th>
+                                            <th class="p-3 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="product-list-body" class="text-sm divide-y divide-slate-100">
+                                        <!-- JS populated -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-700 mb-4 px-1">Recent Transactions</h3>
-                    <div class="bg-white rounded-xl shadow overflow-hidden">
-                        <table class="w-full text-left">
-    <thead class="bg-slate-100 text-xs uppercase text-slate-600">
-        <tr>
-            <!-- Name change kiya taaki pata chale isme Date/Time bhi hai -->
-            <th class="p-3">Transaction / Product</th> 
-            <th class="p-3">Dates (MFG/EXP)</th>
-            <th class="p-3 text-right">Qty</th>
-        </tr>
-    </thead>
-    <tbody id="logs-body" class="text-sm divide-y divide-slate-100">
-        <!-- JS Content -->
-    </tbody>
-</table>
+                </section>
+                <section id="logs" class="tab-content hidden">
+                <!-- 4. LOGS -->
+                <!-- PDF Export Section -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6 overflow-hidden">
+
+                    <!-- Header -->
+                    <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+                        <div class="bg-red-100 text-red-600 w-8 h-8 flex items-center justify-center rounded-lg">
+                            <i class="fa-solid fa-file-pdf"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm">Export Reports</h3>
+                            <p class="text-xs text-slate-400">Select a date range to download history</p>
+                        </div>
                     </div>
+
+                    <!-- Body -->
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-7 gap-4 items-end">
+
+                            <!-- Start Date -->
+                            <div class="md:col-span-2">
+                                <label
+                                    class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">From
+                                    Date</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fa-regular fa-calendar text-slate-400 text-xs"></i>
+                                    </div>
+                                    <input type="date" id="pdf-start"
+                                        class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-red-500 focus:border-red-500 block pl-9 p-2.5 outline-none transition">
+                                </div>
+                            </div>
+
+                            <!-- End Date -->
+                            <div class="md:col-span-2">
+                                <label
+                                    class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">To
+                                    Date</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fa-regular fa-calendar text-slate-400 text-xs"></i>
+                                    </div>
+                                    <input type="date" id="pdf-end"
+                                        class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-red-500 focus:border-red-500 block pl-9 p-2.5 outline-none transition">
+                                </div>
+                            </div>
+
+                            <!-- Action Button -->
+                            <div class="md:col-span-3">
+                                <button onclick="generatePDF()"
+                                    class="w-full text-white bg-slate-800 hover:bg-slate-900 focus:ring-4 focus:ring-slate-300 font-bold rounded-lg text-sm px-5 py-2.5 transition flex items-center justify-center gap-2 shadow-lg shadow-slate-200">
+                                    <i class="fa-solid fa-download"></i>
+                                    Download PDF Report
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <!-- ... inside <section id="logs"> ... -->
+                <h3 class="text-lg font-bold text-slate-700 mb-4 px-1">Recent Transactions</h3>
+
+                <!-- CHANGE CLASS HERE: 'overflow-hidden' hata kar 'overflow-x-auto' karein -->
+                <div class="bg-white rounded-xl shadow overflow-x-auto">
+
+                    <table class="w-full text-left min-w-[600px]"> <!-- Added min-w-[600px] -->
+                        <thead class="bg-slate-100 text-xs uppercase text-slate-600">
+                            <tr>
+                                <th class="p-3">Transaction / Product</th>
+                                <th class="p-3">Dates (MFG/EXP)</th>
+                                <th class="p-3 text-center">Qty</th>
+                                <th class="p-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-body" class="text-sm divide-y divide-slate-100">
+                            <!-- JS populated -->
+                        </tbody>
+                    </table>
+                </div>
                 </section>
 
             </div>
@@ -550,6 +731,13 @@
                 data-tab="logs">
                 <i class="fa-solid fa-clock-rotate-left text-xl"></i>
                 <span class="text-[10px] font-bold">Logs</span>
+            </button>
+            <!-- Inside mobile nav div -->
+            <button onclick="switchTab('products')"
+                class="mobile-nav-item flex flex-col items-center gap-1 text-slate-400 hover:text-green-600"
+                data-tab="products">
+                <i class="fa-solid fa-tags text-xl"></i>
+                <span class="text-[10px] font-bold">Items</span>
             </button>
 
         </div>
