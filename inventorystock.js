@@ -165,16 +165,55 @@ function loadRealtimeData() {
         
         if (data) {
             appState = data;
+            
             if (!appState.stock) appState.stock = {};
             if (!appState.logs) appState.logs = [];
-            initStockObject(); 
+
+            let needSave = false;
+
+            // --- 1. PRODUCT CATALOG MIGRATION (Jo pehle kiya tha) ---
+            if (!appState.products) {
+                console.log("Migrating Catalog...");
+                if(typeof CATALOG !== 'undefined') {
+                    appState.products = JSON.parse(JSON.stringify(CATALOG));
+                    needSave = true;
+                }
+            }
+
+            // --- 2. LOGS ID FIX (Ye naya hai - Old Logs ko ID dega) ---
+            if (appState.logs.length > 0) {
+                appState.logs.forEach((log, index) => {
+                    // Agar logId nahi hai, to ek bana do
+                    if (!log.logId) {
+                        // ID format: OLD_timestamp_index
+                        log.logId = 'OLD_' + Date.now() + '_' + index;
+                        needSave = true;
+                    }
+                });
+            }
+
+            // Agar kuch change hua hai to database me save karo
+            if (needSave) {
+                console.log("System Updated Old Data automatically.");
+                saveDataToFirebase();
+            }
+            
         } else {
+            // New User
+            appState = {
+                stock: {},
+                logs: [],
+                products: (typeof CATALOG !== 'undefined') ? JSON.parse(JSON.stringify(CATALOG)) : {}
+            };
             initStockObject();
             saveDataToFirebase();
         }
 
+        // Render Views
         renderInventory();
         renderLogs();
+        if(typeof renderProductList === 'function') renderProductList();
+        populateProductDropdown();
     });
 }
 // --- 🔄 LOADER LOGIC ---
@@ -273,11 +312,12 @@ window.switchTab = function(tabId) {
 };
 
 window.populateProductDropdown = function() {
-    const cat = document.getElementById('in-cat').value;
+    const cat = document.getElementById('in-cat').value; // 'edible' or 'byprod'
     const select = document.getElementById('in-product');
     select.innerHTML = '';
 
-    const items = cat === 'edible' ? CATALOG.edible : CATALOG.byprod;
+    const items = (appState.products && appState.products[cat]) ? appState.products[cat] : [];
+    
     items.forEach(item => {
         const opt = document.createElement('option');
         opt.value = item.id;
@@ -297,23 +337,25 @@ window.calculateTotal = function() {
 window.handleAddStock = function() {
     const pId = document.getElementById('in-product').value;
     const qty = parseFloat(document.getElementById('in-qty').value);
+    
+    // Price value le rahe hain
     const price = parseFloat(document.getElementById('in-price').value) || 0;
+    
     const isVip = document.getElementById('in-vip').checked;
 
-    // --- NEW: DATES ---
+    // Dates
     const mfgDate = document.getElementById('in-mfg').value;
     const hasExp = document.getElementById('in-has-exp').checked;
-    let expDate = '---';
-
+    let expDate = '-------';
     if(hasExp) {
         expDate = document.getElementById('in-exp').value;
         if(!expDate) return alert("Please select an Expiry Date!");
     }
-    // ------------------
 
     if(!qty || qty <= 0) return alert("Please enter valid quantity");
     if(!mfgDate) return alert("MFG Date is required");
 
+    // Stock Update
     if(!appState.stock[pId]) appState.stock[pId] = 0;
     appState.stock[pId] += qty;
     
@@ -323,42 +365,29 @@ window.handleAddStock = function() {
 
     const totalVal = qty * price;
     
-    // Note me dates bhi save kar rahe hain taaki logs me dikhe
-    // Format: VIP | Price | Batch | MFG | EXP
-    const vipNote = isVip ? '[VIP] ' : '';
-    const note = JSON.stringify({
+    // Note for Logs
+    const noteObj = {
         msg: price > 0 ? `Purchase (₹${totalVal})` : `Stock Update`,
         batch: batchNo,
         mfg: mfgDate,
-        exp: expDate
-    });
+        exp: expDate,
+        mrp: price // Logs me bhi save kar liya
+    };
     
-    addLog('Stock In', pName, `+${qty}`, note);
+    addLog('Stock In', pName, `+${qty}`, JSON.stringify(noteObj));
     saveDataToFirebase();
     
-    // QR Generation me dates bhejein
-    generateLabel(pId, pName, qty, batchNo, isVip, mfgDate, expDate);
+    // --- CHANGE IS HERE: Added 'price' at the end ---
+    generateLabel(pId, pName, qty, batchNo, isVip, mfgDate, expDate, price);
     
     // Reset Form
     document.getElementById('in-qty').value = '';
     document.getElementById('in-price').value = '';
     document.getElementById('in-vip').checked = false;
     document.getElementById('in-has-exp').checked = false;
-    toggleExpiryInput(); // Disable exp input again
-    setDefaultDate(); // Reset MFG to today
+    toggleExpiryInput(); 
+    setDefaultDate(); 
     document.getElementById('in-total-display').innerText = '₹ 0';
-};
-window.printLabel = function() {
-    const content = document.getElementById('print-area').innerHTML;
-    const win = window.open('', '', 'height=500,width=500');
-    win.document.write('<html><head><title>Print Label</title>');
-    win.document.write('<link href="https://cdn.tailwindcss.com" rel="stylesheet">'); 
-    win.document.write('</head><body class="flex items-center justify-center h-screen">');
-    win.document.write('<div class="border-2 border-black p-4 rounded text-center w-64">');
-    win.document.write(content);
-    win.document.write('</div></body></html>');
-    win.document.close();
-    win.print();
 };
 
 window.startScanner = function() {
@@ -446,6 +475,15 @@ window.processDispatch = function() {
     const id = input.dataset.id;
     const qtyToRemove = parseFloat(input.value);
     
+    // --- NEW: Capture Customer Details ---
+    const custName = document.getElementById('res-cust-name').value.trim() || 'Guest';
+    const custPhone = document.getElementById('res-cust-phone').value.trim() || '-';
+    const custAddr = document.getElementById('res-cust-addr').value.trim() || '-';
+    // -------------------------------------
+
+    const batchFromScan = input.dataset.batch || 'N/A';
+    const isVip = input.dataset.vip === 'true';
+
     // Validation
     if(!id || !appState.stock[id]) return alert("Product Error");
     const currentStock = appState.stock[id];
@@ -456,19 +494,32 @@ window.processDispatch = function() {
     // 1. Stock Update
     appState.stock[id] -= qtyToRemove;
     
-    // 2. Log Entry
+    // 2. Log Entry (Packing all details in JSON)
     const pName = getProductName(id);
-    addLog('Dispatch', pName, `-${qtyToRemove}`, 'Scan Dispatch');
+    
+    const noteObj = {
+        msg: 'Scan Sale',
+        batch: batchFromScan,
+        vip: isVip,
+        // Saving Customer Data inside JSON note
+        customer: {
+            name: custName,
+            phone: custPhone,
+            addr: custAddr
+        }
+    };
+
+    addLog('Dispatch', pName, `-${qtyToRemove}`, JSON.stringify(noteObj));
     saveDataToFirebase();
     
-    // 3. FAST FEEDBACK (No Alert Box)
+    // 3. Fast Feedback
     if ('speechSynthesis' in window) {
-        const msg = new SpeechSynthesisUtterance("Dispatched");
+        const msg = new SpeechSynthesisUtterance("Order Dispatched");
         msg.rate = 1.5; 
         window.speechSynthesis.speak(msg);
     }
     
-    // 4. INSTANT RESUME FOR NEXT SCAN
+    // 4. Auto Resume
     continueScanning(); 
 };
 
@@ -483,7 +534,7 @@ window.clearSystem = function() {
 
 function renderInventory() {
     let totalItems = 0;
-    let edibleVal = 0;
+    let edibleVal = 0; // Estimation logic might need update if prices aren't stored in product
     let byprodVal = 0;
 
     const createRow = (item, qty) => {
@@ -493,7 +544,7 @@ function renderInventory() {
         else if(qty < 10) { colorClass = 'bg-yellow-100 text-yellow-700'; statusText = 'Low'; }
 
         return `
-            <div class="p-4 flex flex-row items-center justify-between md:grid md:grid-cols-4 md:gap-4 hover:bg-slate-50 transition">
+            <div class="p-4 flex flex-row items-center justify-between md:grid md:grid-cols-4 md:gap-4 hover:bg-slate-50 transition border-b border-slate-100">
                 <div class="flex flex-col md:block">
                     <span class="font-bold text-slate-700">${item.name}</span>
                     <span class="text-xs text-slate-400 md:hidden">${item.id}</span>
@@ -510,40 +561,64 @@ function renderInventory() {
         `;
     };
 
+    // Render Edible
     const edibleBody = document.getElementById('table-edible');
     if(edibleBody) {
         edibleBody.innerHTML = '';
-        CATALOG.edible.forEach(item => {
+        const edibles = (appState.products && appState.products.edible) ? appState.products.edible : [];
+        edibles.forEach(item => {
             const qty = appState.stock[item.id] || 0;
             totalItems += qty;
-            edibleVal += qty * 50; 
+            edibleVal += qty * 50; // Generic valuation
             edibleBody.innerHTML += createRow(item, qty);
         });
     }
 
+    // Render ByProd
     const byprodBody = document.getElementById('table-byprod');
     if(byprodBody) {
         byprodBody.innerHTML = '';
-        CATALOG.byprod.forEach(item => {
+        const byprods = (appState.products && appState.products.byprod) ? appState.products.byprod : [];
+        byprods.forEach(item => {
             const qty = appState.stock[item.id] || 0;
             totalItems += qty;
-            byprodVal += qty * 100;
+            byprodVal += qty * 100; // Generic valuation
             byprodBody.innerHTML += createRow(item, qty);
         });
     }
-
-    const tItems = document.getElementById('stat-total-items');
-    if(tItems) tItems.innerText = totalItems;
-    const tEdible = document.getElementById('stat-edible-val');
-    if(tEdible) tEdible.innerText = edibleVal.toLocaleString('en-IN');
-    const tByprod = document.getElementById('stat-byprod-val');
-    if(tByprod) tByprod.innerText = byprodVal.toLocaleString('en-IN');
+    
+    // Update Stats
+    if(document.getElementById('stat-total-items')) document.getElementById('stat-total-items').innerText = totalItems;
+    if(document.getElementById('stat-edible-val')) document.getElementById('stat-edible-val').innerText = edibleVal.toLocaleString();
+    if(document.getElementById('stat-byprod-val')) document.getElementById('stat-byprod-val').innerText = byprodVal.toLocaleString();
 }
 
+// Is function ko file me kahi bhi add kar lein
+function getAllProducts() {
+    let products = [];
+    
+    // 1. Database se products lo
+    if (appState.products) {
+        if(appState.products.edible) products = [...products, ...appState.products.edible];
+        if(appState.products.byprod) products = [...products, ...appState.products.byprod];
+    }
+    
+    // 2. Agar DB khali hai, to Hardcoded Catalog use karo (Backup)
+    if (products.length === 0) {
+        if(typeof CATALOG !== 'undefined') {
+            products = [...CATALOG.edible, ...CATALOG.byprod];
+        }
+    }
+    
+    return products;
+}
+
+// Update: Get Product Name from DB
 function getProductName(id) {
-    const all = [...CATALOG.edible, ...CATALOG.byprod];
+    const all = getAllProducts();
     const found = all.find(x => x.id === id);
-    return found ? found.name : 'Unknown';
+    // Agar product mil gaya to Naam dikhao, nahi to ID dikhao
+    return found ? found.name : id; 
 }
 // --- BATCH NUMBER GENERATOR ---
 // Format: Name ke first 4 letters + 6 Unique Digits (Time based)
@@ -561,23 +636,28 @@ function generateBatchNumber(productName) {
 }
 // Function me 'batchNo' parameter add kiya gaya hai
 // Function me 'isVip' parameter add kiya
-function generateLabel(id, name, qty, batchNo, isVip, mfg, exp) {
-    const cleanBatch = batchNo ? batchNo.replace(/👑/g, '') : '';
+function generateLabel(id, name, qty, batchNo, isVip, mfg, exp, price) { // Added 'price' param
     
-    // Date Compression (2025-01-27 -> 250127) to save QR space
-    const shortMfg = mfg.replace(/-/g, '').slice(2); 
-    const shortExp = exp === 'N/A' ? '0' : exp.replace(/-/g, '').slice(2);
+    // Safety Check
+    const target = document.getElementById('lbl-qr-target');
+    if (!target) return;
 
+    const cleanBatch = batchNo ? batchNo.replace(/👑/g, '') : '';
+    const shortMfg = mfg ? mfg.replace(/-/g, '').slice(2) : '00';
+    const shortExp = (!exp || exp === 'N/A') ? '0' : exp.replace(/-/g, '').slice(2);
+
+    // --- CHANGE 1: Add Price to QR Data ---
     const qrData = JSON.stringify({ 
         id: id, 
-        t: 'i', // item
+        t: 'i', 
         b: cleanBatch,
         v: isVip ? 1 : 0,
-        m: shortMfg, // MFG Date
-        e: shortExp  // EXP Date
+        m: shortMfg, 
+        e: shortExp,
+        p: price // 'p' for Price/MRP
     });
 
-    const target = document.getElementById('lbl-qr-target');
+    // Clear Old QR
     target.innerHTML = ''; 
 
     try {
@@ -589,12 +669,11 @@ function generateLabel(id, name, qty, batchNo, isVip, mfg, exp) {
             colorLight : "#ffffff",
             correctLevel : QRCode.CorrectLevel.L
         });
-    } catch (e) { alert("Error generating QR"); return; }
+    } catch (e) { console.error(e); }
 
-    // --- VISUAL LABEL UPDATE ---
-    const displayName = isVip ? '👑 ' + name : name;
+    // --- CHANGE 2: Show MRP on Visual Label ---
     const nameEl = document.getElementById('lbl-name');
-    nameEl.innerText = displayName;
+    nameEl.innerHTML = (isVip ? '👑 ' : '') + name;
     
     if(isVip) nameEl.classList.add('text-yellow-600');
     else nameEl.classList.remove('text-yellow-600');
@@ -603,20 +682,24 @@ function generateLabel(id, name, qty, batchNo, isVip, mfg, exp) {
     document.getElementById('lbl-qty').innerText = 'Qty: ' + qty;
     
     const batchEl = document.getElementById('lbl-batch');
-    if(batchEl) {
-        // Label par dates dikhana (Format: BATCH | MFG | EXP)
-        batchEl.innerHTML = `
-            <div>BATCH: ${batchNo}</div>
-            <div style="font-size: 10px; margin-top: 2px; font-weight: normal;">
-                MFG: ${mfg} <br> EXP: ${exp}
-            </div>
-        `;
-        
-        if(isVip) {
-            batchEl.className = "bg-yellow-100 text-yellow-800 border border-yellow-400 px-2 py-1 rounded text-xs font-mono font-bold tracking-widest block";
-        } else {
-            batchEl.className = "bg-slate-100 text-slate-800 border border-slate-300 px-2 py-1 rounded text-xs font-mono font-bold tracking-widest block";
-        }
+    
+    // Label HTML Update (Added MRP Row)
+    batchEl.innerHTML = `
+        <div style="font-size: 11px;">BATCH: ${batchNo}</div>
+        <div style="font-size: 12px; border-top: 1px dashed #ccc; margin-top: 2px; padding-top: 2px;">
+            MRP: ₹${price}
+        </div>
+        <div style="font-size: 9px; margin-top: 2px; font-weight: normal; color: #555;">
+            MFG: ${mfg} | EXP: ${exp}
+        </div>
+    `;
+    
+    // Styling
+    const baseClass = "px-2 py-1 rounded text-xs font-mono font-bold tracking-widest block border ";
+    if(isVip) {
+        batchEl.className = baseClass + "bg-yellow-100 text-yellow-800 border-yellow-400";
+    } else {
+        batchEl.className = baseClass + "bg-slate-100 text-slate-800 border-slate-300";
     }
 
     document.getElementById('qr-container').classList.add('hidden');
@@ -625,16 +708,13 @@ function generateLabel(id, name, qty, batchNo, isVip, mfg, exp) {
 }
 
 function onScanSuccess(decodedText, decodedResult) {
-    // 1. INSTANT FREEZE (Millisecond response)
-    // Ye line sabse pehle aani chahiye
     if(html5QrcodeScanner) {
         html5QrcodeScanner.pause(true); 
     }
 
-    // 2. Speak Immediately (Short text is faster)
     if ('speechSynthesis' in window) {
-        const msg = new SpeechSynthesisUtterance("Done"); // "Done" is faster than "Scanning Complete"
-        msg.rate = 1.5; // Fast speaking rate
+        const msg = new SpeechSynthesisUtterance("Done");
+        msg.rate = 1.5;
         window.speechSynthesis.speak(msg);
     }
 
@@ -644,56 +724,55 @@ function onScanSuccess(decodedText, decodedResult) {
         let id = null;
         let batch = null;
         let isVip = false;
+        let price = 0; // New Variable
 
-        // Data Parsing
         if (data.t === 'i' || data.t === 'item') {
             id = data.id;
             batch = data.b;
             isVip = (data.v === 1);
-        } else if (data.type === 'gau-erp-item') {
+            price = data.p || 0; // Read Price
+        } 
+        else if (data.type === 'gau-erp-item') {
             id = data.id;
             batch = data.batch;
             isVip = data.vip;
+            // Old QRs me price nahi hoga, to 0 rahega
         }
 
         if (id) {
-            // 3. Show UI Instantly
-            // setTimeout hata diya taaki delay na ho
-            showScanResult(id, batch, isVip);
+            // Pass Price to UI
+            showScanResult(id, batch, isVip, price);
         } else {
-            // Agar QR galat hai to wapas resume karo
             html5QrcodeScanner.resume();
         }
 
     } catch (e) {
-        // Agar parsing error hai to wapas resume karo
         console.error(e);
         html5QrcodeScanner.resume();
     }
 }
 function onScanFailure(error) {}
 // Function signature me batchNo add karein
-function showScanResult(id, batchNo, isVip) {
+function showScanResult(id, batchNo, isVip, price) { // Added price param
     const pName = getProductName(id);
     const currentStock = appState.stock[id] || 0;
     
-    // UI toggle - No Animation classes for speed
     document.getElementById('scan-result-placeholder').classList.add('hidden');
     document.getElementById('scan-result-active').classList.remove('hidden');
 
-    // Name Update
+    // Name
     const nameEl = document.getElementById('res-name');
-    if(isVip) {
-        nameEl.innerHTML = `<span class="text-yellow-600 mr-1">👑</span> ${pName}`;
-        nameEl.classList.add('text-yellow-700');
-    } else {
-        nameEl.innerText = pName;
-        nameEl.classList.remove('text-yellow-700');
-    }
-
-    document.getElementById('res-stock').innerText = currentStock;
+    nameEl.innerHTML = (isVip ? '<span class="text-yellow-600 mr-1">👑</span> ' : '') + pName;
     
-    // Batch/Type Update
+    // --- CHANGE: Show Price with Stock ---
+    const stockEl = document.getElementById('res-stock');
+    if(price > 0) {
+        stockEl.innerHTML = `${currentStock} <span class="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded border border-green-200">MRP: ₹${price}</span>`;
+    } else {
+        stockEl.innerText = currentStock;
+    }
+    
+    // Batch Label
     const typeLabel = document.getElementById('res-type');
     if(batchNo) {
         typeLabel.innerText = batchNo;
@@ -702,16 +781,16 @@ function showScanResult(id, batchNo, isVip) {
             : "text-[10px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-300 px-2 py-1 rounded";
     } else {
         typeLabel.innerText = 'Standard';
-        typeLabel.className = "text-[10px] uppercase font-bold bg-slate-100 px-2 py-1 rounded text-slate-500";
     }
     
-    // Input Setup
     const input = document.getElementById('res-qty-input');
     input.dataset.id = id;
-    input.value = 1; // Default 1
-    
-    // Auto Focus - Immediate
-    input.select(); // Value select kar lo taaki user direct type kare to replace ho jaye
+    input.dataset.batch = batchNo || ''; 
+    input.dataset.vip = isVip ? 'true' : 'false';
+    input.dataset.price = price; // Price bhi dataset me rakh lo future use ke liye
+
+    input.value = 1; 
+    input.select();
     input.focus();
 }
 
@@ -725,6 +804,7 @@ function resetScannerUI() {
 function addLog(type, product, qty, notes) {
     const now = new Date();
     const log = {
+        logId: Date.now().toString(), // <--- YE LINE ADD KARNA JARURI HAI
         date: now.toISOString().split('T')[0],
         time: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
         type, product, qty, notes
@@ -741,79 +821,128 @@ function renderLogs() {
     
     tbody.innerHTML = '';
     
-    // Logs ko loop karein (Top 20 dikhayenge)
-    (appState.logs || []).slice(0, 20).forEach(log => {
-        const typeColor = log.type === 'Stock In' ? 'text-green-600' : 'text-red-600';
+    (appState.logs || []).slice(0, 30).forEach(log => {
+        // ... (Uppar ka purana code same rahega: Date, Note parsing etc) ...
+        // ... (Yahan bas Customer HTML wala hissa change ho raha hai) ...
+
+        const isStockIn = log.type === 'Stock In';
+        const typeColor = isStockIn ? 'text-green-600' : 'text-red-600';
+        const typeBg = isStockIn ? 'bg-green-50' : 'bg-red-50';
         
-        // 1. Transaction Date Format (YYYY-MM-DD -> DD-MM-YYYY)
+        // Date Logic...
         let transDate = log.date || '-';
         if(log.date && log.date.includes('-')) {
             const parts = log.date.split('-');
-            // Ensure parts exist before swapping
-            if(parts.length === 3) {
-                transDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            }
+            if(parts.length === 3) transDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
         }
-        
-        // 2. Parse Note Data (Batch, MFG, EXP)
-        let noteObj = {};
+
+        // Parsing...
         let displayBatch = '-';
-        let displayMfg = '-';
-        let displayExp = '-';
-        
+        let displayMsg = '-';
+        let isVip = false;
+        let customer = null;
+
         try {
             if(log.notes && log.notes.startsWith('{')) {
-                noteObj = JSON.parse(log.notes);
-                displayBatch = noteObj.batch || '-';
-                displayMfg = noteObj.mfg || '-';
-                displayExp = noteObj.exp || '-';
-            } else {
-                displayBatch = log.notes; // Old data fallback
-            }
+                const noteObj = JSON.parse(log.notes);
+                displayBatch = noteObj.batch || 'No Batch';
+                displayMsg = noteObj.msg || '-';
+                isVip = noteObj.vip || false;
+                customer = noteObj.customer;
+            } else { displayBatch = log.notes; }
         } catch(e) { displayBatch = log.notes; }
 
-        // 3. Render Row
+        const vipIcon = (displayBatch.includes('👑') || isVip) ? '<span class="mr-1">👑</span>' : '';
+        const cleanBatch = displayBatch.replace('👑', '');
+
+        // --- NEW CUSTOMER HTML (COLLAPSIBLE) ---
+        // --- NEW SMOOTH CUSTOMER HTML ---
+        let customerHtml = '';
+        if (customer && customer.name) {
+            const detailId = `cust-${log.logId}`;
+            
+            customerHtml = `
+                <!-- Button -->
+                <div class="mt-2">
+                    <button onclick="toggleLogDetails('${detailId}', this)" 
+                        class="text-[10px] font-bold text-blue-500 hover:text-blue-700 flex items-center transition focus:outline-none">
+                        View Order Details <i class="fa-solid fa-chevron-down ml-1 transition-transform duration-300"></i>
+                    </button>
+                </div>
+
+                <!-- Wrapper for Animation (Initially Closed: grid-rows-0) -->
+                <div id="${detailId}" class="smooth-wrapper">
+                    <div class="smooth-inner">
+                        
+                        <!-- Real Content -->
+                        <div class="mt-2 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <!-- Name -->
+                            <div class="flex items-center gap-2 mb-1">
+                                <div class="bg-white p-1 rounded-full border border-slate-200 text-slate-400">
+                                    <i class="fa-solid fa-user text-xs w-3 h-3 flex items-center justify-center"></i>
+                                </div>
+                                <span class="text-xs font-bold text-slate-700">${customer.name}</span>
+                            </div>
+
+                            <!-- Phone -->
+                            <div class="flex items-center gap-2 mb-1">
+                                <div class="bg-white p-1 rounded-full border border-slate-200 text-slate-400">
+                                    <i class="fa-solid fa-phone text-xs w-3 h-3 flex items-center justify-center"></i>
+                                </div>
+                                <span class="text-xs font-mono text-slate-600 select-all">${customer.phone}</span>
+                            </div>
+
+                            <!-- Address -->
+                            <div class="flex gap-2 mt-2 pt-2 border-t border-slate-200">
+                                <div class="mt-0.5 text-slate-400">
+                                    <i class="fa-solid fa-location-dot text-xs"></i>
+                                </div>
+                                <span class="text-xs text-slate-500 leading-relaxed break-words w-full">
+                                    ${customer.addr}
+                                </span>
+                            </div>
+                        </div>
+                        <!-- End Real Content -->
+
+                    </div>
+                </div>
+            `;
+        }
+        // ----------------------------------------
+
         tbody.innerHTML += `
             <tr class="border-b border-slate-50 hover:bg-slate-50 transition text-sm">
-                
-                <!-- Column 1: Transaction Info (Product, Time, Batch, Type) -->
-                <td class="p-3">
-                    <div class="font-bold text-slate-800 text-base">${log.product}</div>
-                    
-                    <!-- NEW: Date & Time Row -->
+                <td class="p-3 align-top"> <!-- align-top added -->
+                    <div class="font-bold text-slate-800 text-base flex items-center">
+                       ${vipIcon} ${log.product}
+                    </div>
                     <div class="flex items-center gap-3 text-[11px] text-slate-400 mt-1 font-mono">
-                        <span class="flex items-center gap-1">
-                            <i class="fa-regular fa-calendar"></i> ${transDate}
-                        </span>
-                        <span class="flex items-center gap-1">
-                            <i class="fa-regular fa-clock"></i> ${log.time}
-                        </span>
+                        <span>📅 ${transDate}</span>
+                        <span>⏰ ${log.time}</span>
                     </div>
-
-                    <!-- Batch Badge -->
-                    <div class="text-[10px] text-slate-500 font-mono mt-1 bg-slate-100 border border-slate-200 inline-block px-1 rounded">
-                        ${displayBatch}
-                    </div>
-
-                    <!-- Transaction Type (Stock In/Out) -->
-                    <div class="text-xs mt-1 font-bold ${typeColor} uppercase tracking-wider">
-                        ${log.type}
-                    </div>
+                    
+                    <!-- Insert Collapsible Customer HTML -->
+                    ${customerHtml}
                 </td>
-                
-                <!-- Column 2: MFG / EXP Dates -->
+
                 <td class="p-3 align-top">
-                    <div class="text-xs text-slate-600">
-                        <span class="font-bold text-slate-400 text-[10px]">MFG:</span> ${displayMfg}
+                     <div class="inline-block px-2 py-1 rounded border bg-slate-100 border-slate-200 text-slate-600 font-mono text-xs font-bold mb-1">
+                        ${cleanBatch}
                     </div>
-                    <div class="text-xs text-red-500 mt-1">
-                        <span class="font-bold text-slate-400 text-[10px]">EXP:</span> ${displayExp}
-                    </div>
+                    <div class="text-[10px] text-slate-400">${displayMsg}</div>
                 </td>
 
-                <!-- Column 3: Quantity -->
-                <td class="p-3 text-right font-bold text-lg text-slate-800 align-top">
-                    ${log.qty}
+                <td class="p-3 text-center align-top">
+                    <span class="font-bold text-lg ${typeColor} ${typeBg} px-3 py-1 rounded-lg">
+                        ${log.qty}
+                    </span>
+                </td>
+
+                <td class="p-3 text-right align-top">
+                    <button onclick="deleteLogEntry('${log.logId}')" 
+                        class="text-slate-300 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
                 </td>
             </tr>
         `;
@@ -988,42 +1117,54 @@ window.handleManualCode = function() {
     
     if(!code) return alert("Please enter a Product ID or Batch Number!");
 
-    const allItems = [...CATALOG.edible, ...CATALOG.byprod];
+    // --- CHANGE 1: Use 'getAllProducts' instead of hardcoded CATALOG ---
+    // Ye function DB aur Old Catalog dono se data lata hai
+    const allItems = getAllProducts(); 
     
     let foundId = null;
     let foundBatch = null;
 
-    // Direct ID Check
+    // 1. Direct ID Check (Example: ED-MILK)
     const exactIdMatch = allItems.find(item => item.id === code);
     
     if (exactIdMatch) {
         foundId = exactIdMatch.id;
     } 
     else {
-        // Batch Number Check
-        // Note: Manual entry se hume ye nahi pata chalega ki wo VIP hai ya nahi, 
-        // jab tak hum Firebase me har batch ka data save na karein.
-        // Filhal hum isVip ko false maan lenge manual entry ke liye.
-        
+        // 2. Batch Number Check logic
         const batchMatch = allItems.find(item => {
+            // Humne Batch kaise banaya tha? -> Name ke first 4 letters se.
+            // Wahi logic wapas lagayenge check karne ke liye.
+            
             const cleanName = item.name.replace(/[^a-zA-Z]/g, '').toUpperCase();
-            const prefix = cleanName.substring(0, 4); 
-            return code.startsWith(prefix);
+            const prefix = cleanName.substring(0, 4); // First 4 letters e.g. MILK
+            
+            // Check: Kya Input code iss prefix se start hota hai?
+            // E.g. Input: MILK84920 -> Starts with MILK? -> Yes
+            if(code.startsWith(prefix)) return true;
+
+            // Extra Check: Agar ID se match kare (e.g. ED-MILK -> MILK)
+            const idPart = item.id.split('-')[1]; // ED-MILK -> MILK
+            if(idPart && code.startsWith(idPart)) return true;
+
+            return false;
         });
 
         if (batchMatch) {
             foundId = batchMatch.id;
-            foundBatch = code; 
+            foundBatch = code;
         }
     }
 
+    // 3. Result
     if (foundId) {
         stopScanner();
-        // Manual entry me VIP status pata nahi chalta, isliye false bhej rahe hain
-        showScanResult(foundId, foundBatch, false); 
+        // Manual entry hai, isliye VIP false maan rahe hain (ya DB se fetch kar sakte hain future me)
+        showScanResult(foundId, foundBatch, false, 0); 
         document.getElementById('manual-code').value = '';
     } else {
-        alert("Product not found! Check ID or Batch No.");
+        console.log("Searched inside:", allItems.map(i => i.name)); // Debugging ke liye console dekhein
+        alert("Product NOT found! \nTip: Ensure the Product Name matches the Batch prefix.");
     }
 };
 // --- DATE HELPERS ---
@@ -1058,22 +1199,149 @@ document.addEventListener('DOMContentLoaded', () => {
     // ... baaki existing code ...
 });
 function continueScanning() {
-    // 1. UI Reset (Form chupao, wapas scanning screen dikhao)
     document.getElementById('scan-result-active').classList.add('hidden');
     document.getElementById('scan-result-placeholder').classList.remove('hidden');
     
-    // Input clear karo
+    // Clear Inputs
     document.getElementById('res-qty-input').value = '';
+    
+    // --- NEW: Clear Customer Inputs ---
+    document.getElementById('res-cust-name').value = '';
+    document.getElementById('res-cust-phone').value = '';
+    document.getElementById('res-cust-addr').value = '';
+    // ----------------------------------
 
-    // 2. Resume Camera (Pause hatana)
     if(html5QrcodeScanner) {
-        try {
-            html5QrcodeScanner.resume();
-            console.log("Camera Resumed");
-        } catch(e) {
-            console.log("Camera was not paused or error:", e);
-            // Agar resume fail ho (kabhi kabhi glitch hota hai), to restart kar do
-            startScanner(); 
-        }
+        try { html5QrcodeScanner.resume(); } catch(e) { startScanner(); }
     }
 }
+// --- PRODUCT MANAGEMENT ---
+
+window.renderProductList = function() {
+    const tbody = document.getElementById('product-list-body');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+
+    const all = getAllProducts();
+
+    all.forEach(item => {
+        const catLabel = item.id.startsWith('ED') ? 'Edible' : 'By-Prod';
+        const catColor = item.id.startsWith('ED') ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700';
+
+        tbody.innerHTML += `
+            <tr>
+                <td class="p-3 font-bold text-slate-700">
+                    ${item.name} <br>
+                    <span class="text-[10px] text-slate-400 font-mono">${item.id}</span>
+                </td>
+                <td class="p-3">
+                    <span class="text-[10px] uppercase font-bold px-2 py-1 rounded ${catColor}">${catLabel}</span>
+                    <span class="text-xs text-slate-500 ml-1 bg-slate-100 px-2 py-1 rounded">Unit: ${item.unit}</span>
+                </td>
+                <td class="p-3 text-right">
+                    <button onclick="handleDeleteProduct('${item.id}', '${catLabel}')" class="text-red-500 hover:bg-red-50 p-2 rounded transition">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+};
+
+window.handleAddNewProduct = function() {
+    const name = document.getElementById('new-prod-name').value.trim();
+    const cat = document.getElementById('new-prod-cat').value; // edible/byprod
+    const unit = document.getElementById('new-prod-unit').value;
+
+    if(!name) return alert("Enter Product Name");
+
+    // Generate ID: ED-NAME or BY-NAME (Random number to prevent duplicates)
+    const prefix = cat === 'edible' ? 'ED' : 'BY';
+    const cleanName = name.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 5);
+    const uniqueId = `${prefix}-${cleanName}-${Math.floor(Math.random()*1000)}`;
+
+    const newItem = { id: uniqueId, name: name, unit: unit };
+
+    if(!appState.products[cat]) appState.products[cat] = [];
+    appState.products[cat].push(newItem);
+    
+    // Initialize stock for new item
+    if(!appState.stock) appState.stock = {};
+    appState.stock[uniqueId] = 0;
+
+    saveDataToFirebase();
+    alert("Product Added!");
+    
+    // Reset Form
+    document.getElementById('new-prod-name').value = '';
+    renderProductList();
+};
+
+window.handleDeleteProduct = function(id, typeLabel) {
+    if(!confirm("Delete this product? Scan history will remain, but you can't add new stock.")) return;
+
+    // Determine category key based on label or ID
+    const catKey = id.startsWith('ED') ? 'edible' : 'byprod';
+    
+    // Remove from array
+    appState.products[catKey] = appState.products[catKey].filter(item => item.id !== id);
+    
+    // Optional: Delete stock entry too? usually safer to keep stock as 0
+    // delete appState.stock[id]; 
+
+    saveDataToFirebase();
+    renderProductList();
+};
+window.deleteLogEntry = function(logId) {
+    // Debugging ke liye
+    console.log("Deleting Log ID:", logId);
+
+    if(!logId || logId === 'undefined') {
+        alert("Error: This log cannot be deleted properly. Please Refresh the page and try again.");
+        return;
+    }
+
+    if(!confirm("Are you sure you want to delete this record permanently?")) return;
+    
+    // Purana count
+    const oldLength = appState.logs.length;
+
+    // Filter logic
+    appState.logs = appState.logs.filter(log => log.logId !== logId);
+    
+    // Check agar delete hua ya nahi
+    if(appState.logs.length === oldLength) {
+        alert("Delete Failed! Log ID mismatch.");
+    } else {
+        saveDataToFirebase();
+        renderLogs();
+        
+        // Optional: Delete hone par sound/toast
+        if ('speechSynthesis' in window) {
+            const msg = new SpeechSynthesisUtterance("Deleted");
+            msg.rate = 1.5;
+            window.speechSynthesis.speak(msg);
+        }
+    }
+};
+// --- TOGGLE LOG DETAILS ---
+// --- SMOOTH TOGGLE LOG DETAILS ---
+window.toggleLogDetails = function(id, btn) {
+    const el = document.getElementById(id);
+    const icon = btn.querySelector('i');
+    
+    // Check if class 'open' exists
+    if (el.classList.contains('open')) {
+        // CLOSE KARO
+        el.classList.remove('open');
+        btn.innerHTML = 'View Order Details <i class="fa-solid fa-chevron-down ml-1 transition-transform duration-300"></i>';
+        btn.classList.remove('text-slate-700');
+        btn.classList.add('text-blue-500');
+    } else {
+        // OPEN KARO
+        el.classList.add('open');
+        btn.innerHTML = 'Hide Details <i class="fa-solid fa-chevron-up ml-1 transition-transform duration-300"></i>';
+        btn.classList.add('text-slate-700');
+        btn.classList.remove('text-blue-500');
+    }
+};
