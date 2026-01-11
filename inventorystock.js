@@ -856,23 +856,20 @@ function renderLogs() {
     
     tbody.innerHTML = '';
     
-    (appState.logs || []).slice(0, 30).forEach(log => {
-        // ... (Uppar ka purana code same rahega: Date, Note parsing etc) ...
-        // ... (Yahan bas Customer HTML wala hissa change ho raha hai) ...
-
+    (appState.logs || []).slice(0, 50).forEach(log => { // Showing last 50
         const isStockIn = log.type === 'Stock In';
         const typeColor = isStockIn ? 'text-green-600' : 'text-red-600';
         const typeBg = isStockIn ? 'bg-green-50' : 'bg-red-50';
         
-        // Date Logic...
         let transDate = log.date || '-';
         if(log.date && log.date.includes('-')) {
             const parts = log.date.split('-');
             if(parts.length === 3) transDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
         }
 
-        // Parsing...
+        // --- Parsing Notes & Batch ---
         let displayBatch = '-';
+        let rawBatch = ''; // Edit function ke liye raw batch
         let displayMsg = '-';
         let isVip = false;
         let customer = null;
@@ -880,74 +877,68 @@ function renderLogs() {
         try {
             if(log.notes && log.notes.startsWith('{')) {
                 const noteObj = JSON.parse(log.notes);
+                rawBatch = noteObj.batch || '';
                 displayBatch = noteObj.batch || 'No Batch';
                 displayMsg = noteObj.msg || '-';
                 isVip = noteObj.vip || false;
                 customer = noteObj.customer;
-            } else { displayBatch = log.notes; }
-        } catch(e) { displayBatch = log.notes; }
+            } else { 
+                displayBatch = log.notes; 
+                rawBatch = log.notes;
+            }
+        } catch(e) { 
+            displayBatch = log.notes; 
+            rawBatch = log.notes;
+        }
 
+        // Crown Icon logic
         const vipIcon = (displayBatch.includes('👑') || isVip) ? '<span class="mr-1">👑</span>' : '';
-        const cleanBatch = displayBatch.replace('👑', '');
+        const cleanBatchDisplay = displayBatch.replace('👑', '');
+        
+        // --- CLEAN RAW BATCH for Editing (Remove Crown from ID if present) ---
+        // Hum chahte hain ki edit function me bina crown wala text jaye
+        const batchForEdit = rawBatch.replace('👑', ''); 
 
-        // --- NEW CUSTOMER HTML (COLLAPSIBLE) ---
-        // --- NEW SMOOTH CUSTOMER HTML ---
+        // --- Customer HTML Logic (Collapsible) ---
         let customerHtml = '';
         if (customer && customer.name) {
             const detailId = `cust-${log.logId}`;
-            
             customerHtml = `
-                <!-- Button -->
                 <div class="mt-2">
                     <button onclick="toggleLogDetails('${detailId}', this)" 
                         class="text-[10px] font-bold text-blue-500 hover:text-blue-700 flex items-center transition focus:outline-none">
                         View Order Details <i class="fa-solid fa-chevron-down ml-1 transition-transform duration-300"></i>
                     </button>
                 </div>
-
-                <!-- Wrapper for Animation (Initially Closed: grid-rows-0) -->
                 <div id="${detailId}" class="smooth-wrapper">
                     <div class="smooth-inner">
-                        
-                        <!-- Real Content -->
                         <div class="mt-2 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                            <!-- Name -->
                             <div class="flex items-center gap-2 mb-1">
                                 <div class="bg-white p-1 rounded-full border border-slate-200 text-slate-400">
                                     <i class="fa-solid fa-user text-xs w-3 h-3 flex items-center justify-center"></i>
                                 </div>
                                 <span class="text-xs font-bold text-slate-700">${customer.name}</span>
                             </div>
-
-                            <!-- Phone -->
                             <div class="flex items-center gap-2 mb-1">
                                 <div class="bg-white p-1 rounded-full border border-slate-200 text-slate-400">
                                     <i class="fa-solid fa-phone text-xs w-3 h-3 flex items-center justify-center"></i>
                                 </div>
                                 <span class="text-xs font-mono text-slate-600 select-all">${customer.phone}</span>
                             </div>
-
-                            <!-- Address -->
                             <div class="flex gap-2 mt-2 pt-2 border-t border-slate-200">
-                                <div class="mt-0.5 text-slate-400">
-                                    <i class="fa-solid fa-location-dot text-xs"></i>
-                                </div>
-                                <span class="text-xs text-slate-500 leading-relaxed break-words w-full">
-                                    ${customer.addr}
-                                </span>
+                                <div class="mt-0.5 text-slate-400"><i class="fa-solid fa-location-dot text-xs"></i></div>
+                                <span class="text-xs text-slate-500 leading-relaxed break-words w-full">${customer.addr}</span>
                             </div>
                         </div>
-                        <!-- End Real Content -->
-
                     </div>
                 </div>
             `;
         }
-        // ----------------------------------------
 
+        // --- RENDER ROW ---
         tbody.innerHTML += `
             <tr class="border-b border-slate-50 hover:bg-slate-50 transition text-sm">
-                <td class="p-3 align-top"> <!-- align-top added -->
+                <td class="p-3 align-top">
                     <div class="font-bold text-slate-800 text-base flex items-center">
                        ${vipIcon} ${log.product}
                     </div>
@@ -955,15 +946,24 @@ function renderLogs() {
                         <span>📅 ${transDate}</span>
                         <span>⏰ ${log.time}</span>
                     </div>
-                    
-                    <!-- Insert Collapsible Customer HTML -->
                     ${customerHtml}
                 </td>
 
                 <td class="p-3 align-top">
-                     <div class="inline-block px-2 py-1 rounded border bg-slate-100 border-slate-200 text-slate-600 font-mono text-xs font-bold mb-1">
-                        ${cleanBatch}
+                    <!-- BATCH & EDIT BUTTON -->
+                    <div class="flex items-center gap-2 mb-1">
+                         <div class="inline-block px-2 py-1 rounded border bg-slate-100 border-slate-200 text-slate-600 font-mono text-xs font-bold">
+                            ${cleanBatchDisplay}
+                        </div>
+                        
+                        <!-- EDIT PENCIL BUTTON -->
+                        <button onclick="editBatchNumber('${batchForEdit}')" 
+                            class="w-6 h-6 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-400 flex items-center justify-center transition shadow-sm"
+                            title="Edit Batch Everywhere">
+                            <i class="fa-solid fa-pencil text-[10px]"></i>
+                        </button>
                     </div>
+
                     <div class="text-[10px] text-slate-400">${displayMsg}</div>
                 </td>
 
@@ -983,7 +983,6 @@ function renderLogs() {
         `;
     });
 }
-
 // Beep Sound (Faster than Speech)
 const context = new (window.AudioContext || window.webkitAudioContext)();
 const osc = context.createOscillator();
@@ -1840,4 +1839,56 @@ window.highlightMatch = function(text, query) {
     if(!query || !text) return text;
     const regex = new RegExp(`(${query})`, 'gi');
     return text.toString().replace(regex, '<span class="highlight-text">$1</span>');
+};
+// --- BATCH EDIT FUNCTION (Global Update) ---
+window.editBatchNumber = function(oldBatch) {
+    // 1. User se naya Batch maangein
+    const newBatch = prompt(`Edit Batch Number:\n\nReplacing: ${oldBatch}\nEnter New Batch Name:`, oldBatch);
+
+    // Agar user ne Cancel kiya ya same naam rakha, to ruk jao
+    if (!newBatch || newBatch === oldBatch || newBatch.trim() === "") return;
+
+    const finalNewBatch = newBatch.trim().toUpperCase();
+    let updateCount = 0;
+
+    // 2. Saare Logs scan karo aur replace karo
+    if (appState.logs && Array.isArray(appState.logs)) {
+        appState.logs.forEach(log => {
+            let isJson = false;
+            let noteObj = null;
+
+            // Check karo ki note JSON hai ya plain text
+            try {
+                noteObj = JSON.parse(log.notes);
+                isJson = true;
+            } catch (e) {
+                noteObj = log.notes;
+            }
+
+            // CASE A: Agar Note JSON Object hai (New Format)
+            if (isJson && noteObj && typeof noteObj === 'object') {
+                if (noteObj.batch === oldBatch) {
+                    noteObj.batch = finalNewBatch;
+                    log.notes = JSON.stringify(noteObj); // Wapas JSON string banao
+                    updateCount++;
+                }
+            } 
+            // CASE B: Agar Note seedha string hai (Old Format)
+            else if (typeof log.notes === 'string') {
+                if (log.notes === oldBatch) {
+                    log.notes = finalNewBatch;
+                    updateCount++;
+                }
+            }
+        });
+    }
+
+    // 3. Save & Refresh
+    if (updateCount > 0) {
+        saveDataToFirebase();
+        renderLogs(); // UI Update
+        alert(`Success! Updated batch "${oldBatch}" to "${finalNewBatch}" in ${updateCount} records.`);
+    } else {
+        alert("No matching batch records found to update.");
+    }
 };
