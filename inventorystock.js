@@ -343,7 +343,7 @@ window.handleAddStock = function() {
     
     const isVip = document.getElementById('in-vip').checked;
 
-    // Dates
+    // Dates Logic
     const mfgDate = document.getElementById('in-mfg').value;
     const hasExp = document.getElementById('in-has-exp').checked;
     let expDate = '-------';
@@ -355,10 +355,22 @@ window.handleAddStock = function() {
     if(!qty || qty <= 0) return alert("Please enter valid quantity");
     if(!mfgDate) return alert("MFG Date is required");
 
-    // Stock Update
+    // 1. STOCK UPDATE
     if(!appState.stock[pId]) appState.stock[pId] = 0;
     appState.stock[pId] += qty;
     
+    // --- NEW: PRICE UPDATE (Fix Calculation) ---
+    // Hum product list me price update kar denge taaki dashboard sahi calculate kare
+    const catKey = pId.startsWith('ED') ? 'edible' : 'byprod';
+    if(appState.products && appState.products[catKey]) {
+        const prodIndex = appState.products[catKey].findIndex(p => p.id === pId);
+        if(prodIndex > -1 && price > 0) {
+            // Product ke andar price save kar rahe hain (Last Purchase Price)
+            appState.products[catKey][prodIndex].lastPrice = price;
+        }
+    }
+    // -------------------------------------------
+
     const pName = getProductName(pId);
     let batchNo = generateBatchNumber(pName);
     if (isVip) batchNo = '👑' + batchNo;
@@ -371,13 +383,12 @@ window.handleAddStock = function() {
         batch: batchNo,
         mfg: mfgDate,
         exp: expDate,
-        mrp: price // Logs me bhi save kar liya
+        mrp: price
     };
     
     addLog('Stock In', pName, `+${qty}`, JSON.stringify(noteObj));
     saveDataToFirebase();
     
-    // --- CHANGE IS HERE: Added 'price' at the end ---
     generateLabel(pId, pName, qty, batchNo, isVip, mfgDate, expDate, price);
     
     // Reset Form
@@ -409,20 +420,18 @@ window.startScanner = function() {
 };
 
 function initCamera() {
-    // Agar purana instance hai to band karein
     if(html5QrcodeScanner) {
         try { html5QrcodeScanner.clear(); } catch(e){}
     }
 
     html5QrcodeScanner = new Html5Qrcode("reader");
     
-    // --- TURBO CONFIGURATION ---
     const config = { 
-        fps: 40, // Super Fast Scanning
-        qrbox: { width: 250, height: 250 },
+        fps: 50, // Ultra High FPS
+        // Size thoda chhota rakhenge taaki user camera paas laye (Better for small/damaged QRs)
+        qrbox: { width: 220, height: 220 }, 
         aspectRatio: 1.0,
         disableFlip: false,
-        // Crucial: Only scan QR Codes (Ignore Barcodes = 2x Speed)
         formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
         experimentalFeatures: {
             useBarCodeDetectorIfSupported: true
@@ -433,13 +442,13 @@ function initCamera() {
         { facingMode: "environment" }, 
         config,
         onScanSuccess, 
-        (errorMessage) => { /* Ignore errors for speed */ }
+        (error) => { /* No-op for speed */ }
     ).then(() => {
         const statusEl = document.getElementById('scanner-status');
         if(statusEl) {
-            statusEl.innerText = "Turbo On";
+            statusEl.innerText = "High-Res Mode";
             statusEl.classList.remove('bg-red-500/80');
-            statusEl.classList.add('bg-emerald-500', 'animate-pulse'); // Visual cue
+            statusEl.classList.add('bg-blue-600', 'text-white');
         }
     }).catch(err => {
         alert("Camera Error: " + err);
@@ -523,37 +532,49 @@ window.processDispatch = function() {
     continueScanning(); 
 };
 
-window.clearSystem = function() {
-    if(confirm("Delete ALL data from Cloud?")) {
-        set(ref(db, DB_PATH), { stock: {}, logs: [] })
-          .then(() => location.reload());
-    }
-};
+
 
 // --- RENDER & HELPER FUNCTIONS ---
 
 function renderInventory() {
     let totalItems = 0;
-    let edibleVal = 0; // Estimation logic might need update if prices aren't stored in product
+    let edibleVal = 0; 
     let byprodVal = 0;
 
-    const createRow = (item, qty) => {
+    const createRow = (item, qty, currentPrice) => {
         let colorClass = 'bg-green-100 text-green-700';
         let statusText = 'In Stock';
         if(qty === 0) { colorClass = 'bg-red-100 text-red-700'; statusText = 'Out'; }
         else if(qty < 10) { colorClass = 'bg-yellow-100 text-yellow-700'; statusText = 'Low'; }
 
+        // --- CHANGE: Calculate Total Value ---
+        const totalValue = qty * currentPrice;
+        const valueDisplay = totalValue > 0 ? `Total: ₹${totalValue.toLocaleString('en-IN')}` : '-';
+
         return `
-            <div class="p-4 flex flex-row items-center justify-between md:grid md:grid-cols-4 md:gap-4 hover:bg-slate-50 transition border-b border-slate-100">
-                <div class="flex flex-col md:block">
+            <div class="p-4 flex flex-row items-center justify-between md:grid md:grid-cols-5 md:gap-4 hover:bg-slate-50 transition border-b border-slate-100">
+                
+                <!-- Name Column -->
+                <div class="flex flex-col md:block md:col-span-2">
                     <span class="font-bold text-slate-700">${item.name}</span>
                     <span class="text-xs text-slate-400 md:hidden">${item.id}</span>
                 </div>
+                
+                <!-- Unit Column -->
                 <div class="text-sm text-slate-500 hidden md:block">${item.unit}</div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs text-slate-400 md:hidden">Qty:</span>
-                    <span class="font-bold text-lg md:text-base text-slate-800">${qty} <span class="text-xs font-normal md:hidden">${item.unit}</span></span>
+                
+                <!-- Qty & Total Value Column -->
+                <div class="flex flex-col justify-center">
+                    <span class="font-bold text-lg text-slate-800">
+                        ${qty} <span class="text-xs font-normal text-slate-400">${item.unit}</span>
+                    </span>
+                    <!-- Yaha ab Total Value dikhegi (e.g. Total: ₹6,000) -->
+                    <span class="text-[10px] text-slate-500 font-medium bg-slate-100 px-1 rounded w-fit mt-1">
+                        ${valueDisplay}
+                    </span>
                 </div>
+
+                <!-- Status Column -->
                 <div class="text-right md:text-left">
                     <span class="px-2 py-1 rounded text-[10px] md:text-xs font-bold uppercase ${colorClass}">${statusText}</span>
                 </div>
@@ -561,6 +582,8 @@ function renderInventory() {
         `;
     };
 
+    // --- FIX CALCULATION LOGIC ---
+    
     // Render Edible
     const edibleBody = document.getElementById('table-edible');
     if(edibleBody) {
@@ -568,9 +591,12 @@ function renderInventory() {
         const edibles = (appState.products && appState.products.edible) ? appState.products.edible : [];
         edibles.forEach(item => {
             const qty = appState.stock[item.id] || 0;
+            const price = item.lastPrice || 0; // Use saved price
+            
             totalItems += qty;
-            edibleVal += qty * 50; // Generic valuation
-            edibleBody.innerHTML += createRow(item, qty);
+            edibleVal += qty * price; // Actual Calculation
+            
+            edibleBody.innerHTML += createRow(item, qty, price);
         });
     }
 
@@ -581,16 +607,19 @@ function renderInventory() {
         const byprods = (appState.products && appState.products.byprod) ? appState.products.byprod : [];
         byprods.forEach(item => {
             const qty = appState.stock[item.id] || 0;
+            const price = item.lastPrice || 0; // Use saved price
+
             totalItems += qty;
-            byprodVal += qty * 100; // Generic valuation
-            byprodBody.innerHTML += createRow(item, qty);
+            byprodVal += qty * price; // Actual Calculation
+            
+            byprodBody.innerHTML += createRow(item, qty, price);
         });
     }
     
-    // Update Stats
+    // Update Stats on Dashboard
     if(document.getElementById('stat-total-items')) document.getElementById('stat-total-items').innerText = totalItems;
-    if(document.getElementById('stat-edible-val')) document.getElementById('stat-edible-val').innerText = edibleVal.toLocaleString();
-    if(document.getElementById('stat-byprod-val')) document.getElementById('stat-byprod-val').innerText = byprodVal.toLocaleString();
+    if(document.getElementById('stat-edible-val')) document.getElementById('stat-edible-val').innerText = edibleVal.toLocaleString('en-IN');
+    if(document.getElementById('stat-byprod-val')) document.getElementById('stat-byprod-val').innerText = byprodVal.toLocaleString('en-IN');
 }
 
 // Is function ko file me kahi bhi add kar lein
@@ -636,45 +665,41 @@ function generateBatchNumber(productName) {
 }
 // Function me 'batchNo' parameter add kiya gaya hai
 // Function me 'isVip' parameter add kiya
-function generateLabel(id, name, qty, batchNo, isVip, mfg, exp, price) { // Added 'price' param
-    
-    // Safety Check
+function generateLabel(id, name, qty, batchNo, isVip, mfg, exp, price) {
     const target = document.getElementById('lbl-qr-target');
     if (!target) return;
 
     const cleanBatch = batchNo ? batchNo.replace(/👑/g, '') : '';
-    const shortMfg = mfg ? mfg.replace(/-/g, '').slice(2) : '00';
-    const shortExp = (!exp || exp === 'N/A') ? '0' : exp.replace(/-/g, '').slice(2);
+    const vipFlag = isVip ? '1' : '0';
 
-    // --- CHANGE 1: Add Price to QR Data ---
-    const qrData = JSON.stringify({ 
-        id: id, 
-        t: 'i', 
-        b: cleanBatch,
-        v: isVip ? 1 : 0,
-        m: shortMfg, 
-        e: shortExp,
-        p: price // 'p' for Price/MRP
-    });
+    // --- STRATEGY: PIPE FORMAT (No JSON) ---
+    // Format: ID|BATCH|VIP
+    // Example: ED-MILK|MILK84920|1
+    // Ye JSON se 40% chota hota hai, isliye dots BADE banenge.
+    const rawData = `${id}|${cleanBatch}|${vipFlag}`;
 
-    // Clear Old QR
     target.innerHTML = ''; 
 
     try {
         new QRCode(target, {
-            text: qrData,
+            text: rawData,
             width: 128,
             height: 128,
-            colorDark : isVip ? "#ca8a04" : "#000000",
+            colorDark : "#000000",
             colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.L
+            // --- CRITICAL CHANGE: High Error Correction ---
+            // H = High (30% Damage Recovery). 
+            // Kyunki data kam hai, Level H use karne par bhi QR dense nahi hoga.
+            correctLevel : QRCode.CorrectLevel.H 
         });
     } catch (e) { console.error(e); }
 
-    // --- CHANGE 2: Show MRP on Visual Label ---
+    // --- VISUAL LABEL ---
     const nameEl = document.getElementById('lbl-name');
     nameEl.innerHTML = (isVip ? '👑 ' : '') + name;
-    
+     nameEl.style.fontSize = '24px';  // Font size badhaya
+    nameEl.style.fontWeight = '900'; // Extra Bold kiya
+    nameEl.style.marginBottom = '5px';
     if(isVip) nameEl.classList.add('text-yellow-600');
     else nameEl.classList.remove('text-yellow-600');
 
@@ -682,25 +707,28 @@ function generateLabel(id, name, qty, batchNo, isVip, mfg, exp, price) { // Adde
     document.getElementById('lbl-qty').innerText = 'Qty: ' + qty;
     
     const batchEl = document.getElementById('lbl-batch');
-    
-    // Label HTML Update (Added MRP Row)
-    batchEl.innerHTML = `
-        <div style="font-size: 11px;">BATCH: ${batchNo}</div>
-        <div style="font-size: 12px; border-top: 1px dashed #ccc; margin-top: 2px; padding-top: 2px;">
+     batchEl.innerHTML = `
+        <!-- BATCH (Highlighted Background) -->
+        <div style="font-size: 16px; font-weight: 800; background: #e5e7eb; padding: 4px 0; margin-bottom: 4px;">
+            BATCH: ${batchNo}
+        </div>
+        
+        <!-- MRP (Sabse Bada aur Bold) -->
+        <div style="font-size: 22px; font-weight: 900; padding: 2px 0; border-top: 2px dashed #000; border-bottom: 2px dashed #000;">
             MRP: ₹${price}
         </div>
-        <div style="font-size: 9px; margin-top: 2px; font-weight: normal; color: #555;">
-            MFG: ${mfg} | EXP: ${exp}
+        
+        <!-- DATES (Bold aur Flex layout) -->
+        <div style="font-size: 13px; font-weight: 800; margin-top: 5px; display: flex; justify-content: space-between; padding: 0 5px;">
+            <span>MFG: ${mfg}</span>
+            <span>EXP: ${exp}</span>
         </div>
     `;
     
-    // Styling
-    const baseClass = "px-2 py-1 rounded text-xs font-mono font-bold tracking-widest block border ";
-    if(isVip) {
-        batchEl.className = baseClass + "bg-yellow-100 text-yellow-800 border-yellow-400";
-    } else {
-        batchEl.className = baseClass + "bg-slate-100 text-slate-800 border-slate-300";
-    }
+    // Border styling for better print contrast
+    const baseClass = "px-2 py-1 rounded text-xs font-mono font-bold tracking-widest block border-2 ";
+    if(isVip) batchEl.className = baseClass + "bg-yellow-50 text-yellow-900 border-yellow-500";
+    else batchEl.className = baseClass + "bg-white text-slate-900 border-black";
 
     document.getElementById('qr-container').classList.add('hidden');
     document.getElementById('print-area').classList.remove('hidden');
@@ -713,41 +741,48 @@ function onScanSuccess(decodedText, decodedResult) {
     }
 
     if ('speechSynthesis' in window) {
-        const msg = new SpeechSynthesisUtterance("Done");
-        msg.rate = 1.5;
+        const msg = new SpeechSynthesisUtterance("Ok"); // Shortest word for speed
+        msg.rate = 2.0; 
         window.speechSynthesis.speak(msg);
     }
 
     try {
-        const data = JSON.parse(decodedText);
-        
         let id = null;
         let batch = null;
         let isVip = false;
-        let price = 0; // New Variable
+        let price = 0;
 
-        if (data.t === 'i' || data.t === 'item') {
-            id = data.id;
-            batch = data.b;
-            isVip = (data.v === 1);
-            price = data.p || 0; // Read Price
+        // --- NEW: PIPE FORMAT PARSER ---
+        if (decodedText.includes('|')) {
+            const parts = decodedText.split('|');
+            // Format: ID|BATCH|VIP
+            if(parts.length >= 2) {
+                id = parts[0];
+                batch = parts[1];
+                isVip = (parts[2] === '1');
+            }
         } 
-        else if (data.type === 'gau-erp-item') {
-            id = data.id;
-            batch = data.batch;
-            isVip = data.vip;
-            // Old QRs me price nahi hoga, to 0 rahega
+        // Fallback for JSON (Old QRs)
+        else {
+            const data = JSON.parse(decodedText);
+            if (data.i) { id = data.i; batch = data.b; }
+            else if (data.id) { id = data.id; batch = data.batch; isVip = data.vip; }
         }
 
         if (id) {
-            // Pass Price to UI
+            // Get price from Database since it's not in QR anymore
+            const product = getAllProducts().find(p => p.id === id);
+            if(product && product.lastPrice) {
+                price = product.lastPrice;
+            }
             showScanResult(id, batch, isVip, price);
         } else {
+            console.log("Unknown QR Format");
             html5QrcodeScanner.resume();
         }
 
     } catch (e) {
-        console.error(e);
+        console.error("Scan Error", e);
         html5QrcodeScanner.resume();
     }
 }
@@ -1344,4 +1379,432 @@ window.toggleLogDetails = function(id, btn) {
         btn.classList.add('text-slate-700');
         btn.classList.remove('text-blue-500');
     }
+};
+window.printLabel = function() {
+    // 1. Content nikalo
+    const printArea = document.getElementById('print-area');
+    if(!printArea) return alert("Label not generated yet!");
+
+    // Clone content to avoid messing up UI
+    const content = printArea.innerHTML;
+
+    // 2. Nayi Window kholo (Standard Method)
+    const win = window.open('', '', 'height=600,width=500');
+    
+    if (win) {
+        // Agar popup khul gaya
+        win.document.write('<html><head><title>Print Label</title>');
+        // Tailwind CDN taaki style same rahe
+        win.document.write('<script src="https://cdn.tailwindcss.com"></script>'); 
+        win.document.write('<style>@page { size: 4in 6in; margin: 0; } body { margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }</style>');
+        win.document.write('</head><body>');
+        
+        // Content Wrapper
+        win.document.write('<div style="width: 350px; text-align: center; border: 2px solid #000; padding: 10px; border-radius: 10px;">');
+        win.document.write(content);
+        win.document.write('</div>');
+        
+        win.document.write('</body></html>');
+        win.document.close();
+        
+        // Thoda wait karo taaki styles load ho jayein
+        setTimeout(() => {
+            win.print();
+            win.close(); // Print ke baad band kar do
+        }, 500);
+    } else {
+        // 3. Fallback (Agar Popup Blocked hai)
+        alert("Pop-up blocked! Please allow pop-ups for printing.");
+    }
+};
+// --- CUSTOMER / ACCOUNT MODAL LOGIC ---
+
+// --- MODAL & WHATSAPP LOGIC (COMPLETE) ---
+
+// 1. Open Modal (Slide Up Animation)
+window.openCustomerModal = function() {
+    const modal = document.getElementById('customer-modal');
+    if(!modal) return;
+    
+    // Reset classes for animation
+    modal.classList.remove('hidden');
+    
+    // Allow browser to render 'hidden' removal before animating translate
+    setTimeout(() => {
+        modal.classList.remove('closed');
+        modal.classList.add('open');
+    }, 10);
+
+    // Default load Orders Tab
+    switchModalTab('tab-orders');
+};
+
+// 2. Close Modal (Slide Down Animation)
+window.closeCustomerModal = function() {
+    const modal = document.getElementById('customer-modal');
+    modal.classList.remove('open');
+    modal.classList.add('closed');
+    
+    // Wait for animation to finish before hiding
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+};
+
+// 3. Switch Tabs inside Modal (Orders vs Billing)
+window.switchModalTab = function(tabId) {
+    // Hide all contents
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+    document.getElementById(tabId).classList.remove('hidden');
+
+    // Update Buttons Styles
+    const btnOrders = document.getElementById('btn-tab-orders');
+    const btnUsers = document.getElementById('btn-tab-users');
+
+    if(tabId === 'tab-orders') {
+        renderOrderDispatchTab();
+        btnOrders.className = "flex-1 py-4 text-sm font-bold uppercase text-center border-b-4 border-brand text-brand transition";
+        btnUsers.className = "flex-1 py-4 text-sm font-bold uppercase text-center border-b-4 border-transparent text-slate-400 hover:text-slate-600 transition";
+    } else {
+        renderUserBillingTab();
+        btnUsers.className = "flex-1 py-4 text-sm font-bold uppercase text-center border-b-4 border-blue-500 text-blue-600 transition";
+        btnOrders.className = "flex-1 py-4 text-sm font-bold uppercase text-center border-b-4 border-transparent text-slate-400 hover:text-slate-600 transition";
+    }
+};
+
+// --- TAB 1: ORDERS (WITH DISPATCH TOGGLE) ---
+function renderOrderDispatchTab() {
+    const container = document.getElementById('tab-orders');
+    container.innerHTML = '';
+
+    // Get Logs containing Customer Data (Only 'Dispatch' type)
+    const orders = (appState.logs || []).filter(log => {
+        if(log.type !== 'Dispatch') return false;
+        try {
+            const n = JSON.parse(log.notes);
+            return n.customer && n.customer.name;
+        } catch(e) { return false; }
+    });
+
+    if(orders.length === 0) {
+        container.innerHTML = `<div class="text-center text-slate-400 mt-10">No recent orders found.</div>`;
+        return;
+    }
+
+    orders.forEach(log => {
+        const note = JSON.parse(log.notes);
+        const cust = note.customer;
+        // Unique ID for toggle button
+        const toggleId = `toggle_${log.logId}`;
+        
+        // Render HTML Card with Toggle
+        container.innerHTML += `
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                    <h4 class="font-bold text-slate-800">${cust.name}</h4>
+                    <p class="text-xs text-slate-500 font-mono">${log.product} (Qty: ${log.qty})</p>
+                    <p class="text-[10px] text-slate-400 mt-1">${log.date} at ${log.time}</p>
+                </div>
+
+                <!-- DISPATCH TOGGLE BUTTON -->
+                <div class="flex flex-col items-center gap-1">
+                    <label for="${toggleId}" class="flex items-center cursor-pointer relative">
+                        <input type="checkbox" id="${toggleId}" class="sr-only" onchange="handleDispatchNotify(this, '${cust.phone}', '${cust.name}', '${log.product}', '${log.qty}')">
+                        <div class="w-11 h-6 bg-slate-200 rounded-full border border-slate-300 toggle-label transition-colors duration-300"></div>
+                        <div class="dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition transform duration-300"></div>
+                    </label>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Dispatch</span>
+                </div>
+            </div>
+            <style>
+                #${toggleId}:checked ~ .toggle-label { background-color: #10b981; border-color: #10b981; }
+                #${toggleId}:checked ~ .dot { transform: translateX(100%); }
+            </style>
+        `;
+    });
+}
+
+// Logic: Send Dispatch Notification on WhatsApp
+window.handleDispatchNotify = function(checkbox, phone, name, product, qty) {
+    if(checkbox.checked) {
+        // WhatsApp Message Format
+        const msg = `Namaste ${name}, \n\nYour order for *${product}* (Qty: ${Math.abs(qty)}) has been *DISPATCHED* from Anadi Godham. \n\nThank you for choosing purity! 🌿`;
+        
+        // Open WhatsApp API
+        const url = `https://wa.me/91${cleanPhone(phone)}?text=${encodeURIComponent(msg)}`;
+        window.open(url, '_blank');
+    }
+};
+
+// --- TAB 2: ALL USERS (BILL GENERATION) ---
+// --- MODAL, SEARCH & WHATSAPP LOGIC (FINAL & SINGLE VERSION) ---
+
+// 1. Open Modal
+window.openCustomerModal = function() {
+    const modal = document.getElementById('customer-modal');
+    if(!modal) return;
+    
+    // Clear search on open
+    const searchInput = document.getElementById('modal-search-input');
+    if(searchInput) searchInput.value = '';
+
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('closed');
+        modal.classList.add('open');
+    }, 10);
+
+    switchModalTab('tab-orders');
+};
+
+// 2. Close Modal
+window.closeCustomerModal = function() {
+    const modal = document.getElementById('customer-modal');
+    modal.classList.remove('open');
+    modal.classList.add('closed');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+};
+
+// 3. Switch Tabs (Updated to keep Search active)
+window.switchModalTab = function(tabId) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+    document.getElementById(tabId).classList.remove('hidden');
+
+    // Update Buttons
+    const btnOrders = document.getElementById('btn-tab-orders');
+    const btnUsers = document.getElementById('btn-tab-users');
+    
+    // Get current search query to maintain filtering when switching tabs
+    const searchInput = document.getElementById('modal-search-input');
+    const currentQuery = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+    if(tabId === 'tab-orders') {
+        if(typeof renderOrderDispatchTab === 'function') renderOrderDispatchTab(currentQuery);
+        if(btnOrders) btnOrders.className = "flex-1 py-4 text-sm font-bold uppercase text-center border-b-4 border-brand text-brand transition";
+        if(btnUsers) btnUsers.className = "flex-1 py-4 text-sm font-bold uppercase text-center border-b-4 border-transparent text-slate-400 hover:text-slate-600 transition";
+    } else {
+        if(typeof renderUserBillingTab === 'function') renderUserBillingTab(currentQuery);
+        if(btnUsers) btnUsers.className = "flex-1 py-4 text-sm font-bold uppercase text-center border-b-4 border-blue-500 text-blue-600 transition";
+        if(btnOrders) btnOrders.className = "flex-1 py-4 text-sm font-bold uppercase text-center border-b-4 border-transparent text-slate-400 hover:text-slate-600 transition";
+    }
+};
+
+// 4. SEARCH HANDLER
+window.handleModalSearch = function() {
+    const query = document.getElementById('modal-search-input').value.trim().toLowerCase();
+    
+    // Check which tab is active
+    if(!document.getElementById('tab-orders').classList.contains('hidden')) {
+        renderOrderDispatchTab(query);
+    } else {
+        renderUserBillingTab(query);
+    }
+};
+
+// --- TAB 1: ORDERS RENDER (With Search) ---
+window.renderOrderDispatchTab = function(searchQuery = '') {
+    const container = document.getElementById('tab-orders');
+    if(!container) return;
+    container.innerHTML = '';
+
+    const orders = (appState.logs || []).filter(log => {
+        if(log.type !== 'Dispatch') return false;
+        try {
+            const n = JSON.parse(log.notes);
+            if(!n.customer || !n.customer.name) return false;
+
+            // Search Filter
+            const name = n.customer.name.toLowerCase();
+            const phone = (n.customer.phone || '').toString();
+            return name.includes(searchQuery) || phone.includes(searchQuery);
+
+        } catch(e) { return false; }
+    });
+
+    if(orders.length === 0) {
+        container.innerHTML = `<div class="text-center text-slate-400 mt-10">
+            ${searchQuery ? 'No matching orders found.' : 'No recent orders found.'}
+        </div>`;
+        return;
+    }
+
+    orders.forEach(log => {
+        const note = JSON.parse(log.notes);
+        const cust = note.customer;
+        const toggleId = `toggle_${log.logId}`;
+        
+        container.innerHTML += `
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between animate-fade-in">
+                <div>
+                    <h4 class="font-bold text-slate-800 text-lg">${highlightMatch(cust.name, searchQuery)}</h4>
+                    <p class="text-xs text-slate-500 font-mono">${log.product} (Qty: ${log.qty})</p>
+                    <p class="text-[10px] text-slate-400 mt-1">
+                        <i class="fa-solid fa-phone mr-1"></i>${highlightMatch(cust.phone, searchQuery)}
+                    </p>
+                </div>
+
+                <div class="flex flex-col items-center gap-1">
+                    <label for="${toggleId}" class="flex items-center cursor-pointer relative">
+                        <input type="checkbox" id="${toggleId}" class="sr-only" onchange="handleDispatchNotify(this, '${cust.phone}', '${cust.name}', '${log.product}', '${log.qty}')">
+                        <div class="w-11 h-6 bg-slate-200 rounded-full border border-slate-300 toggle-label transition-colors duration-300"></div>
+                        <div class="dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition transform duration-300"></div>
+                    </label>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Dispatch</span>
+                </div>
+            </div>
+            <style>
+                #${toggleId}:checked ~ .toggle-label { background-color: #10b981; border-color: #10b981; }
+                #${toggleId}:checked ~ .dot { transform: translateX(100%); }
+                .highlight-text { background-color: #fde047; color: black; padding: 0 2px; border-radius: 2px; }
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+                .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+            </style>
+        `;
+    });
+};
+
+// Logic: Send Dispatch Notification
+window.handleDispatchNotify = function(checkbox, phone, name, product, qty) {
+    if(checkbox.checked) {
+        const msg = `Namaste ${name}, \n\nYour order for *${product}* (Qty: ${Math.abs(qty)}) has been *DISPATCHED* from Anadi Godham. \n\nThank you for choosing purity! 🌿`;
+        const url = `https://wa.me/91${cleanPhone(phone)}?text=${encodeURIComponent(msg)}`;
+        window.open(url, '_blank');
+    }
+};
+
+// --- TAB 2: USERS BILLING RENDER (With Search) ---
+window.renderUserBillingTab = function(searchQuery = '') {
+    const container = document.getElementById('tab-users');
+    if(!container) return;
+    container.innerHTML = '';
+
+    const userMap = {};
+
+    // 1. Aggregate Data
+    (appState.logs || []).forEach(log => {
+        if(log.type !== 'Dispatch') return;
+        try {
+            const note = JSON.parse(log.notes);
+            if(!note.customer || !note.customer.phone) return;
+
+            const phone = note.customer.phone;
+            
+            if(!userMap[phone]) {
+                userMap[phone] = {
+                    name: note.customer.name,
+                    phone: phone,
+                    orders: [],
+                    totalAmount: 0
+                };
+            }
+
+            const products = getAllProducts();
+            const prodDetails = products.find(p => p.name === log.product);
+            const price = prodDetails ? (prodDetails.lastPrice || 0) : 0;
+            const qty = Math.abs(log.qty);
+            const cost = price * qty;
+
+            userMap[phone].totalAmount += cost;
+            userMap[phone].orders.push({
+                item: log.product,
+                qty: qty,
+                cost: cost,
+                date: log.date
+            });
+
+        } catch(e) {}
+    });
+
+    // 2. Filter Logic
+    const users = Object.values(userMap).filter(u => {
+        const name = u.name.toLowerCase();
+        const phone = u.phone.toString();
+        return name.includes(searchQuery) || phone.includes(searchQuery);
+    });
+
+    if(users.length === 0) {
+        container.innerHTML = `<div class="text-center text-slate-400 mt-10">
+            ${searchQuery ? 'No customer found with that name/phone.' : 'No customer history found.'}
+        </div>`;
+        return;
+    }
+
+    // 3. Render filtered users
+    users.forEach(u => {
+        container.innerHTML += `
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition animate-fade-in" onclick="generateAndSendBill('${u.phone}', '${u.name}')">
+                <div class="flex justify-between items-center mb-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-lg shrink-0">
+                            ${u.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-lg">${highlightMatch(u.name, searchQuery)}</h4>
+                            <span class="text-xs text-slate-500 font-mono">
+                                <i class="fa-solid fa-phone text-[10px] mr-1"></i>${highlightMatch(u.phone, searchQuery)}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="block text-xs text-slate-400 uppercase font-bold">Total Bill</span>
+                        <span class="text-xl font-bold text-red-600">₹${u.totalAmount.toLocaleString('en-IN')}</span>
+                    </div>
+                </div>
+                
+                <button class="w-full mt-2 bg-green-50 text-green-700 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-green-100 transition">
+                    <i class="fa-brands fa-whatsapp text-lg"></i> Send Bill on WhatsApp
+                </button>
+            </div>
+        `;
+    });
+};
+
+// Logic: Generate Full Bill Text & Send via WhatsApp
+window.generateAndSendBill = function(phone, name) {
+    let billMsg = `*BILL INVOICE - Anadi Godham* 🌿\n\n`;
+    billMsg += `Customer: *${name}*\n`;
+    billMsg += `-----------------------------\n`;
+    
+    let total = 0;
+    
+    (appState.logs || []).forEach(log => {
+        if(log.type !== 'Dispatch') return;
+        try {
+            const note = JSON.parse(log.notes);
+            if(note.customer && note.customer.phone === phone) {
+                const products = getAllProducts();
+                const prodDetails = products.find(p => p.name === log.product);
+                const price = prodDetails ? (prodDetails.lastPrice || 0) : 0;
+                const qty = Math.abs(log.qty);
+                const cost = price * qty;
+                
+                total += cost;
+                billMsg += `${log.date}: ${log.product} x${qty} = ₹${cost}\n`;
+            }
+        } catch(e){}
+    });
+
+    billMsg += `-----------------------------\n`;
+    billMsg += `*TOTAL AMOUNT: ₹${total.toLocaleString('en-IN')}*\n`;
+    billMsg += `-----------------------------\n\n`;
+    billMsg += `Please pay on this number:\n*9810017422* (Online/UPI)\n\n`;
+    billMsg += `Kindly share the payment screenshot here. Thanks! 🙏`;
+
+    const url = `https://wa.me/91${cleanPhone(phone)}?text=${encodeURIComponent(billMsg)}`;
+    window.open(url, '_blank');
+};
+
+// Helper: Clean Phone Number
+window.cleanPhone = function(p) {
+    if(!p) return '';
+    return p.replace(/[^0-9]/g, '').slice(-10); 
+};
+
+// Helper: Highlight Search Text
+window.highlightMatch = function(text, query) {
+    if(!query || !text) return text;
+    const regex = new RegExp(`(${query})`, 'gi');
+    return text.toString().replace(regex, '<span class="highlight-text">$1</span>');
 };
