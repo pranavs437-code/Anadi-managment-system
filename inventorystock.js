@@ -1682,21 +1682,27 @@ window.renderUserBillingTab = function(searchQuery = '') {
 
     const userMap = {};
 
-    // 1. Aggregate Data
+    // 1. Aggregate Data (Grouping by Clean Phone)
     (appState.logs || []).forEach(log => {
         if(log.type !== 'Dispatch') return;
         try {
             const note = JSON.parse(log.notes);
             if(!note.customer || !note.customer.phone) return;
 
-            const phone = note.customer.phone;
+            // --- CHANGE: Clean Phone ko Key banayein ---
+            const rawPhone = note.customer.phone;
+            const uniquePhone = cleanPhone(rawPhone);
+
+            // Agar phone invalid hai (kam digits), to skip karein
+            if(!uniquePhone || uniquePhone.length < 10) return; 
             
-            if(!userMap[phone]) {
-                userMap[phone] = {
-                    name: note.customer.name,
-                    phone: phone,
-                    orders: [],
-                    totalAmount: 0
+            if(!userMap[uniquePhone]) {
+                userMap[uniquePhone] = {
+                    name: note.customer.name, // Pehla naam use karenge
+                    phone: rawPhone,          // Display ke liye original dikhayenge
+                    cleanPhone: uniquePhone,  // Logic ke liye clean wala
+                    totalAmount: 0,
+                    orderCount: 0
                 };
             }
 
@@ -1706,35 +1712,33 @@ window.renderUserBillingTab = function(searchQuery = '') {
             const qty = Math.abs(log.qty);
             const cost = price * qty;
 
-            userMap[phone].totalAmount += cost;
-            userMap[phone].orders.push({
-                item: log.product,
-                qty: qty,
-                cost: cost,
-                date: log.date
-            });
+            userMap[uniquePhone].totalAmount += cost;
+            userMap[uniquePhone].orderCount += 1;
 
         } catch(e) {}
     });
 
-    // 2. Filter Logic
+    // 2. Filter Logic (Array me convert karein)
     const users = Object.values(userMap).filter(u => {
         const name = u.name.toLowerCase();
         const phone = u.phone.toString();
-        return name.includes(searchQuery) || phone.includes(searchQuery);
+        // Search clean phone se bhi match karein
+        return name.includes(searchQuery) || phone.includes(searchQuery) || u.cleanPhone.includes(searchQuery);
     });
 
     if(users.length === 0) {
         container.innerHTML = `<div class="text-center text-slate-400 mt-10">
-            ${searchQuery ? 'No customer found with that name/phone.' : 'No customer history found.'}
+            ${searchQuery ? 'No customer found.' : 'No customer history found.'}
         </div>`;
         return;
     }
 
     // 3. Render filtered users
+    // Note: Onclick me hum 'cleanPhone' bhejenge
     users.forEach(u => {
         container.innerHTML += `
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition animate-fade-in" onclick="generateAndSendBill('${u.phone}', '${u.name}')">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition animate-fade-in" 
+                onclick="generateAndSendBill('${u.cleanPhone}', '${u.name}')">
                 <div class="flex justify-between items-center mb-2">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-lg shrink-0">
@@ -1745,16 +1749,19 @@ window.renderUserBillingTab = function(searchQuery = '') {
                             <span class="text-xs text-slate-500 font-mono">
                                 <i class="fa-solid fa-phone text-[10px] mr-1"></i>${highlightMatch(u.phone, searchQuery)}
                             </span>
+                            <span class="text-[10px] text-slate-400 block mt-0.5">
+                                ${u.orderCount} Orders till now
+                            </span>
                         </div>
                     </div>
                     <div class="text-right">
-                        <span class="block text-xs text-slate-400 uppercase font-bold">Total Bill</span>
+                        <span class="block text-xs text-slate-400 uppercase font-bold">Total Lifetime</span>
                         <span class="text-xl font-bold text-red-600">₹${u.totalAmount.toLocaleString('en-IN')}</span>
                     </div>
                 </div>
                 
                 <button class="w-full mt-2 bg-green-50 text-green-700 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-green-100 transition">
-                    <i class="fa-brands fa-whatsapp text-lg"></i> Send Bill on WhatsApp
+                    <i class="fa-brands fa-whatsapp text-lg"></i> Send Full Bill
                 </button>
             </div>
         `;
@@ -1762,44 +1769,70 @@ window.renderUserBillingTab = function(searchQuery = '') {
 };
 
 // Logic: Generate Full Bill Text & Send via WhatsApp
-window.generateAndSendBill = function(phone, name) {
+// Logic: Generate Full Bill Text & Send via WhatsApp
+window.generateAndSendBill = function(targetCleanPhone, name) {
     let billMsg = `*BILL INVOICE - Anadi Godham* 🌿\n\n`;
     billMsg += `Customer: *${name}*\n`;
     billMsg += `-----------------------------\n`;
     
     let total = 0;
     
-    (appState.logs || []).forEach(log => {
+    // Reverse logs taaki purane order pehle dikhein (Optional: .slice().reverse() hata sakte hain agar naya pehle chahiye)
+    const logsReversed = [...(appState.logs || [])].reverse();
+
+    logsReversed.forEach(log => {
         if(log.type !== 'Dispatch') return;
         try {
             const note = JSON.parse(log.notes);
-            if(note.customer && note.customer.phone === phone) {
-                const products = getAllProducts();
-                const prodDetails = products.find(p => p.name === log.product);
-                const price = prodDetails ? (prodDetails.lastPrice || 0) : 0;
-                const qty = Math.abs(log.qty);
-                const cost = price * qty;
+            
+            // --- CHANGE: Match using Clean Phone ---
+            if(note.customer && note.customer.phone) {
+                const logPhoneClean = cleanPhone(note.customer.phone);
                 
-                total += cost;
-                billMsg += `${log.date}: ${log.product} x${qty} = ₹${cost}\n`;
+                if(logPhoneClean === targetCleanPhone) {
+                    const products = getAllProducts();
+                    const prodDetails = products.find(p => p.name === log.product);
+                    // Price DB se le rahe hain (ya log ke andar save MRP se agar available ho)
+                    // Better ye hoga ki agar aapne log me MRP save kiya hai to wo use karein
+                    const price = (note.mrp || (prodDetails ? prodDetails.lastPrice : 0)) || 0;
+                    
+                    const qty = Math.abs(log.qty);
+                    const cost = price * qty;
+                    
+                    total += cost;
+                    
+                    // Format Date (DD-MM)
+                    let dateShort = log.date; 
+                    if(log.date.includes('-')) {
+                        const parts = log.date.split('-'); 
+                        dateShort = `${parts[2]}/${parts[1]}`; // DD/MM format
+                    }
+
+                    billMsg += `${dateShort}: ${log.product} (x${qty}) = ₹${cost}\n`;
+                }
             }
         } catch(e){}
     });
 
     billMsg += `-----------------------------\n`;
-    billMsg += `*TOTAL AMOUNT: ₹${total.toLocaleString('en-IN')}*\n`;
+    billMsg += `*GRAND TOTAL: ₹${total.toLocaleString('en-IN')}*\n`;
     billMsg += `-----------------------------\n\n`;
     billMsg += `Please pay on this number:\n*9810017422* (Online/UPI)\n\n`;
     billMsg += `Kindly share the payment screenshot here. Thanks! 🙏`;
 
-    const url = `https://wa.me/91${cleanPhone(phone)}?text=${encodeURIComponent(billMsg)}`;
+    // WhatsApp Link (Target number par hi bhejega)
+    const url = `https://wa.me/91${targetCleanPhone}?text=${encodeURIComponent(billMsg)}`;
     window.open(url, '_blank');
 };
 
 // Helper: Clean Phone Number
+// Helper: Clean Phone Number (Strict 10 Digits)
 window.cleanPhone = function(p) {
     if(!p) return '';
-    return p.replace(/[^0-9]/g, '').slice(-10); 
+    // Sirf numbers rakhein
+    const cleaned = p.toString().replace(/[^0-9]/g, '');
+    // Last 10 digits uthayein (taaki +91 ya 0 hat jaye)
+    return cleaned.slice(-10); 
 };
 
 // Helper: Highlight Search Text
