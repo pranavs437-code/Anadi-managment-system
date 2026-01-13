@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Anadi Aashram Dairy Processing</title>
+    
+    <!-- FAVICON -->
+    <link rel="icon" type="image/png" href="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- PDF Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#ea580c', // Aashram Saffron
+                        brandDark: '#c2410c',
+                        cream: '#fff7ed',
+                        dark: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; background-color: #f3f4f6; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .fade-in { animation: fadeIn 0.4s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .slide-up { animation: slideUp 0.3s ease-out forwards; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        /* Mobile Tabs */
+        .tab-active { border-bottom: 3px solid #ea580c; color: #ea580c; font-weight: 700; background-color: #fff7ed; }
+        .tab-inactive { border-bottom: 3px solid transparent; color: #94a3b8; }
+
+        /* Desktop Sidebar */
+        .sidebar-active { background-color: #ea580c; color: white; font-weight: bold; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(234, 88, 12, 0.3); }
+        .sidebar-inactive { color: #94a3b8; hover:bg-slate-800; hover:text-white; }
+
+        /* Input Styling */
+        .input-field {
+            width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem;
+            padding: 0.5rem; font-weight: 700; color: #334155; outline: none; transition: all 0.2s;
+        }
+        .input-field:focus { border-color: #ea580c; background-color: white; box-shadow: 0 0 0 2px rgba(234,88,12,0.1); }
+        .label-text { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; margin-bottom: 0.25rem; display: block; }
+        
+        /* Loader */
+        .loader-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-slate-100 font-sans">
+
+    <!-- =========================
+         1. LOGIN SCREEN
+         ========================= -->
+    <div id="login-screen" class="fixed inset-0 z-[100] bg-brand md:bg-[url('https://images.unsplash.com/photo-1546445317-29f4545e9d53?q=80&w=2000&auto=format&fit=crop')] md:bg-cover md:bg-center flex flex-col items-center justify-center p-6 transition-all duration-500">
+        <!-- Overlay for desktop background brightness -->
+        <div class="absolute inset-0 bg-black/50 hidden md:block"></div>
+
+        <div class="relative bg-white/95 backdrop-blur rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center border border-white/50">
+            <img src="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png" class="w-24 h-24 mx-auto mb-4 object-contain">
+            <h2 class="text-2xl font-bold text-slate-800">Anadi Aashram</h2>
+            <p class="text-sm text-slate-500 mb-6">Dairy Processing Unit</p>
+            
+            <div id="login-error" class="hidden bg-red-100 text-red-600 text-xs font-bold p-3 rounded-lg mb-4 text-left flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i> Invalid Credentials
+            </div>
+
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="label-text ml-1">Email ID</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-3 top-3.5 text-slate-400"></i>
+                        <input type="email" id="login-email" placeholder="Email" class="input-field pl-10 py-3">
+                    </div>
+                </div>
+                <div>
+                    <label class="label-text ml-1">Password</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3 top-3.5 text-slate-400"></i>
+                        <input type="password" id="login-pass" placeholder="Password" class="input-field pl-10 py-3">
+                    </div>
+                </div>
+            </div>
+            
+            <button onclick="attemptLogin()" id="btn-login" class="w-full bg-brand text-white font-bold py-3 rounded-xl mt-6 shadow-lg hover:bg-brandDark transition transform active:scale-95">Access Dashboard</button>
+        </div>
+        <p class="relative text-orange-100 md:text-white/70 text-xs mt-8 font-mono z-10">Anadi Seva Prakalp © 2026</p>
+    </div>
+
+    <!-- =========================
+         2. MAIN APPLICATION
+         ========================= -->
+    <div id="app-content" class="hidden h-full flex flex-col md:flex-row">
+        
+        <!-- A. DESKTOP SIDEBAR -->
+        <aside class="hidden md:flex flex-col w-72 bg-dark text-white shadow-2xl z-40 flex-shrink-0">
+            <div class="p-6 flex items-center gap-3 border-b border-slate-700">
+                <div class="w-10 h-10 bg-white rounded-full p-1 flex items-center justify-center">
+                    <img src="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png" class="w-full h-full object-contain">
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none text-orange-500">Anadi Dairy</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Processing Unit</p>
+                </div>
+            </div>
+
+            <nav class="flex-1 p-4 space-y-2">
+                <button onclick="switchTab('record')" id="desk-btn-record" class="w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-active transition">
+                    <i class="fa-solid fa-blender-phone w-6 text-center"></i> <span>Processing</span>
+                </button>
+                <button onclick="switchTab('history')" id="desk-btn-history" class="w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-inactive transition">
+                    <i class="fa-solid fa-clock-rotate-left w-6 text-center"></i> <span>History & Reports</span>
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-slate-700">
+                <div class="bg-slate-800 rounded-xl p-4 mb-4">
+                    <p class="text-xs text-slate-400 uppercase font-bold mb-1">Entry Date</p>
+                    <input type="date" id="desk-process-date" class="bg-slate-700 border border-slate-600 text-white text-sm font-bold rounded-lg p-2 w-full outline-none focus:ring-2 focus:ring-brand">
+                </div>
+                <button onclick="logout()" class="w-full py-2 text-red-400 hover:text-white hover:bg-red-600/20 rounded-lg transition font-bold text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- B. MOBILE HEADER -->
+        <header class="md:hidden bg-white shadow-sm z-20 flex-shrink-0">
+            <div class="px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-brand text-xl">
+                        <i class="fa-solid fa-industry"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-800 leading-none">Anadi Aashram</h1>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase">Dairy Processing</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div id="header-date-picker">
+                        <input type="date" id="process-date" class="bg-slate-100 border border-slate-200 text-slate-700 text-sm font-bold rounded-lg p-2 outline-none focus:ring-2 focus:ring-brand w-32">
+                    </div>
+                    <button onclick="logout()" class="w-9 h-9 bg-red-50 text-red-500 rounded-lg hover:bg-red-100"><i class="fa-solid fa-power-off"></i></button>
+                </div>
+            </div>
+            
+            <!-- Mobile Tabs -->
+            <div class="flex text-sm font-bold uppercase tracking-wide text-center bg-white border-t border-slate-100">
+                <button onclick="switchTab('record')" id="tab-btn-record" class="flex-1 py-3 tab-active transition-colors">
+                    <i class="fa-solid fa-blender-phone mr-1"></i> Processing
+                </button>
+                <button onclick="switchTab('history')" id="tab-btn-history" class="flex-1 py-3 tab-inactive transition-colors">
+                    <i class="fa-solid fa-clock-rotate-left mr-1"></i> History
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 overflow-y-auto bg-slate-100 p-4 pb-32 md:p-8">
+
+            <!-- === TAB 1: PROCESSING RECORD === -->
+            <section id="tab-record" class="space-y-6 fade-in max-w-6xl mx-auto">
+                
+                <!-- Desktop Top Bar -->
+                <div class="hidden md:flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-slate-800">Daily Processing Entry</h2>
+                    <div class="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-64">
+                        <button onclick="setShift('morning')" id="desk-btn-morning" class="flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all bg-orange-50 text-orange-600 shadow-sm border border-orange-100">
+                            <i class="fa-regular fa-sun"></i> Morning
+                        </button>
+                        <button onclick="setShift('evening')" id="desk-btn-evening" class="flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 text-slate-500 transition-all hover:bg-slate-50">
+                            <i class="fa-solid fa-moon"></i> Evening
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mobile Shift Toggle -->
+                <div class="md:hidden flex bg-slate-200 p-1 rounded-xl shadow-inner">
+                    <button onclick="setShift('morning')" id="btn-morning" class="flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all bg-white text-orange-600 shadow-sm">
+                        <i class="fa-regular fa-sun"></i> Morning
+                    </button>
+                    <button onclick="setShift('evening')" id="btn-evening" class="flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 text-slate-500 transition-all">
+                        <i class="fa-solid fa-moon"></i> Evening
+                    </button>
+                </div>
+
+                <!-- GRID LAYOUT -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                    <!-- STEP 1: MILK INTAKE (Full Width on Mobile, Col 1 on Desktop) -->
+                    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden md:col-span-3">
+                        <div class="bg-slate-50 px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-bucket text-blue-500"></i>
+                            <h3 class="font-bold text-slate-700">1. Milk Reception</h3>
+                        </div>
+                        <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="label-text">Total Milk Received (L)</label>
+                                <input type="number" id="milk-received" placeholder="0" class="input-field text-xl bg-blue-50/50 border-blue-200 focus:border-blue-500" oninput="calculate()">
+                            </div>
+                            <div class="col-span-2 grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-xl border border-dashed border-slate-200">
+                                <div><label class="label-text">Set for Curd (L)</label><input type="number" id="milk-to-curd" placeholder="0" class="input-field" oninput="calculate()"></div>
+                                <div><label class="label-text">Set for Paneer (L)</label><input type="number" id="milk-to-paneer" placeholder="0" class="input-field" oninput="calculate()"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- STEP 2: CURD & PANEER (Split Cols) -->
+                    <!-- Paneer -->
+                    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                        <div class="bg-orange-50 px-4 py-3 border-b border-orange-100 flex items-center gap-2">
+                            <i class="fa-solid fa-cheese text-orange-500"></i><h3 class="font-bold text-slate-700">Paneer</h3>
+                        </div>
+                        <div class="p-4 space-y-4 flex-1">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="label-text">Made (Kg)</label><input type="number" id="paneer-made" placeholder="0" class="input-field" oninput="calculate()"></div>
+                                <div><label class="label-text">Sold (Kg)</label><input type="number" id="paneer-sold" placeholder="0" class="input-field" oninput="calculate()"></div>
+                            </div>
+                            <div class="bg-slate-800 text-white p-3 rounded-lg flex justify-between items-center mt-auto"><span class="text-xs font-bold uppercase">Balance</span><span class="font-bold text-xl"><span id="paneer-stock">0</span> Kg</span></div>
+                        </div>
+                    </section>
+
+                    <!-- Curd -->
+                    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                        <div class="bg-blue-50 px-4 py-3 border-b border-blue-100 flex items-center gap-2">
+                            <i class="fa-solid fa-jar text-blue-600"></i><h3 class="font-bold text-slate-700">Curd (Dahi)</h3>
+                        </div>
+                        <div class="p-4 space-y-4 flex-1">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="label-text">Made (Kg)</label><input type="number" id="curd-made" placeholder="0" class="input-field" oninput="calculate()"></div>
+                                <div><label class="label-text">Sold (Kg)</label><input type="number" id="curd-sold" placeholder="0" class="input-field" oninput="calculate()"></div>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 mt-auto"><div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-500 uppercase">Available</span><span class="font-bold text-lg text-brand"><span id="curd-balance">0</span> Kg</span></div></div>
+                        </div>
+                    </section>
+
+                    <!-- STEP 3: CHURNING (Takes up remaining space or new row) -->
+                    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative md:col-span-1">
+                        <div class="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-blue-400 to-yellow-400"></div>
+                        <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                            <div class="flex items-center gap-2"><i class="fa-solid fa-arrows-spin text-slate-400"></i><h3 class="font-bold text-slate-700">2. Churning</h3></div>
+                        </div>
+                        <div class="p-4 space-y-4">
+                            <div><label class="label-text text-brand">Curd Used (Kg)</label><input type="number" id="curd-churned" placeholder="Amount" class="input-field border-brand/30 bg-orange-50/50" oninput="calculate()"></div>
+                            
+                            <div class="space-y-3 pt-2 border-t border-dashed border-slate-200">
+                                <!-- Butter -->
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold text-slate-500 mb-1"><span>White Butter</span> <span>(Kg)</span></div>
+                                    <div class="grid grid-cols-2 gap-2"><input type="number" id="butter-made" placeholder="Made" class="input-field py-1" oninput="calculate()"><input type="number" id="butter-sold" placeholder="Sold" class="input-field py-1" oninput="calculate()"></div>
+                                    <div class="text-right text-[10px] font-bold text-brand mt-1">Bal: <span id="butter-balance">0</span></div>
+                                </div>
+                                <!-- Chaach -->
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold text-slate-500 mb-1"><span>Buttermilk</span> <span>(L)</span></div>
+                                    <div class="grid grid-cols-2 gap-2"><input type="number" id="chaach-made" placeholder="Made" class="input-field py-1" oninput="calculate()"><input type="number" id="chaach-sold" placeholder="Sold" class="input-field py-1" oninput="calculate()"></div>
+                                    <div class="text-right text-[10px] font-bold text-slate-400 mt-1">Stock: <span id="chaach-stock">0</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- STEP 4: GHEE (Full Width) -->
+                    <section class="md:col-span-3 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-sm border border-yellow-200 overflow-hidden">
+                        <div class="px-4 py-3 border-b border-yellow-100 flex items-center gap-2 text-yellow-800"><i class="fa-solid fa-bottle-droplet"></i><h3 class="font-bold">3. Ghee Production</h3></div>
+                        <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                            <div><label class="label-text text-yellow-700">Butter Melted (Kg)</label><input type="number" id="butter-melted" placeholder="0" class="input-field bg-white border-yellow-200 focus:border-yellow-500" oninput="calculate()"></div>
+                            <div><label class="label-text text-yellow-700">Ghee Produced (Kg/L)</label><input type="number" id="ghee-made" placeholder="0" class="input-field bg-white border-yellow-200 focus:border-yellow-500" oninput="calculate()"></div>
+                            <div class="bg-yellow-400 text-yellow-900 p-3 rounded-lg text-center shadow-sm"><span class="block text-xs font-bold uppercase opacity-80">Ghee Produced</span><span class="block text-2xl font-bold"><span id="ghee-stock-display">0</span> <small class="text-sm">Kg</small></span></div>
+                        </div>
+                    </section>
+
+                </div>
+            </section>
+
+            <!-- === TAB 2: HISTORY === -->
+            <section id="tab-history" class="hidden space-y-6 fade-in max-w-6xl mx-auto">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-4 items-center">
+                    <h2 class="text-xl font-bold text-slate-800 mr-auto hidden md:block">History Records</h2>
+                    <div class="flex items-center gap-2 flex-1 md:max-w-xs">
+                        <i class="fa-solid fa-filter text-slate-400 ml-1"></i>
+                        <input type="date" id="history-filter-date" onchange="filterHistory()" class="flex-1 bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-lg p-2 outline-none">
+                    </div>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <button onclick="resetHistoryFilter()" class="flex-1 md:flex-none text-xs font-bold text-slate-500 bg-slate-100 px-4 py-2.5 rounded-lg border border-slate-200 hover:bg-slate-200 transition">Show All</button>
+                        <button onclick="downloadHistoryPDF()" class="flex-1 md:flex-none text-xs font-bold text-white bg-red-600 px-4 py-2.5 rounded-lg border border-red-700 flex items-center justify-center gap-2 shadow-sm hover:bg-red-700 transition">
+                            <i class="fa-solid fa-file-pdf"></i> Download PDF
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- History Grid -->
+                <div id="history-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- JS Injects Cards Here -->
+                </div>
+            </section>
+
+        </main>
+
+        <!-- BOTTOM CONTROLS (Fixed on Mobile, Sticky on Desktop) -->
+        <div id="bottom-controls" class="fixed bottom-0 left-0 right-0 md:left-72 p-4 pb-6 md:p-6 bg-gradient-to-t from-white via-white to-transparent md:bg-white md:border-t md:border-slate-200 z-30 flex items-center justify-end gap-3 transition-all">
+            <button onclick="openFullReport()" class="flex-1 md:flex-none bg-dark text-white h-14 md:h-12 rounded-2xl md:rounded-lg shadow-xl md:shadow-none flex items-center px-4 md:px-6 gap-3 active:scale-95 transition border border-slate-600 hover:bg-slate-800">
+                <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-yellow-400 md:hidden"><i class="fa-solid fa-chart-pie"></i></div>
+                <div class="text-left leading-tight md:text-center">
+                    <div class="text-[10px] uppercase font-bold text-slate-400 md:hidden">Summary</div>
+                    <div class="font-bold text-sm md:flex md:items-center md:gap-2"><i class="fa-solid fa-chart-pie hidden md:block text-yellow-400"></i> Daily Analysis</div>
+                </div>
+                <i class="fa-solid fa-chevron-up ml-auto text-slate-500 md:hidden"></i>
+            </button>
+            <button id="btn-save" onclick="saveData()" class="bg-brand text-white w-14 h-14 md:w-auto md:h-12 flex-shrink-0 rounded-full md:rounded-lg shadow-xl md:shadow-md flex items-center justify-center text-xl md:text-sm md:font-bold md:px-8 gap-2 hover:scale-110 md:hover:scale-105 transition active:scale-90 border-4 border-white md:border-transparent hover:bg-brandDark">
+                <i class="fa-solid fa-save"></i> <span class="hidden md:inline">Save Entry</span>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- MODAL: FULL REPORT -->
+    <div id="modal-report" class="fixed inset-0 bg-black/60 z-50 hidden flex items-end md:items-center justify-center backdrop-blur-sm p-0 md:p-6">
+        <div class="bg-slate-50 w-full md:max-w-2xl rounded-t-3xl md:rounded-2xl h-[80vh] md:h-auto md:max-h-[90vh] flex flex-col slide-up overflow-hidden shadow-2xl">
+            <div class="bg-white p-5 border-b border-slate-200 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Processing Report</h2>
+                    <p class="text-xs text-slate-500 font-bold uppercase" id="report-date-display">--</p>
+                </div>
+                <button onclick="closeReport()" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="report-content-body" class="flex-1 overflow-y-auto p-5 space-y-4">
+                <!-- Content injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- FIREBASE & LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+
+        // CONFIG (FIXED URL)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDq_E-ZxeBlikGu0ChkBuvGJRr2xrd6mLA",
+            authDomain: "anadi-aashram-managment.firebaseapp.com",
+            databaseURL: "https://anadi-aashram-managment-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "anadi-aashram-managment",
+            storageBucket: "anadi-aashram-managment.firebasestorage.app",
+            messagingSenderId: "976995934910",
+            appId: "1:976995934910:web:b92c5f72fd70df043734ef",
+            measurementId: "G-8QKSL93F2D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // --- AUTH ---
+        onAuthStateChanged(auth, (user) => {
+            if(user) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+                loadData();
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('app-content').classList.add('hidden');
+            }
+        });
+
+        window.attemptLogin = function() {
+            const btn = document.getElementById('btn-login');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Loading...';
+            signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value)
+                .catch(() => { 
+                    document.getElementById('login-error').classList.remove('hidden'); 
+                    btn.innerHTML = orig; 
+                });
+        };
+        window.logout = function() { if(confirm("Logout?")) signOut(auth); };
+
+        // --- GLOBAL & VARS ---
+        let allHistoryData = {};
+        let currentShift = 'morning';
+        const getLoader = (msg) => `<div class="flex flex-col items-center py-10 opacity-70"><i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand mb-2"></i><span class="text-xs font-bold uppercase text-slate-500">${msg}</span></div>`;
+
+        // --- TABS & UI ---
+        window.switchTab = function(tabId) {
+            document.getElementById('tab-record').classList.add('hidden');
+            document.getElementById('tab-history').classList.add('hidden');
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+            // Mobile Tabs
+            document.getElementById('tab-btn-record').className = "flex-1 py-3 tab-inactive transition-colors";
+            document.getElementById('tab-btn-history').className = "flex-1 py-3 tab-inactive transition-colors";
+            document.getElementById('tab-btn-' + tabId).className = "flex-1 py-3 tab-active transition-colors";
+
+            // Desktop Sidebar
+            const deskRec = document.getElementById('desk-btn-record');
+            const deskHist = document.getElementById('desk-btn-history');
+            if(deskRec && deskHist) {
+                deskRec.className = "w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-inactive transition";
+                deskHist.className = "w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-inactive transition";
+                document.getElementById('desk-btn-' + tabId).className = "w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-active transition";
+            }
+
+            const ctrls = document.getElementById('bottom-controls');
+            const dp = document.getElementById('header-date-picker');
+            
+            if(tabId === 'record') {
+                ctrls.classList.remove('translate-y-full');
+                dp.classList.remove('hidden');
+            } else {
+                ctrls.classList.add('translate-y-full');
+                dp.classList.add('hidden');
+                loadHistory(); 
+            }
+        };
+
+        window.setShift = function(shift) {
+            currentShift = shift;
+            // Mobile Buttons
+            document.getElementById('btn-morning').className = shift === 'morning' ? "flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all bg-white text-orange-600 shadow-sm border border-slate-100" : "flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 text-slate-500 transition-all";
+            document.getElementById('btn-evening').className = shift === 'evening' ? "flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all bg-white text-indigo-600 shadow-sm border border-slate-100" : "flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 text-slate-500 transition-all";
+            
+            // Desktop Buttons
+            const dM = document.getElementById('desk-btn-morning');
+            const dE = document.getElementById('desk-btn-evening');
+            if(dM && dE) {
+                dM.className = shift === 'morning' ? "flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all bg-orange-50 text-orange-600 shadow-sm border border-orange-100" : "flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 text-slate-500 transition-all hover:bg-slate-50";
+                dE.className = shift === 'evening' ? "flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all bg-indigo-50 text-indigo-600 shadow-sm border border-indigo-100" : "flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 text-slate-500 transition-all hover:bg-slate-50";
+            }
+            loadData();
+        };
+
+        // --- CALCULATION & DATA ---
+        const val = (id) => parseFloat(document.getElementById(id).value) || 0;
+        const setTxt = (id, v) => document.getElementById(id).innerText = v.toFixed(1);
+
+        window.calculate = function() {
+            setTxt('paneer-stock', val('paneer-made') - val('paneer-sold'));
+            setTxt('curd-balance', val('curd-made') - val('curd-sold'));
+            setTxt('butter-balance', val('butter-made') - val('butter-sold'));
+            setTxt('chaach-stock', val('chaach-made') - val('chaach-sold'));
+            setTxt('ghee-stock-display', val('ghee-made'));
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const today = new Date();
+            document.getElementById('process-date').valueAsDate = today;
+            document.getElementById('desk-process-date').valueAsDate = today;
+            
+            // Sync dates
+            document.getElementById('process-date').addEventListener('change', (e) => {
+                document.getElementById('desk-process-date').value = e.target.value;
+                loadData();
+            });
+            document.getElementById('desk-process-date').addEventListener('change', (e) => {
+                document.getElementById('process-date').value = e.target.value;
+                loadData();
+            });
+        });
+
+        function loadData() {
+            const date = document.getElementById('process-date').value;
+            if(!date) return;
+            // Clear inputs
+            document.querySelectorAll('input[type="number"]').forEach(i => i.value = '');
+            calculate();
+
+            const path = `aashram_dairy/${date}/${currentShift}`;
+            onValue(ref(db, path), (snap) => {
+                const data = snap.val();
+                if(!data) return;
+                const setVal = (id, v) => document.getElementById(id).value = v || '';
+                
+                setVal('milk-received', data.milk?.received);
+                setVal('milk-to-curd', data.milk?.to_curd);
+                setVal('milk-to-paneer', data.milk?.to_paneer);
+                setVal('paneer-made', data.paneer?.made); setVal('paneer-sold', data.paneer?.sold);
+                setVal('curd-made', data.curd?.made); setVal('curd-sold', data.curd?.sold);
+                setVal('curd-churned', data.processing?.curd_churned);
+                setVal('butter-made', data.butter?.made); setVal('butter-sold', data.butter?.sold);
+                setVal('chaach-made', data.chaach?.made); setVal('chaach-sold', data.chaach?.sold);
+                setVal('butter-melted', data.processing?.butter_melted);
+                setVal('ghee-made', data.ghee?.made);
+                calculate();
+            });
+        }
+
+        window.saveData = function() {
+            const date = document.getElementById('process-date').value;
+            const btn = document.getElementById('btn-save');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+            
+            const data = {
+                milk: { received: val('milk-received'), to_curd: val('milk-to-curd'), to_paneer: val('milk-to-paneer') },
+                paneer: { made: val('paneer-made'), sold: val('paneer-sold') },
+                curd: { made: val('curd-made'), sold: val('curd-sold') },
+                processing: { curd_churned: val('curd-churned'), butter_melted: val('butter-melted') },
+                butter: { made: val('butter-made'), sold: val('butter-sold') },
+                chaach: { made: val('chaach-made'), sold: val('chaach-sold') },
+                ghee: { made: val('ghee-made') }
+            };
+
+            update(ref(db, `aashram_dairy/${date}/${currentShift}`), data).then(() => {
+                btn.innerHTML = '<i class="fa-solid fa-check"></i>'; btn.classList.replace('bg-brand','bg-green-600');
+                setTimeout(() => { btn.innerHTML = orig; btn.classList.replace('bg-green-600','bg-brand'); }, 1500);
+            }).catch(e => { alert(e.message); btn.innerHTML = orig; });
+        };
+
+        // --- HISTORY & PDF ---
+        window.loadHistory = function() {
+            const container = document.getElementById('history-list-container');
+            container.innerHTML = getLoader("Fetching Records...");
+            onValue(ref(db, 'aashram_dairy'), (snap) => {
+                allHistoryData = snap.val() || {};
+                renderHistory(allHistoryData);
+            });
+        };
+
+        window.renderHistory = function(data) {
+            const container = document.getElementById('history-list-container');
+            const dates = Object.keys(data).sort().reverse();
+            if(dates.length === 0) { container.innerHTML = '<div class="col-span-full text-center text-slate-400 mt-10">No records found.</div>'; return; }
+            container.innerHTML = '';
+            
+            dates.forEach(dateStr => {
+                const dayData = data[dateStr];
+                let milk = 0, paneer = 0, ghee = 0, butter = 0, chaach = 0;
+                ['morning', 'evening'].forEach(s => {
+                    const shift = dayData[s] || {};
+                    milk += parseFloat(shift.milk?.received || 0);
+                    paneer += parseFloat(shift.paneer?.made || 0);
+                    ghee += parseFloat(shift.ghee?.made || 0);
+                    butter += parseFloat(shift.butter?.made || 0);
+                    chaach += parseFloat(shift.chaach?.made || 0);
+                });
+                
+                const dateObj = new Date(dateStr);
+                const dateFmt = dateObj.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
+
+                container.innerHTML += `
+                    <div onclick="openFullReport('${dateStr}')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-brand active:scale-[0.98] transition">
+                        <div class="bg-slate-50 px-4 py-2 border-b border-slate-100 flex justify-between items-center">
+                            <span class="font-bold text-slate-700"><i class="fa-regular fa-calendar mr-2 text-slate-400"></i> ${dateFmt}</span>
+                            <span class="text-xs font-bold text-brand bg-orange-100 px-2 py-0.5 rounded-full"><i class="fa-solid fa-bottle-droplet"></i> ${milk.toFixed(1)} L</span>
+                        </div>
+                        <div class="p-4 grid grid-cols-2 gap-4 text-center divide-x divide-slate-100">
+                            <div class="space-y-1">
+                                <div class="text-[10px] font-bold text-slate-400 uppercase">Paneer</div><div class="font-bold text-slate-700">${paneer.toFixed(1)} Kg</div>
+                                <div class="text-[10px] font-bold text-slate-400 uppercase mt-2">Butter</div><div class="font-bold text-slate-700">${butter.toFixed(1)} Kg</div>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="text-[10px] font-bold text-slate-400 uppercase">Ghee</div><div class="font-bold text-slate-700">${ghee.toFixed(1)} Kg</div>
+                                <div class="text-[10px] font-bold text-slate-400 uppercase mt-2">Chaach</div><div class="font-bold text-slate-700">${chaach.toFixed(1)} L</div>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        };
+
+        window.filterHistory = function() {
+            const fd = document.getElementById('history-filter-date').value;
+            if(!fd) { renderHistory(allHistoryData); return; }
+            const res = {}; if(allHistoryData[fd]) res[fd] = allHistoryData[fd];
+            renderHistory(res);
+        };
+        window.resetHistoryFilter = function() { document.getElementById('history-filter-date').value = ''; renderHistory(allHistoryData); };
+
+        window.downloadHistoryPDF = function() {
+            if(Object.keys(allHistoryData).length === 0) { alert("No data"); return; }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setTextColor(234, 88, 12); doc.setFontSize(18); doc.text("Anadi Aashram - Dairy Records", 14, 20);
+            doc.setTextColor(100); doc.setFontSize(10); doc.text("Generated: " + new Date().toLocaleDateString(), 14, 28);
+            
+            const rows = [];
+            Object.keys(allHistoryData).sort().reverse().forEach(date => {
+                const dayData = allHistoryData[date];
+                let m = 0, pM = 0, pS = 0, g = 0, bM = 0, bS = 0, cM = 0, cS = 0;
+                ['morning', 'evening'].forEach(s => {
+                    const sh = dayData[s] || {};
+                    m += parseFloat(sh.milk?.received || 0);
+                    pM += parseFloat(sh.paneer?.made || 0); pS += parseFloat(sh.paneer?.sold || 0);
+                    g += parseFloat(sh.ghee?.made || 0);
+                    bM += parseFloat(sh.butter?.made || 0); bS += parseFloat(sh.butter?.sold || 0);
+                    cM += parseFloat(sh.chaach?.made || 0); cS += parseFloat(sh.chaach?.sold || 0);
+                });
+                rows.push([date, m.toFixed(1), pM.toFixed(1)+"/"+pS.toFixed(1), bM.toFixed(1)+"/"+bS.toFixed(1), cM.toFixed(1)+"/"+cS.toFixed(1), g.toFixed(1)]);
+            });
+
+            doc.autoTable({
+                startY: 35,
+                head: [['Date', 'Milk(L)', 'Paneer(M/S)', 'Butter(M/S)', 'Chaach(M/S)', 'Ghee']],
+                body: rows,
+                headStyles: { fillColor: [234, 88, 12] },
+                theme: 'grid',
+                styles: { fontSize: 8 }
+            });
+            doc.save("Aashram_Dairy.pdf");
+        };
+
+        // --- REPORTS ---
+        window.openFullReport = function(optionalDate) {
+            const dateStr = optionalDate || document.getElementById('process-date').value;
+            if(!dateStr) return alert("Select Date");
+            document.getElementById('report-date-display').innerText = new Date(dateStr).toDateString();
+            document.getElementById('report-content-body').innerHTML = getLoader("Generating Report...");
+            document.getElementById('modal-report').classList.remove('hidden');
+
+            onValue(ref(db, `aashram_dairy/${dateStr}`), (snap) => {
+                const data = snap.val() || {};
+                const get = (shift, cat, field) => parseFloat(data[shift]?.[cat]?.[field] || 0);
+                const safe = (v) => v.toFixed(1);
+
+                const calcShift = (s) => ({
+                    milk: get(s,'milk','received'),
+                    paneerMade: get(s,'paneer','made'), paneerSold: get(s,'paneer','sold'),
+                    curdMade: get(s,'curd','made'), curdSold: get(s,'curd','sold'),
+                    butterMade: get(s,'butter','made'), butterSold: get(s,'butter','sold'),
+                    chaachMade: get(s,'chaach','made'), chaachSold: get(s,'chaach','sold'),
+                    ghee: get(s,'ghee','made')
+                });
+
+                const m = calcShift('morning');
+                const e = calcShift('evening');
+                const t = (k) => m[k] + e[k];
+
+                const row = (label, k, unit) => `
+                    <div class="grid grid-cols-4 gap-2 items-center text-xs">
+                        <div class="font-bold text-slate-700 pl-2">${label}</div>
+                        <div class="text-center bg-slate-50 py-1 rounded text-slate-600">${safe(m[k])}</div>
+                        <div class="text-center bg-slate-50 py-1 rounded text-slate-600">${safe(e[k])}</div>
+                        <div class="text-center font-bold text-brand bg-orange-50 rounded">${safe(t(k))} <span class="text-[8px]">${unit}</span></div>
+                    </div>`;
+
+                const html = `
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-4 gap-2 text-[10px] font-bold uppercase text-slate-400 text-center pb-2 border-b border-slate-200">
+                            <div class="text-left pl-2">Item</div><div>Morn</div><div>Eve</div><div>Total</div>
+                        </div>
+                        <div class="space-y-2">
+                            ${row('Milk In', 'milk', 'L')}
+                            <div class="border-t border-dashed border-slate-100 my-1"></div>
+                            ${row('Paneer Made', 'paneerMade', 'Kg')}
+                            ${row('Paneer Sold', 'paneerSold', 'Kg')}
+                            <div class="border-t border-dashed border-slate-100 my-1"></div>
+                            ${row('Curd Made', 'curdMade', 'Kg')}
+                            ${row('Curd Sold', 'curdSold', 'Kg')}
+                            <div class="border-t border-dashed border-slate-100 my-1"></div>
+                            ${row('Butter Made', 'butterMade', 'Kg')}
+                            ${row('Butter Sold', 'butterSold', 'Kg')}
+                            <div class="border-t border-dashed border-slate-100 my-1"></div>
+                            ${row('Chaach Made', 'chaachMade', 'L')}
+                            ${row('Chaach Sold', 'chaachSold', 'L')}
+                            <div class="border-t border-dashed border-slate-100 my-1"></div>
+                            ${row('Ghee Made', 'ghee', 'Kg')}
+                        </div>
+                    </div>`;
+                document.getElementById('report-content-body').innerHTML = html;
+            }, { onlyOnce: true });
+        };
+        window.closeReport = function() { document.getElementById('modal-report').classList.add('hidden'); };
+    </script>
+</body>
+</html>
