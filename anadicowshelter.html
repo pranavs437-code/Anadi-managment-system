@@ -180,7 +180,6 @@
         </header>
 
         <!-- MAIN CONTENT AREA -->
-        <!-- Added md:pb-40 to fix desktop scrolling issue -->
         <main class="flex-1 overflow-y-auto relative bg-slate-100 p-4 pb-40 md:p-8 md:pb-40">
             
             <!-- === TAB 1: MILK PRODUCTION === -->
@@ -245,15 +244,23 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-2">Sent for Delivery</label>
                             <div class="relative">
-                                <input type="number" id="dist-delivery" placeholder="0" oninput="calculateCalculations()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 pl-4 font-bold text-slate-700 outline-none focus:border-brand">
+                                <input type="number" step="any" id="dist-delivery" placeholder="0" oninput="calculateCalculations()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 pl-4 font-bold text-slate-700 outline-none focus:border-brand">
                                 <span class="absolute right-4 top-3 text-xs font-bold text-slate-400">L</span>
                             </div>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-2">Sent to Aashram</label>
                             <div class="relative">
-                                <input type="number" id="dist-aashram" placeholder="0" oninput="calculateCalculations()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 pl-4 font-bold text-slate-700 outline-none focus:border-brand">
+                                <input type="number" step="any" id="dist-aashram" placeholder="0" oninput="calculateCalculations()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 pl-4 font-bold text-slate-700 outline-none focus:border-brand">
                                 <span class="absolute right-4 top-3 text-xs font-bold text-slate-400">L</span>
+                            </div>
+                        </div>
+                        <!-- TEA SECTION ADDED HERE -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-2 text-emerald-600">Sent for Tea (Chai)</label>
+                            <div class="relative">
+                                <input type="number" step="any" id="dist-tea" placeholder="0" oninput="calculateCalculations()" class="w-full bg-emerald-50 border border-emerald-200 rounded-lg p-3 pl-4 font-bold text-emerald-800 outline-none focus:border-brand">
+                                <span class="absolute right-4 top-3 text-xs font-bold text-emerald-500">L</span>
                             </div>
                         </div>
                     </div>
@@ -353,7 +360,7 @@
         </div>
     </div>
 
-    <!-- MODAL: EDIT COW (NEW) -->
+    <!-- MODAL: EDIT COW -->
     <div id="modal-edit-cow" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100">
             <h3 class="text-lg font-bold text-slate-800 mb-4">Edit Cow Details</h3>
@@ -550,6 +557,7 @@
                 const dateObj = new Date(dateStr);
                 const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
                 
+                // NO ROUNDOFF in History
                 container.innerHTML += `
                     <div onclick="openFullReport('${dateStr}')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-brand transition group active:scale-[0.98]">
                         <!-- Header with Edit/Delete Buttons -->
@@ -568,11 +576,11 @@
                         </div>
 
                         <div class="p-4 flex items-center justify-between">
-                            <div class="text-center"><div class="text-[10px] uppercase font-bold text-orange-400 mb-1">Morning</div><div class="font-bold text-slate-700">${morn.toFixed(1)}</div></div>
+                            <div class="text-center"><div class="text-[10px] uppercase font-bold text-orange-400 mb-1">Morning</div><div class="font-bold text-slate-700">${morn}</div></div>
                             <div class="h-8 w-px bg-slate-100"></div>
-                            <div class="text-center"><div class="text-[10px] uppercase font-bold text-indigo-400 mb-1">Evening</div><div class="font-bold text-slate-700">${eve.toFixed(1)}</div></div>
+                            <div class="text-center"><div class="text-[10px] uppercase font-bold text-indigo-400 mb-1">Evening</div><div class="font-bold text-slate-700">${eve}</div></div>
                             <div class="h-8 w-px bg-slate-100"></div>
-                            <div class="text-center"><div class="text-[10px] uppercase font-bold text-emerald-600 mb-1">Total</div><div class="font-bold text-xl text-emerald-700">${total.toFixed(1)}</div></div>
+                            <div class="text-center"><div class="text-[10px] uppercase font-bold text-emerald-600 mb-1">Total</div><div class="font-bold text-xl text-emerald-700">${total}</div></div>
                         </div>
                     </div>`;
             });
@@ -614,8 +622,13 @@
                 const m = Object.values(d.morning||{}).reduce((s,v)=>s+(parseFloat(v)||0),0);
                 const e = Object.values(d.evening||{}).reduce((s,v)=>s+(parseFloat(v)||0),0);
                 const t = m+e;
-                const dist = (parseFloat(d.distribution_morning?.delivery)||0) + (parseFloat(d.distribution_evening?.delivery)||0) + (parseFloat(d.distribution_morning?.aashram)||0) + (parseFloat(d.distribution_evening?.aashram)||0);
-                tableRows.push([dateStr, m.toFixed(1), e.toFixed(1), t.toFixed(1), dist.toFixed(1), (t-dist).toFixed(1)]);
+                // Add Tea to Distribution Sum
+                const dist = (parseFloat(d.distribution_morning?.delivery)||0) + (parseFloat(d.distribution_evening?.delivery)||0) 
+                           + (parseFloat(d.distribution_morning?.aashram)||0) + (parseFloat(d.distribution_evening?.aashram)||0)
+                           + (parseFloat(d.distribution_morning?.tea)||0) + (parseFloat(d.distribution_evening?.tea)||0);
+                
+                // NO ROUNDOFF in PDF
+                tableRows.push([dateStr, m, e, t, dist, (t-dist)]);
             });
             doc.autoTable({ startY: 35, head: [['Date', 'Morning', 'Evening', 'Total', 'Dist.', 'Stock']], body: tableRows, headStyles: { fillColor: [22, 101, 52] }, theme: 'grid' });
             doc.save("Records.pdf");
@@ -635,28 +648,33 @@
             const morn = Object.values(data.morning||{}).reduce((s,v)=>s+(parseFloat(v)||0),0);
             const eve = Object.values(data.evening||{}).reduce((s,v)=>s+(parseFloat(v)||0),0);
             const total = morn+eve;
+            
             const del = (parseFloat(data.distribution_morning?.delivery)||0) + (parseFloat(data.distribution_evening?.delivery)||0);
             const ash = (parseFloat(data.distribution_morning?.aashram)||0) + (parseFloat(data.distribution_evening?.aashram)||0);
-            const dist = del+ash;
+            const tea = (parseFloat(data.distribution_morning?.tea)||0) + (parseFloat(data.distribution_evening?.tea)||0);
             
+            const dist = del+ash+tea;
+            
+            // NO ROUNDOFF in Report
             document.getElementById('report-content-body').innerHTML = `
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100 fade-in">
                     <h3 class="text-xs font-bold text-slate-400 uppercase mb-4 flex items-center gap-2"><i class="fa-solid fa-bucket text-brand"></i> Production</h3>
-                    <div class="flex justify-between items-end border-b border-dashed border-slate-200 pb-3 mb-3"><span class="text-sm font-bold text-slate-600">Morning</span><span class="font-bold text-slate-800">${morn.toFixed(1)} L</span></div>
-                    <div class="flex justify-between items-end border-b border-dashed border-slate-200 pb-3 mb-3"><span class="text-sm font-bold text-slate-600">Evening</span><span class="font-bold text-slate-800">${eve.toFixed(1)} L</span></div>
-                    <div class="flex justify-between items-center bg-emerald-50 p-3 rounded-lg"><span class="font-bold text-emerald-800">Total</span><span class="font-bold text-2xl text-emerald-700">${total.toFixed(1)} L</span></div>
+                    <div class="flex justify-between items-end border-b border-dashed border-slate-200 pb-3 mb-3"><span class="text-sm font-bold text-slate-600">Morning</span><span class="font-bold text-slate-800">${morn} L</span></div>
+                    <div class="flex justify-between items-end border-b border-dashed border-slate-200 pb-3 mb-3"><span class="text-sm font-bold text-slate-600">Evening</span><span class="font-bold text-slate-800">${eve} L</span></div>
+                    <div class="flex justify-between items-center bg-emerald-50 p-3 rounded-lg"><span class="font-bold text-emerald-800">Total</span><span class="font-bold text-2xl text-emerald-700">${total} L</span></div>
                 </div>
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100 fade-in mt-4">
                     <h3 class="text-xs font-bold text-slate-400 uppercase mb-4 flex items-center gap-2"><i class="fa-solid fa-truck-fast text-orange-500"></i> Distribution</h3>
                     <div class="grid grid-cols-2 gap-3 mb-3">
-                        <div class="bg-orange-50 p-3 rounded-lg text-center"><div class="text-xs font-bold text-orange-400 uppercase">Delivery</div><div class="font-bold text-xl text-orange-700 mt-1">${del.toFixed(1)}</div></div>
-                        <div class="bg-indigo-50 p-3 rounded-lg text-center"><div class="text-xs font-bold text-indigo-400 uppercase">Aashram</div><div class="font-bold text-xl text-indigo-700 mt-1">${ash.toFixed(1)}</div></div>
+                        <div class="bg-orange-50 p-3 rounded-lg text-center"><div class="text-xs font-bold text-orange-400 uppercase">Delivery</div><div class="font-bold text-xl text-orange-700 mt-1">${del}</div></div>
+                        <div class="bg-indigo-50 p-3 rounded-lg text-center"><div class="text-xs font-bold text-indigo-400 uppercase">Aashram</div><div class="font-bold text-xl text-indigo-700 mt-1">${ash}</div></div>
+                        <div class="bg-emerald-50 p-3 rounded-lg text-center col-span-2"><div class="text-xs font-bold text-emerald-500 uppercase">Tea (Chai)</div><div class="font-bold text-xl text-emerald-800 mt-1">${tea}</div></div>
                     </div>
                 </div>
                 <div class="bg-slate-800 rounded-xl p-5 text-white shadow-lg fade-in mt-4">
                     <div class="flex justify-between items-center">
                         <div><p class="text-xs text-slate-400 uppercase font-bold mb-1">Net Stock</p></div>
-                        <h2 class="text-4xl font-bold text-yellow-400">${(total-dist).toFixed(1)} <span class="text-lg">L</span></h2>
+                        <h2 class="text-4xl font-bold text-yellow-400">${(total-dist)} <span class="text-lg">L</span></h2>
                     </div>
                 </div>`;
         }
@@ -773,7 +791,7 @@
                             <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-xs font-bold">${cow.name.charAt(0)}</div> ${cow.name}
                         </label>
                         <div class="flex items-center gap-2">
-                            <input type="number" step="0.1" id="in-${cow.id}" data-cowid="${cow.id}" class="milk-input w-20 bg-white border border-slate-300 rounded-lg p-2 text-center font-bold text-lg outline-none focus:border-brand" placeholder="0.0" oninput="calculateCalculations()">
+                            <input type="number" step="any" id="in-${cow.id}" data-cowid="${cow.id}" class="milk-input w-20 bg-white border border-slate-300 rounded-lg p-2 text-center font-bold text-lg outline-none focus:border-brand" placeholder="0.0" oninput="calculateCalculations()">
                         </div>
                     </div>`;
             });
@@ -809,12 +827,18 @@
         window.calculateCalculations = function() {
             let total = 0;
             document.querySelectorAll('.milk-input').forEach(i => total += (parseFloat(i.value)||0));
+            
             const del = parseFloat(document.getElementById('dist-delivery').value)||0;
             const ash = parseFloat(document.getElementById('dist-aashram').value)||0;
-            document.getElementById('display-total-prod').innerText = total.toFixed(1);
+            const tea = parseFloat(document.getElementById('dist-tea').value)||0; // Added Tea
+            
+            // NO ROUNDOFF - Display as is
+            document.getElementById('display-total-prod').innerText = total;
+            
             const rem = document.getElementById('display-remaining');
-            rem.innerText = (total - (del+ash)).toFixed(1);
-            if((total-(del+ash)) < 0) rem.classList.add('text-red-500'); else rem.classList.remove('text-red-500');
+            rem.innerText = (total - (del + ash + tea)); // Added Tea to subtract
+            
+            if((total-(del+ash+tea)) < 0) rem.classList.add('text-red-500'); else rem.classList.remove('text-red-500');
         };
 
         window.saveMilkRecord = function() {
@@ -826,7 +850,12 @@
             
             const shiftData = {};
             document.querySelectorAll('.milk-input').forEach(i => { const v=parseFloat(i.value); if(v>0) shiftData[i.dataset.cowid]=v; });
-            const dist = { delivery: parseFloat(document.getElementById('dist-delivery').value)||0, aashram: parseFloat(document.getElementById('dist-aashram').value)||0 };
+            
+            const dist = { 
+                delivery: parseFloat(document.getElementById('dist-delivery').value)||0, 
+                aashram: parseFloat(document.getElementById('dist-aashram').value)||0,
+                tea: parseFloat(document.getElementById('dist-tea').value)||0 // Added Tea save
+            };
             
             const updates = {};
             updates[`${path}/${currentShift}`] = shiftData;
@@ -844,15 +873,19 @@
             document.querySelectorAll('.milk-input').forEach(i => i.value = '');
             document.getElementById('dist-delivery').value = '';
             document.getElementById('dist-aashram').value = '';
+            document.getElementById('dist-tea').value = ''; // Clear Tea
             
             onValue(ref(db, `gaushala/milk_records/${dateVal}`), (snap) => {
                 const d = snap.val();
                 if(!d) { calculateCalculations(); return; }
                 const s = d[currentShift] || {};
                 Object.keys(s).forEach(id => { const el=document.getElementById(`in-${id}`); if(el) el.value=s[id]; });
+                
                 const dist = d[`distribution_${currentShift}`] || {};
                 document.getElementById('dist-delivery').value = dist.delivery||'';
                 document.getElementById('dist-aashram').value = dist.aashram||'';
+                document.getElementById('dist-tea').value = dist.tea||''; // Load Tea
+                
                 calculateCalculations();
             }, { onlyOnce: true });
         }
