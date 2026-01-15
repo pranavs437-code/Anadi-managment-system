@@ -1,5 +1,3 @@
-<!-- START OF FILE text/html -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -354,6 +352,28 @@
         </div>
     </div>
 
+    <!-- MODAL: EDIT COW (NEW) -->
+    <div id="modal-edit-cow" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">Edit Cow Details</h3>
+            <input type="hidden" id="edit-cow-id">
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs font-bold text-slate-500">Name</label>
+                    <input type="text" id="edit-cow-name" class="w-full border border-slate-300 rounded-lg p-2 outline-none focus:border-brand">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500">Tag ID</label>
+                    <input type="text" id="edit-cow-tag" class="w-full border border-slate-300 rounded-lg p-2 outline-none focus:border-brand">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="document.getElementById('modal-edit-cow').classList.add('hidden')" class="flex-1 py-2 bg-slate-100 text-slate-600 rounded-lg font-bold hover:bg-slate-200 transition">Cancel</button>
+                <button onclick="saveEditedCow()" class="flex-1 py-2 bg-brand text-white rounded-lg font-bold shadow-md hover:bg-emerald-800 transition">Update</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: CALF DETAILS -->
     <div id="modal-calf-details" class="fixed inset-0 bg-black/60 z-50 hidden flex items-end sm:items-center justify-center sm:p-4 backdrop-blur-sm">
         <div class="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-sm h-[85vh] sm:h-auto flex flex-col transform transition-all scale-100 overflow-hidden">
@@ -500,7 +520,6 @@
         }
 
         // --- CORE FUNCTIONS (Cow, History, Milk) ---
-        // Same logic as before, just updated class names for responsiveness
 
         window.loadHistory = function() {
             const container = document.getElementById('history-list-container');
@@ -514,8 +533,14 @@
         window.renderHistory = function(data) {
             const container = document.getElementById('history-list-container');
             const dates = Object.keys(data).sort().reverse();
-            if(dates.length === 0) { container.innerHTML = '<div class="col-span-full text-center text-slate-400 mt-10">No records found.</div>'; return; }
+            
+            if(dates.length === 0) { 
+                container.innerHTML = '<div class="col-span-full text-center text-slate-400 mt-10">No records found.</div>'; 
+                return; 
+            }
+            
             container.innerHTML = '';
+            
             dates.forEach(dateStr => {
                 const dayData = data[dateStr];
                 const morn = Object.values(dayData.morning||{}).reduce((s,v)=>s+(parseFloat(v)||0),0);
@@ -526,10 +551,21 @@
                 
                 container.innerHTML += `
                     <div onclick="openFullReport('${dateStr}')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-brand transition group active:scale-[0.98]">
+                        <!-- Header with Edit/Delete Buttons -->
                         <div class="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center group-hover:bg-brand/5 transition">
-                            <span class="font-bold text-slate-700 flex items-center gap-2"><i class="fa-regular fa-calendar-check text-slate-400"></i> ${formattedDate}</span>
-                            <i class="fa-solid fa-chevron-right text-slate-300 text-sm"></i>
+                            <span class="font-bold text-slate-700 flex items-center gap-2">
+                                <i class="fa-regular fa-calendar-check text-slate-400"></i> ${formattedDate}
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <button onclick="event.stopPropagation(); editHistoryRecord('${dateStr}')" title="Edit Record" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-300 flex items-center justify-center transition">
+                                    <i class="fa-solid fa-pencil text-xs"></i>
+                                </button>
+                                <button onclick="event.stopPropagation(); deleteHistoryRecord('${dateStr}')" title="Delete Record" class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-300 flex items-center justify-center transition">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
                         </div>
+
                         <div class="p-4 flex items-center justify-between">
                             <div class="text-center"><div class="text-[10px] uppercase font-bold text-orange-400 mb-1">Morning</div><div class="font-bold text-slate-700">${morn.toFixed(1)}</div></div>
                             <div class="h-8 w-px bg-slate-100"></div>
@@ -540,6 +576,21 @@
                     </div>`;
             });
         };
+
+        window.deleteHistoryRecord = function(dateStr) {
+            if(confirm(`Delete all records for ${dateStr}? This cannot be undone.`)) {
+                remove(ref(db, `gaushala/milk_records/${dateStr}`));
+            }
+        }
+
+        window.editHistoryRecord = function(dateStr) {
+            document.getElementById('record-date').value = dateStr;
+            document.getElementById('desk-record-date').value = dateStr;
+            switchTab('milk');
+            loadDailyRecord();
+            document.querySelector('main').scrollTop = 0;
+            alert(`Loaded record for ${dateStr}. You can modify it now and click 'Save Record'.`);
+        }
 
         window.filterHistory = function() {
             const filterDate = document.getElementById('history-filter-date').value;
@@ -617,26 +668,72 @@
                 if(selectedCowIdForDetail && !document.getElementById('modal-calf-details').classList.contains('hidden')) renderCalfList(); 
             });
         }
+
         window.addNewCow = function() {
             const name = document.getElementById('new-cow-name').value.trim();
             if(!name) return alert("Enter Name");
             const cowId = 'COW_' + Date.now();
             set(ref(db, 'gaushala/cows/' + cowId), { id: cowId, name: name, tag: document.getElementById('new-cow-tag').value, status: 'Active' }).then(()=>{ closeAddCowModal(); });
         }
+
         function renderCowList() {
             const container = document.getElementById('cow-list-container');
             if(!container) return;
             container.innerHTML = '';
+            
             Object.values(cowsData).forEach(cow => {
                 container.innerHTML += `
-                    <div onclick="openCalfDetails('${cow.id}')" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between cursor-pointer active:scale-[0.98] transition hover:border-brand hover:shadow-md group">
+                    <div onclick="openCalfDetails('${cow.id}')" class="relative bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between cursor-pointer active:scale-[0.98] transition hover:border-brand hover:shadow-md group">
+                        <!-- Cow Info -->
                         <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 text-xl group-hover:bg-brand group-hover:text-white transition"><i class="fa-solid fa-cow"></i></div>
-                            <div><h4 class="font-bold text-slate-800 text-lg">${cow.name}</h4><p class="text-xs text-slate-500 font-mono">${cow.tag || '#'}</p></div>
+                            <div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 text-xl group-hover:bg-brand group-hover:text-white transition">
+                                <i class="fa-solid fa-cow"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-lg">${cow.name}</h4>
+                                <p class="text-xs text-slate-500 font-mono">${cow.tag || '#'}</p>
+                            </div>
                         </div>
-                        <div class="text-right"><div class="font-bold text-slate-700 text-lg"><i class="fa-solid fa-baby-carriage text-xs mr-1 text-slate-400"></i> ${cow.calves?Object.keys(cow.calves).length:0}</div></div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex items-center gap-2">
+                            <button onclick="event.stopPropagation(); openEditCowModal('${cow.id}', '${cow.name}', '${cow.tag||''}')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-indigo-100 hover:text-indigo-600 flex items-center justify-center transition z-10">
+                                <i class="fa-solid fa-pencil text-xs"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); deleteCow('${cow.id}')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition z-10">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </div>
                     </div>`;
             });
+        }
+
+        window.deleteCow = function(id) {
+            if(confirm("Are you sure you want to delete this cow? This will also delete her milk records permanently.")) {
+                remove(ref(db, 'gaushala/cows/' + id));
+            }
+        }
+
+        window.openEditCowModal = function(id, name, tag) {
+            document.getElementById('edit-cow-id').value = id;
+            document.getElementById('edit-cow-name').value = name;
+            document.getElementById('edit-cow-tag').value = tag;
+            document.getElementById('modal-edit-cow').classList.remove('hidden');
+        }
+
+        window.saveEditedCow = function() {
+            const id = document.getElementById('edit-cow-id').value;
+            const name = document.getElementById('edit-cow-name').value;
+            const tag = document.getElementById('edit-cow-tag').value;
+            
+            if(!name) return alert("Name is required");
+            
+            update(ref(db, 'gaushala/cows/' + id), {
+                name: name,
+                tag: tag
+            }).then(() => {
+                document.getElementById('modal-edit-cow').classList.add('hidden');
+            }).catch(e => alert(e.message));
         }
 
         window.openCalfDetails = function(cowId) {
