@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Anadi Expense Manager</title>
+    
+    <!-- FAVICON -->
+    <link rel="icon" type="image/png" href="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- PDF Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#ea580c', // Saffron
+                        brandDark: '#c2410c',
+                        cream: '#fff7ed',
+                        dark: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; background-color: #f3f4f6; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .fade-in { animation: fadeIn 0.4s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Mobile Tabs */
+        .tab-active { border-bottom: 3px solid #ea580c; color: #ea580c; font-weight: 700; background-color: #fff7ed; }
+        .tab-inactive { border-bottom: 3px solid transparent; color: #94a3b8; }
+
+        /* Desktop Sidebar */
+        .sidebar-active { background-color: #ea580c; color: white; font-weight: bold; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(234, 88, 12, 0.3); }
+        .sidebar-inactive { color: #94a3b8; hover:bg-slate-800; hover:text-white; }
+
+        /* Input Styling */
+        .input-field {
+            width: 100%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem;
+            padding: 0.6rem; font-weight: 700; color: #334155; outline: none; transition: all 0.2s;
+        }
+        .input-field:focus { border-color: #ea580c; background-color: white; box-shadow: 0 0 0 2px rgba(234,88,12,0.1); }
+        .label-text { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 0.25rem; display: block; }
+        
+        /* Loader */
+        .loader-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-slate-100 font-sans">
+
+    <!-- =========================
+         1. LOGIN SCREEN
+         ========================= -->
+    <div id="login-screen" class="fixed inset-0 z-[100] bg-brand md:bg-[url('https://images.unsplash.com/photo-1546445317-29f4545e9d53?q=80&w=2000&auto=format&fit=crop')] md:bg-cover md:bg-center flex flex-col items-center justify-center p-6 transition-all duration-500">
+        <div class="absolute inset-0 bg-black/50 hidden md:block"></div>
+        <div class="relative bg-white/95 backdrop-blur rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center border border-white/50">
+            <img src="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png" class="w-24 h-24 mx-auto mb-4 object-contain">
+            <h2 class="text-2xl font-bold text-slate-800">Anadi Accounts</h2>
+            <p class="text-sm text-slate-500 mb-6">Expense Management</p>
+            <div id="login-error" class="hidden bg-red-100 text-red-600 text-xs font-bold p-3 rounded-lg mb-4 text-left flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i> Invalid Credentials
+            </div>
+            <div class="space-y-4 text-left">
+                <div><label class="label-text ml-1">Email ID</label><input type="email" id="login-email" placeholder="Email" class="input-field"></div>
+                <div><label class="label-text ml-1">Password</label><input type="password" id="login-pass" placeholder="Password" class="input-field"></div>
+            </div>
+            <button onclick="attemptLogin()" id="btn-login" class="w-full bg-brand text-white font-bold py-3 rounded-xl mt-6 shadow-lg hover:bg-brandDark transition transform active:scale-95">Login</button>
+        </div>
+        <p class="relative text-orange-100 md:text-white/70 text-xs mt-8 font-mono z-10">Anadi Seva Prakalp © 2026</p>
+    </div>
+
+    <!-- =========================
+         2. MAIN APPLICATION
+         ========================= -->
+    <div id="app-content" class="hidden h-full flex flex-col md:flex-row">
+        
+        <!-- SIDEBAR (Desktop) -->
+        <aside class="hidden md:flex flex-col w-72 bg-dark text-white shadow-2xl z-40 flex-shrink-0">
+            <div class="p-6 flex items-center gap-3 border-b border-slate-700">
+                <div class="w-10 h-10 bg-white rounded-full p-1 flex items-center justify-center">
+                    <img src="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png" class="w-full h-full object-contain">
+                </div>
+                <div><h1 class="font-bold text-lg leading-none text-orange-500">Anadi Finance</h1><p class="text-[10px] text-slate-400 font-bold uppercase">Expense Tracker</p></div>
+            </div>
+            <nav class="flex-1 p-4 space-y-2">
+                <button onclick="switchTab('gaushala')" id="desk-btn-gaushala" class="w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-active transition"><i class="fa-solid fa-cow w-6 text-center"></i> <span>Cow Shelter</span></button>
+                <button onclick="switchTab('aashram')" id="desk-btn-aashram" class="w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-inactive transition"><i class="fa-solid fa-om w-6 text-center"></i> <span>Aashram</span></button>
+                <button onclick="switchTab('history')" id="desk-btn-history" class="w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-inactive transition"><i class="fa-solid fa-clock-rotate-left w-6 text-center"></i> <span>History</span></button>
+            </nav>
+            <div class="p-4 border-t border-slate-700">
+                <div class="bg-slate-800 rounded-xl p-4 mb-4"><p class="text-xs text-slate-400 uppercase font-bold mb-1">Expense Date</p><input type="date" id="desk-expense-date" class="bg-slate-700 border border-slate-600 text-white text-sm font-bold rounded-lg p-2 w-full outline-none focus:ring-2 focus:ring-brand"></div>
+                <button onclick="logout()" class="w-full py-2 text-red-400 hover:text-white hover:bg-red-600/20 rounded-lg transition font-bold text-sm flex items-center justify-center gap-2"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+            </div>
+        </aside>
+
+        <!-- MOBILE HEADER -->
+        <header class="md:hidden bg-white shadow-sm z-20 flex-shrink-0">
+            <div class="px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-2"><div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-brand text-xl"><i class="fa-solid fa-wallet"></i></div><div><h1 class="text-lg font-bold text-slate-800 leading-none">Anadi Accounts</h1><p class="text-[10px] text-slate-500 font-bold uppercase">Expense Manager</p></div></div>
+                <div class="flex items-center gap-2">
+                    <input type="date" id="expense-date" class="bg-slate-100 border border-slate-200 text-slate-700 text-sm font-bold rounded-lg p-2 outline-none focus:ring-2 focus:ring-brand w-32">
+                    <button onclick="logout()" class="w-9 h-9 bg-red-50 text-red-500 rounded-lg hover:bg-red-100"><i class="fa-solid fa-power-off"></i></button>
+                </div>
+            </div>
+            <div class="flex text-sm font-bold uppercase tracking-wide text-center bg-white border-t border-slate-100">
+                <button onclick="switchTab('gaushala')" id="tab-btn-gaushala" class="flex-1 py-3 tab-active transition-colors"><i class="fa-solid fa-cow mr-1"></i> Gaushala</button>
+                <button onclick="switchTab('aashram')" id="tab-btn-aashram" class="flex-1 py-3 tab-inactive transition-colors"><i class="fa-solid fa-om mr-1"></i> Aashram</button>
+                <button onclick="switchTab('history')" id="tab-btn-history" class="flex-1 py-3 tab-inactive transition-colors"><i class="fa-solid fa-clock mr-1"></i> History</button>
+            </div>
+        </header>
+
+        <!-- CONTENT AREA -->
+        <main class="flex-1 overflow-y-auto bg-slate-100 p-4 pb-40 md:p-8 md:pb-40">
+
+            <!-- === TAB 1: GAUSHALA (COW SHELTER) === -->
+            <section id="tab-gaushala" class="space-y-6 fade-in max-w-6xl mx-auto">
+                <div class="flex justify-between items-center"><h2 class="text-xl font-bold text-slate-800 border-l-4 border-brand pl-3">Gaushala Expenses</h2><span class="text-xs font-bold text-slate-400 uppercase bg-white px-3 py-1 rounded-full shadow-sm">Daily Entry</span></div>
+
+                <!-- 1. FEED & FOOD -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-orange-50 px-4 py-3 border-b border-orange-100 flex items-center gap-2"><i class="fa-solid fa-wheat-awn text-orange-600"></i><h3 class="font-bold text-slate-700">Cow Feed & Food</h3></div>
+                    <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="gau-feed-grid"></div>
+                </div>
+
+                <!-- 2. MEDICAL -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-blue-50 px-4 py-3 border-b border-blue-100 flex items-center gap-2"><i class="fa-solid fa-user-doctor text-blue-600"></i><h3 class="font-bold text-slate-700">Medical & Vet (₹)</h3></div>
+                    <div class="p-4 space-y-4">
+                        <div class="flex gap-2">
+                            <input type="text" id="gau-med-name" placeholder="Medicine Name" class="flex-[2] input-field font-normal">
+                            <input type="number" id="gau-med-price" placeholder="Price" class="flex-1 input-field">
+                            <button onclick="addMedicine('gau')" class="bg-blue-600 text-white w-12 rounded-lg hover:bg-blue-700"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div id="gau-medicine-list" class="space-y-2"></div>
+                        <div class="pt-3 border-t border-dashed border-slate-200">
+                            <label class="label-text text-blue-600">Doctor Fees</label>
+                            <input type="number" id="gau-med-doctor" placeholder="₹" class="input-field total-calc bg-blue-50 border-blue-100">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. UTILITIES & SALARIES (GAUSHALA ONLY) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+                        <div class="flex items-center gap-2 mb-3"><i class="fa-solid fa-bolt text-yellow-500"></i><h3 class="font-bold text-slate-700">Utilities (₹)</h3></div>
+                        <div class="space-y-2">
+                            <div><label class="label-text">Rent</label><input type="number" id="gau-util-rent" placeholder="₹" class="input-field total-calc"></div>
+                            <div><label class="label-text">Electricity</label><input type="number" id="gau-util-electricity" placeholder="₹" class="input-field total-calc"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center gap-2"><i class="fa-solid fa-users text-emerald-600"></i><h3 class="font-bold text-slate-700">Gaushala Salaries (₹)</h3></div>
+                            <button onclick="openStaffModal('gaushala')" class="text-xs border border-emerald-200 text-emerald-600 px-2 py-1 rounded-full hover:bg-emerald-50"><i class="fa-solid fa-plus"></i> Add Staff</button>
+                        </div>
+                        <div id="gau-salary-list" class="space-y-2">
+                            <!-- Gaushala Staff List -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- === TAB 2: AASHRAM === -->
+            <section id="tab-aashram" class="hidden space-y-6 fade-in max-w-6xl mx-auto">
+                <div class="flex justify-between items-center"><h2 class="text-xl font-bold text-slate-800 border-l-4 border-brand pl-3">Aashram Expenses</h2></div>
+
+                <!-- 1. GROCERIES -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-orange-50 px-4 py-3 border-b border-orange-100 flex justify-between items-center">
+                        <div class="flex items-center gap-2"><i class="fa-solid fa-basket-shopping text-orange-600"></i><h3 class="font-bold text-slate-700">Groceries</h3></div>
+                        <button onclick="openCustomGroceryModal()" class="text-xs bg-white text-orange-600 px-3 py-1 rounded-full border border-orange-200 font-bold"><i class="fa-solid fa-plus"></i> Custom Item</button>
+                    </div>
+                    <!-- Pre-loaded List -->
+                    <div class="p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4" id="ash-grocery-grid"></div>
+                    <!-- Custom Added List -->
+                    <div id="ash-custom-grocery-list" class="px-4 pb-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+                </div>
+
+                <!-- 2. DONATIONS -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-emerald-50 px-4 py-3 border-b border-emerald-100 flex items-center gap-2"><i class="fa-solid fa-hand-holding-heart text-emerald-600"></i><h3 class="font-bold text-slate-700">Donations Received</h3></div>
+                    <div class="p-4 space-y-3">
+                        <div class="flex flex-col md:flex-row gap-2">
+                            <input type="text" id="don-name" placeholder="Donor Name" class="input-field flex-1">
+                            <input type="text" id="don-item" placeholder="Item / Amount" class="input-field flex-1">
+                            <input type="date" id="don-date" class="input-field w-full md:w-40 bg-white">
+                            <button onclick="addDonation()" class="bg-emerald-600 text-white py-2 px-4 rounded-lg font-bold"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div id="donation-list" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- 3. MEDICAL (AASHRAM) -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-blue-50 px-4 py-3 border-b border-blue-100 flex items-center gap-2"><i class="fa-solid fa-pills text-blue-600"></i><h3 class="font-bold text-slate-700">Medicines & Health</h3></div>
+                    <div class="p-4 space-y-4">
+                        <div class="flex gap-2">
+                            <input type="text" id="ash-med-name" placeholder="Medicine Name" class="flex-[2] input-field font-normal">
+                            <input type="number" id="ash-med-price" placeholder="Price" class="flex-1 input-field">
+                            <button onclick="addMedicine('ash')" class="bg-blue-600 text-white w-12 rounded-lg hover:bg-blue-700"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div id="ash-medicine-list" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- 4. UTILITIES & SALARIES (AASHRAM ONLY) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3">
+                        <div class="flex items-center gap-2 mb-1"><i class="fa-solid fa-house-chimney text-slate-500"></i><h3 class="font-bold text-slate-700">Facility Expenses</h3></div>
+                        <div><label class="label-text">Electricity Bill</label><input type="number" id="ash-util-elec" placeholder="₹" class="input-field total-calc"></div>
+                        <div><label class="label-text">Rent</label><input type="number" id="ash-util-rent" placeholder="₹" class="input-field total-calc"></div>
+                        <div><label class="label-text">Repairing</label><input type="number" id="ash-util-repair" placeholder="₹" class="input-field total-calc"></div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <div class="flex items-center gap-2"><i class="fa-solid fa-users text-emerald-600"></i><h3 class="font-bold text-slate-700">Aashram Salaries (₹)</h3></div>
+                            <button onclick="openStaffModal('aashram')" class="text-xs border border-emerald-200 text-emerald-600 px-2 py-1 rounded-full hover:bg-emerald-50"><i class="fa-solid fa-plus"></i> Add Staff</button>
+                        </div>
+                        <div id="ash-salary-list" class="space-y-2">
+                            <!-- Aashram Staff List -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. EXTRAS -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center gap-2"><i class="fa-solid fa-circle-plus text-gray-500"></i><h3 class="font-bold text-slate-700">Extra / Misc Expenses</h3></div>
+                    <div class="p-4 space-y-3">
+                        <div class="flex flex-col md:flex-row gap-2">
+                            <input type="text" id="extra-name" placeholder="Item/Service Name" class="input-field flex-[2]">
+                            <input type="number" id="extra-price" placeholder="₹ Cost" class="input-field flex-1">
+                            <input type="text" id="extra-detail" placeholder="Details (Optional)" class="input-field flex-[2]">
+                            <button onclick="addExtra()" class="bg-gray-700 text-white py-2 px-4 rounded-lg font-bold"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div id="extra-list" class="space-y-2"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- === TAB 3: HISTORY === -->
+            <section id="tab-history" class="hidden space-y-6 fade-in max-w-6xl mx-auto">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-4 items-center">
+                    <h2 class="text-xl font-bold text-slate-800 mr-auto">Expense History</h2>
+                    <input type="date" id="history-filter-date" onchange="loadHistory()" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-lg p-2 outline-none">
+                </div>
+                <div id="history-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </section>
+
+        </main>
+
+        <!-- BOTTOM BAR -->
+        <div id="bottom-controls" class="fixed bottom-0 left-0 right-0 md:left-72 p-4 pb-6 md:p-6 bg-white border-t border-slate-200 z-30 flex items-center justify-between gap-4">
+            <div class="text-left">
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Total Today</p>
+                <p class="text-2xl font-bold text-slate-800">₹ <span id="grand-total">0</span></p>
+            </div>
+            <button onclick="saveExpenses()" id="btn-save" class="bg-brand text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-brandDark transition active:scale-95 flex items-center gap-2">
+                <i class="fa-solid fa-save"></i> Save
+            </button>
+        </div>
+
+    </div>
+
+    <!-- MODALS -->
+    <!-- Staff Modal -->
+    <div id="modal-staff" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">Add Staff Member</h3>
+            
+            <label class="label-text ml-1 mb-1">Department</label>
+            <select id="new-staff-dept" class="input-field mb-4 bg-white">
+                <option value="gaushala">Gaushala</option>
+                <option value="aashram">Aashram</option>
+            </select>
+
+            <label class="label-text ml-1 mb-1">Name</label>
+            <input type="text" id="new-staff-name" placeholder="Full Name" class="input-field mb-4">
+            
+            <label class="label-text ml-1 mb-1">Role</label>
+            <input type="text" id="new-staff-role" placeholder="Role (e.g. Helper)" class="input-field mb-4">
+            
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('modal-staff').classList.add('hidden')" class="flex-1 py-2 bg-slate-100 text-slate-600 rounded-lg font-bold">Cancel</button>
+                <button onclick="addNewStaff()" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg font-bold">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Grocery Modal -->
+    <div id="modal-grocery" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">Add Custom Item</h3>
+            <input type="text" id="new-grocery-name" placeholder="Item Name" class="input-field mb-4">
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('modal-grocery').classList.add('hidden')" class="flex-1 py-2 bg-slate-100 text-slate-600 rounded-lg font-bold">Cancel</button>
+                <button onclick="addCustomGrocery()" class="flex-1 py-2 bg-brand text-white rounded-lg font-bold">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIREBASE & JS -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+        import { getDatabase, ref, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+
+        // NEW CONFIGURATION
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBF8C-0IlQpXUJE1jUB3YjCDciORTcCT3o",
+  authDomain: "expensemanagment-ca08c.firebaseapp.com",
+  databaseURL: "https://expensemanagment-ca08c-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "expensemanagment-ca08c",
+  storageBucket: "expensemanagment-ca08c.firebasestorage.app",
+  messagingSenderId: "918192607143",
+  appId: "1:918192607143:web:a728365214a0ffeaceb082",
+  measurementId: "G-TWJ8SEP0J8"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // --- GLOBAL DATA ---
+        let staffList = {};
+        let gauMedicines = [];
+        let ashMedicines = [];
+        let ashCustomGroceries = [];
+        let ashDonations = [];
+        let ashExtras = [];
+
+        // --- PRE-DEFINED LISTS ---
+        const gauFeedItems = ['bhoosa','dana','chocker','chilka','aata','mineral','calcium','seera'];
+        const ashGroceryItems = [
+            "Namak", "Daliya", "Sugar", "Besan", "Suji", "Moong Dal", "Moong Chilka", "Moong Dhuli", 
+            "Masoor Dal", "Aarahar Dal", "Chana Dal", "Lobhiya", "Kala Chana", "Daal Vadi", "Rajma", 
+            "Tea", "Refined Oil", "Mustard Oil", "Lal Manjan", "Atta", "Rice", "Lal Mirch", "Haldi", 
+            "Dhaniya", "Garam Masala", "Jeera", "5 Bhai Soap", "Nirma", "Vim Bar", "Bath Soap", 
+            "Agarbati", "Match Box", "Phenayol", "Good Nite", "Harpic", "Rush", "Hair Oil Navratan", "Horlicks"
+        ];
+
+        // --- AUTH ---
+        onAuthStateChanged(auth, user => {
+            if(user) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+                initApp();
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('app-content').classList.add('hidden');
+            }
+        });
+        window.attemptLogin = () => {
+            signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value)
+                .catch(() => document.getElementById('login-error').classList.remove('hidden'));
+        };
+        window.logout = () => signOut(auth);
+
+        // --- INIT ---
+        function initApp() {
+            const today = new Date();
+            document.getElementById('expense-date').valueAsDate = today;
+            document.getElementById('desk-expense-date').valueAsDate = today;
+            document.getElementById('don-date').valueAsDate = today;
+
+            renderStaticLists();
+
+            const syncDates = (e) => {
+                const val = e.target.value;
+                document.getElementById('desk-expense-date').value = val;
+                document.getElementById('expense-date').value = val;
+                loadExpenses();
+            };
+            document.getElementById('expense-date').addEventListener('change', syncDates);
+            document.getElementById('desk-expense-date').addEventListener('change', syncDates);
+
+            // Load Staff
+            onValue(ref(db, 'staff'), snap => {
+                staffList = snap.val() || {};
+                // We'll re-render staff salary inputs after loading saved data in loadExpenses
+                loadExpenses();
+            });
+
+            document.body.addEventListener('input', e => {
+                if(e.target.classList.contains('total-calc') || e.target.classList.contains('salary-input') || e.target.id.includes('price')) calculateTotal();
+            });
+        }
+
+        // --- RENDERERS ---
+        function renderStaticLists() {
+            // Gaushala Feed
+            const gauGrid = document.getElementById('gau-feed-grid');
+            gauGrid.innerHTML = '';
+            gauFeedItems.forEach(item => {
+                gauGrid.innerHTML += `
+                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <label class="label-text text-orange-600 mb-1 capitalize">${item}</label>
+                        <div class="flex gap-2">
+                            <input type="number" step="any" id="gau-feed-${item}-qty" placeholder="Qty" class="input-field w-1/2 text-xs bg-white border-orange-100">
+                            <input type="number" step="any" id="gau-feed-${item}-price" placeholder="₹ Price" class="input-field w-1/2 total-calc font-bold text-slate-800">
+                        </div>
+                    </div>`;
+            });
+
+            // Aashram Groceries
+            const ashGrid = document.getElementById('ash-grocery-grid');
+            ashGrid.innerHTML = '';
+            ashGroceryItems.forEach((item, index) => {
+                ashGrid.innerHTML += `
+                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <label class="label-text text-slate-500 mb-1 truncate">${item}</label>
+                        <div class="flex gap-2">
+                            <input type="number" step="any" id="ash-groc-${index}-qty" placeholder="Qty" class="input-field w-1/2 text-xs bg-white">
+                            <input type="number" step="any" id="ash-groc-${index}-price" placeholder="₹ Price" class="input-field w-1/2 total-calc font-bold text-slate-800">
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function renderStaffInputs(savedGau = {}, savedAsh = {}) {
+            // Filter lists based on 'dept' property in staff object
+            // If dept is missing, default to gaushala for backward compatibility or display in both? Let's display based on explicit property.
+            
+            const gauStaff = Object.entries(staffList).filter(([_, s]) => !s.dept || s.dept === 'gaushala');
+            const ashStaff = Object.entries(staffList).filter(([_, s]) => s.dept === 'aashram');
+
+            const render = (containerId, staffArr, savedVals) => {
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+                if(staffArr.length === 0) {
+                    container.innerHTML = '<div class="text-xs text-slate-400 text-center py-2">No staff in this department.</div>';
+                    return;
+                }
+                staffArr.forEach(([id, staff]) => {
+                    const val = savedVals[id] || '';
+                    container.innerHTML += `
+                        <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            <div><div class="font-bold text-slate-700 text-sm">${staff.name}</div><div class="text-[10px] text-slate-400 uppercase">${staff.role}</div></div>
+                            <input type="number" data-staff-id="${id}" value="${val}" placeholder="₹" class="input-field w-20 text-right salary-input">
+                        </div>`;
+                });
+            };
+
+            render('gau-salary-list', gauStaff, savedGau);
+            render('ash-salary-list', ashStaff, savedAsh);
+        }
+
+        // --- DYNAMIC ITEMS ---
+        window.addMedicine = (type) => {
+            const nameEl = document.getElementById(type+'-med-name');
+            const priceEl = document.getElementById(type+'-med-price');
+            const name = nameEl.value;
+            const price = parseFloat(priceEl.value);
+            if(!name || !price) return;
+            
+            const arr = type === 'gau' ? gauMedicines : ashMedicines;
+            arr.push({name, price});
+            renderList(type+'-medicine-list', arr, type === 'gau' ? 'gauMedicines' : 'ashMedicines');
+            nameEl.value = ''; priceEl.value = '';
+            calculateTotal();
+        };
+
+        window.openCustomGroceryModal = () => document.getElementById('modal-grocery').classList.remove('hidden');
+        window.addCustomGrocery = () => {
+            const name = document.getElementById('new-grocery-name').value;
+            if(!name) return;
+            ashCustomGroceries.push({name, qty:0, price:0});
+            renderCustomGroceries();
+            document.getElementById('new-grocery-name').value = '';
+            document.getElementById('modal-grocery').classList.add('hidden');
+        };
+        function renderCustomGroceries() {
+            const list = document.getElementById('ash-custom-grocery-list');
+            list.innerHTML = '';
+            ashCustomGroceries.forEach((item, i) => {
+                list.innerHTML += `
+                    <div class="bg-orange-50 p-2 rounded-lg border border-orange-100 relative group">
+                        <button onclick="removeCustomGrocery(${i})" class="absolute -top-1 -right-1 bg-red-100 text-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs"><i class="fa-solid fa-times"></i></button>
+                        <label class="label-text text-orange-700 mb-1">${item.name}</label>
+                        <div class="flex gap-2">
+                            <input type="number" step="any" value="${item.qty||''}" oninput="ashCustomGroceries[${i}].qty=this.value" placeholder="Qty" class="input-field w-1/2 text-xs bg-white">
+                            <input type="number" step="any" value="${item.price||''}" oninput="ashCustomGroceries[${i}].price=this.value; calculateTotal()" placeholder="₹" class="input-field w-1/2 total-calc font-bold text-slate-800">
+                        </div>
+                    </div>`;
+            });
+        }
+        window.removeCustomGrocery = (i) => { ashCustomGroceries.splice(i,1); renderCustomGroceries(); calculateTotal(); };
+
+        window.addDonation = () => {
+            const name = document.getElementById('don-name').value;
+            const item = document.getElementById('don-item').value;
+            const date = document.getElementById('don-date').value;
+            if(!name) return;
+            ashDonations.push({name, item, date});
+            renderDonations();
+            document.getElementById('don-name').value = '';
+            document.getElementById('don-item').value = '';
+        };
+        function renderDonations() {
+            const list = document.getElementById('donation-list');
+            list.innerHTML = '';
+            ashDonations.forEach((d, i) => {
+                list.innerHTML += `
+                    <div class="flex justify-between items-center bg-emerald-50 p-2 rounded text-sm text-emerald-800 border border-emerald-100">
+                        <div><span class="font-bold">${d.name}</span> <span class="text-xs text-emerald-600">(${d.date})</span><div class="text-xs">${d.item}</div></div>
+                        <button onclick="removeDonation(${i})" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
+                    </div>`;
+            });
+        }
+        window.removeDonation = (i) => { ashDonations.splice(i,1); renderDonations(); };
+
+        window.addExtra = () => {
+            const name = document.getElementById('extra-name').value;
+            const price = parseFloat(document.getElementById('extra-price').value);
+            const detail = document.getElementById('extra-detail').value;
+            if(!name || !price) return;
+            ashExtras.push({name, price, detail});
+            renderExtras();
+            document.getElementById('extra-name').value = '';
+            document.getElementById('extra-price').value = '';
+            document.getElementById('extra-detail').value = '';
+            calculateTotal();
+        };
+        function renderExtras() {
+            const list = document.getElementById('extra-list');
+            list.innerHTML = '';
+            ashExtras.forEach((e, i) => {
+                list.innerHTML += `
+                    <div class="flex justify-between items-center bg-gray-50 p-2 rounded text-sm border border-gray-100">
+                        <div><div class="font-bold text-gray-700">${e.name}</div><div class="text-xs text-gray-500">${e.detail}</div></div>
+                        <div class="flex items-center gap-3"><span class="font-bold">₹${e.price}</span><button onclick="removeExtra(${i})" class="text-red-400"><i class="fa-solid fa-xmark"></i></button></div>
+                    </div>`;
+            });
+        }
+        window.removeExtra = (i) => { ashExtras.splice(i,1); renderExtras(); calculateTotal(); };
+
+        function renderList(id, arr, arrName) {
+            const el = document.getElementById(id);
+            el.innerHTML = '';
+            arr.forEach((item, i) => {
+                el.innerHTML += `
+                    <div class="flex justify-between items-center bg-blue-50 p-2 rounded text-sm text-blue-800">
+                        <span>${item.name}</span>
+                        <div class="flex items-center gap-3"><span class="font-bold">₹${item.price}</span><button onclick="removeItem('${arrName}',${i})" class="text-red-400"><i class="fa-solid fa-xmark"></i></button></div>
+                    </div>`;
+            });
+        }
+        window.removeItem = (arrName, i) => {
+            if(arrName==='gauMedicines') { gauMedicines.splice(i,1); renderList('gau-medicine-list', gauMedicines, 'gauMedicines'); }
+            if(arrName==='ashMedicines') { ashMedicines.splice(i,1); renderList('ash-medicine-list', ashMedicines, 'ashMedicines'); }
+            calculateTotal();
+        };
+
+        // --- CALCULATIONS ---
+        function calculateTotal() {
+            let sum = 0;
+            // Inputs
+            document.querySelectorAll('input.total-calc').forEach(i => sum += (parseFloat(i.value)||0));
+            document.querySelectorAll('input.salary-input').forEach(i => sum += (parseFloat(i.value)||0));
+            // Arrays
+            gauMedicines.forEach(m => sum += (parseFloat(m.price)||0));
+            ashMedicines.forEach(m => sum += (parseFloat(m.price)||0));
+            ashExtras.forEach(e => sum += (parseFloat(e.price)||0));
+            ashCustomGroceries.forEach(g => sum += (parseFloat(g.price)||0));
+            document.getElementById('grand-total').innerText = sum;
+        }
+
+        // --- SAVE ---
+        window.saveExpenses = () => {
+            const date = document.getElementById('expense-date').value;
+            const btn = document.getElementById('btn-save');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            // GAUSHALA
+            const gauFood = {};
+            gauFeedItems.forEach(k => { gauFood[k] = { qty: parseFloat(document.getElementById(`gau-feed-${k}-qty`).value)||0, cost: parseFloat(document.getElementById(`gau-feed-${k}-price`).value)||0 }; });
+            const gauSalaries = {};
+            document.querySelectorAll('#gau-salary-list .salary-input').forEach(el => { if(el.value) gauSalaries[el.dataset.staffId] = parseFloat(el.value); });
+            const gauData = {
+                food: gauFood,
+                medical: { list: gauMedicines, doctor: parseFloat(document.getElementById('gau-med-doctor').value)||0 },
+                utilities: { rent: parseFloat(document.getElementById('gau-util-rent').value)||0, electricity: parseFloat(document.getElementById('gau-util-electricity').value)||0 },
+                salaries: gauSalaries
+            };
+
+            // AASHRAM
+            const ashGrocery = {};
+            ashGroceryItems.forEach((item, i) => {
+                const qty = parseFloat(document.getElementById(`ash-groc-${i}-qty`).value)||0;
+                const cost = parseFloat(document.getElementById(`ash-groc-${i}-price`).value)||0;
+                if(qty>0 || cost>0) ashGrocery[i] = {name: item, qty, cost};
+            });
+            const ashSalaries = {};
+            document.querySelectorAll('#ash-salary-list .salary-input').forEach(el => { if(el.value) ashSalaries[el.dataset.staffId] = parseFloat(el.value); });
+            
+            const ashData = {
+                groceries: ashGrocery,
+                customGroceries: ashCustomGroceries,
+                donations: ashDonations,
+                medical: { list: ashMedicines },
+                utilities: { 
+                    electricity: parseFloat(document.getElementById('ash-util-elec').value)||0,
+                    rent: parseFloat(document.getElementById('ash-util-rent').value)||0,
+                    repair: parseFloat(document.getElementById('ash-util-repair').value)||0
+                },
+                salaries: ashSalaries,
+                extras: ashExtras
+            };
+
+            const grandTotal = parseFloat(document.getElementById('grand-total').innerText);
+
+            update(ref(db, `expenses/${date}`), { gaushala: gauData, aashram: ashData, total: grandTotal }).then(() => {
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Saved';
+                setTimeout(()=>btn.innerHTML='<i class="fa-solid fa-save"></i> Save', 1500);
+            });
+        };
+
+        // --- LOAD ---
+        function loadExpenses() {
+            const date = document.getElementById('expense-date').value;
+            // Reset
+            document.querySelectorAll('input[type="number"], input[type="text"]').forEach(i => { if(!i.id.includes('date')) i.value = ''; });
+            gauMedicines=[]; ashMedicines=[]; ashCustomGroceries=[]; ashDonations=[]; ashExtras=[];
+            renderList('gau-medicine-list', [], ''); renderList('ash-medicine-list', [], '');
+            renderCustomGroceries(); renderDonations(); renderExtras();
+            // Re-render salaries with empty values first
+            renderStaffInputs();
+
+            onValue(ref(db, `expenses/${date}`), snap => {
+                const data = snap.val();
+                if(!data) { calculateTotal(); return; }
+
+                if(data.gaushala) {
+                    const g = data.gaushala;
+                    if(g.food) gauFeedItems.forEach(k => { if(g.food[k]) { document.getElementById(`gau-feed-${k}-qty`).value=g.food[k].qty; document.getElementById(`gau-feed-${k}-price`).value=g.food[k].cost; } });
+                    if(g.medical) { gauMedicines = g.medical.list||[]; renderList('gau-medicine-list', gauMedicines, 'gauMedicines'); document.getElementById('gau-med-doctor').value=g.medical.doctor; }
+                    if(g.utilities) { document.getElementById('gau-util-rent').value=g.utilities.rent; document.getElementById('gau-util-electricity').value=g.utilities.electricity; }
+                    renderStaffInputs(g.salaries || {}, {}); // Temp load gaushala
+                }
+
+                if(data.aashram) {
+                    const a = data.aashram;
+                    if(a.groceries) Object.entries(a.groceries).forEach(([i, val]) => {
+                        const qEl = document.getElementById(`ash-groc-${i}-qty`);
+                        const pEl = document.getElementById(`ash-groc-${i}-price`);
+                        if(qEl && pEl) { qEl.value = val.qty; pEl.value = val.cost; }
+                    });
+                    ashCustomGroceries = a.customGroceries || []; renderCustomGroceries();
+                    ashDonations = a.donations || []; renderDonations();
+                    ashMedicines = (a.medical ? a.medical.list : []) || []; renderList('ash-medicine-list', ashMedicines, 'ashMedicines');
+                    if(a.utilities) { document.getElementById('ash-util-elec').value=a.utilities.electricity; document.getElementById('ash-util-rent').value=a.utilities.rent; document.getElementById('ash-util-repair').value=a.utilities.repair; }
+                    ashExtras = a.extras || []; renderExtras();
+                    
+                    // Final Salary Load (Combine saved G and A)
+                    renderStaffInputs(data.gaushala?.salaries || {}, a.salaries || {});
+                } else if (data.gaushala) {
+                    // Only Gaushala data exists
+                    renderStaffInputs(data.gaushala.salaries || {}, {});
+                }
+                
+                calculateTotal();
+            }, { onlyOnce: true });
+        }
+
+        // --- HISTORY ---
+        window.loadHistory = () => {
+            const container = document.getElementById('history-container');
+            container.innerHTML = '<div class="col-span-full text-center py-10 text-slate-400">Loading...</div>';
+            
+            onValue(ref(db, 'expenses'), snap => {
+                const allData = snap.val() || {};
+                container.innerHTML = '';
+                const dates = Object.keys(allData).sort().reverse();
+                
+                dates.forEach(date => {
+                    if(document.getElementById('history-filter-date').value && date !== document.getElementById('history-filter-date').value) return;
+                    const d = allData[date];
+                    const total = d.total || 0;
+                    if(total === 0) return;
+                    
+                    container.innerHTML += `
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <div class="flex justify-between font-bold mb-2"><span>${date}</span><span class="text-brand">₹${total}</span></div>
+                            <div class="text-xs text-slate-500">
+                                Click 'Daily Entry' tab and select this date to view full details.
+                            </div>
+                        </div>`;
+                });
+            });
+        }
+
+        // STAFF
+        window.openStaffModal = (dept) => {
+            document.getElementById('modal-staff').classList.remove('hidden');
+            if(dept) document.getElementById('new-staff-dept').value = dept;
+        };
+        window.addNewStaff = () => {
+            const dept = document.getElementById('new-staff-dept').value;
+            const name = document.getElementById('new-staff-name').value;
+            const role = document.getElementById('new-staff-role').value;
+            if(!name) return;
+            const id = 'staff_'+Date.now();
+            update(ref(db, 'staff/'+id), {name, role, dept}).then(()=>{
+                document.getElementById('new-staff-name').value='';
+                document.getElementById('new-staff-role').value='';
+                document.getElementById('modal-staff').classList.add('hidden');
+            });
+        };
+
+        // Tabs
+        window.switchTab = (t) => {
+            ['gaushala','aashram','history'].forEach(x => {
+                document.getElementById('tab-'+x).classList.add('hidden');
+                document.getElementById('tab-btn-'+x).className="flex-1 py-3 tab-inactive transition-colors";
+                if(document.getElementById('desk-btn-'+x)) document.getElementById('desk-btn-'+x).className="w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-inactive transition";
+            });
+            document.getElementById('tab-'+t).classList.remove('hidden');
+            document.getElementById('tab-btn-'+t).className="flex-1 py-3 tab-active transition-colors";
+            if(document.getElementById('desk-btn-'+t)) document.getElementById('desk-btn-'+t).className="w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-active transition";
+            
+            if(t==='history') { loadHistory(); document.getElementById('bottom-controls').classList.add('translate-y-full'); }
+            else document.getElementById('bottom-controls').classList.remove('translate-y-full');
+        };
+    </script>
+</body>
+</html>
