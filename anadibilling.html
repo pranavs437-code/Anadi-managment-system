@@ -441,15 +441,46 @@
             });
         }
         
-        function renderHistoryTab(invoices) {
-            const list = document.getElementById('history-list');
-            if(invoices.length === 0) { list.innerHTML = '<div class="text-center py-10 text-slate-400">No invoices generated yet.</div>'; return; }
-            const sorted = [...invoices].sort((a,b) => b.timestamp - a.timestamp);
-            list.innerHTML = '';
-            sorted.forEach((inv) => {
-                 list.innerHTML += `<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center hover:bg-slate-50 transition"><div><div class="font-bold text-slate-800 text-sm">${inv.customerName}</div><div class="text-xs text-slate-400">#${inv.invId} • ${inv.date}</div></div><div class="text-right"><div class="font-bold text-brand text-sm">₹${parseFloat(inv.total).toFixed(2)}</div></div></div>`;
-            });
-        }
+        // Updated History Tab Renderer with Delete Button
+function renderHistoryTab(invoices) {
+    const list = document.getElementById('history-list');
+    
+    if(invoices.length === 0) { 
+        list.innerHTML = '<div class="text-center py-10 text-slate-400">No invoices generated yet.</div>'; 
+        return; 
+    }
+    
+    // Sort by latest first
+    const sorted = [...invoices].sort((a,b) => b.timestamp - a.timestamp);
+    
+    list.innerHTML = '';
+    
+    sorted.forEach((inv) => {
+         list.innerHTML += `
+         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center hover:bg-slate-50 transition group">
+            
+            <!-- Left: Invoice Details -->
+            <div>
+                <div class="font-bold text-slate-800 text-sm">${inv.customerName}</div>
+                <div class="text-xs text-slate-400">#${inv.invId} • ${inv.date}</div>
+            </div>
+
+            <!-- Right: Price & Delete Button -->
+            <div class="flex items-center gap-3">
+                <div class="text-right">
+                    <div class="font-bold text-brand text-sm">₹${parseFloat(inv.total).toFixed(2)}</div>
+                </div>
+                
+                <!-- Delete Button -->
+                <!-- Mobile pe hamesha dikhega, Desktop pe hover karne par dikhega -->
+                <button onclick="deleteItem('invoices', '${inv.id}')" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:bg-red-100 hover:text-red-500 flex items-center justify-center transition opacity-100 md:opacity-0 md:group-hover:opacity-100" title="Delete Invoice">
+                    <i class="fa-solid fa-trash text-xs"></i>
+                </button>
+            </div>
+
+         </div>`;
+    });
+}
 
         window.addCustomer = function() {
             const name = document.getElementById('new-cust-name').value.trim();
@@ -649,40 +680,62 @@
         }
 
         window.sendMonthlyBill = function(custId, start, end) {
-            const invoices = window.invoicesRef.filter(inv => {
-                const dateCheck = (start === 'ALL' || inv.date >= start) && (end === 'ALL' || inv.date <= end);
-                return inv.customerId === custId && dateCheck;
-            });
+    // 1. Filter invoices based on customer and date
+    const invoices = window.invoicesRef.filter(inv => {
+        const dateCheck = (start === 'ALL' || inv.date >= start) && (end === 'ALL' || inv.date <= end);
+        return inv.customerId === custId && dateCheck;
+    });
 
-            if(invoices.length === 0) return;
+    if(invoices.length === 0) {
+        alert("No bills found for this period.");
+        return;
+    }
 
-            const custName = invoices[0].customerName;
-            const custObj = window.customersRef.find(c => c.id === custId);
-            let phone = custObj ? custObj.phone : invoices[0].customerPhone;
-            
-            let cleanPhone = (phone || '').replace(/\D/g, '');
-            if(!cleanPhone) {
-                alert("No phone number found.");
-                return;
-            }
-            if(cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
+    // 2. Get Customer Details
+    const custName = invoices[0].customerName;
+    const custObj = window.customersRef.find(c => c.id === custId);
+    let phone = custObj ? custObj.phone : invoices[0].customerPhone;
+    
+    // 3. Clean Phone Number
+    let cleanPhone = (phone || '').replace(/\D/g, '');
+    if(!cleanPhone) {
+        alert("No phone number found.");
+        return;
+    }
+    if(cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
 
-            let grandTotal = 0;
-            let msg = `*ACCOUNT STATEMENT*\n`;
-            msg += `Customer: ${custName}\n`;
-            msg += `Period: ${start} to ${end}\n`;
-            msg += `------------------------\n`;
-            invoices.sort((a,b) => new Date(a.date) - new Date(b.date)); 
-            invoices.forEach(inv => {
-                const amt = parseFloat(inv.total);
-                msg += `${inv.date} (#${inv.invId}): ₹${amt.toFixed(2)}\n`;
-                grandTotal += amt;
-            });
-            msg += `------------------------\n`;
-            msg += `*TOTAL DUE: ₹${grandTotal.toFixed(2)}*\n\n`;
-            msg += `_Generated by Anadi Billing System_`;
-            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
-        }
+    // 4. Construct Message
+    let grandTotal = 0;
+    let msg = `*ACCOUNT STATEMENT*\n`;
+    msg += `Customer: ${custName}\n`;
+    msg += `Period: ${start} to ${end}\n`;
+    msg += `------------------------\n`;
+    
+    // Sort by Date
+    invoices.sort((a,b) => new Date(a.date) - new Date(b.date)); 
+    
+    // List Items
+    invoices.forEach(inv => {
+        const amt = parseFloat(inv.total);
+        msg += `${inv.date} (#${inv.invId}): ₹${amt.toFixed(2)}\n`;
+        grandTotal += amt;
+    });
+    
+    msg += `------------------------\n`;
+    msg += `*TOTAL DUE: ₹${grandTotal.toFixed(2)}*\n`;
+    msg += `------------------------\n\n`;
+
+    // --- NEW PAYMENT SECTION ADDED HERE ---
+    msg += `💳 *PAYMENT DETAILS:*\n`;
+    msg += `UPI: *9810017422*\n`;
+    msg += `👉 Please make the online transaction and share the screenshot for confirmation.\n\n`;
+    // --------------------------------------
+
+    msg += `_Generated by Anadi Billing System_`;
+
+    // 5. Open WhatsApp
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+}
 
         function openEditCustomerModal(id, name, phone, address) {
             document.getElementById('edit-cust-id').value = id;
@@ -884,34 +937,41 @@
         }
 
         function shareOnWhatsApp() {
-            const phoneText = document.getElementById('inv-cust-phone').textContent;
-            const name = document.getElementById('inv-cust-name').textContent;
-            const invId = document.getElementById('inv-id').textContent;
-            const date = document.getElementById('inv-date').textContent;
-            const grandTotal = document.getElementById('inv-total').textContent;
+    const phoneText = document.getElementById('inv-cust-phone').textContent;
+    const name = document.getElementById('inv-cust-name').textContent;
+    const invId = document.getElementById('inv-id').textContent;
+    const date = document.getElementById('inv-date').textContent;
+    const grandTotal = document.getElementById('inv-total').textContent;
 
-            let cleanPhone = phoneText.replace(/\D/g, ''); 
-            if(!cleanPhone) {
-                alert("Customer phone number is missing! Cannot share on WhatsApp.");
-                return;
-            }
-            if(cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
+    let cleanPhone = phoneText.replace(/\D/g, ''); 
+    if(!cleanPhone) {
+        alert("Customer phone number is missing! Cannot share on WhatsApp.");
+        return;
+    }
+    if(cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
 
-            let message = `*INVOICE: ${name}*\n`;
-            message += `Invoice No: #${invId}\n`;
-            message += `Date: ${date}\n`;
-            message += `------------------------------\n`;
-            message += `*Item Details:*\n`;
-            cart.forEach((item, index) => {
-                message += `${index + 1}. ${item.name} (${item.qty} x ${item.price}) = ₹${item.total.toFixed(2)}\n`;
-            });
-            message += `------------------------------\n`;
-            message += `*GRAND TOTAL: ${grandTotal}*\n\n`;
-            message += `Thank you for your business!\n`;
-            message += `_Generated by Anadi Billing_`;
+    let message = `*INVOICE: ${name}*\n`;
+    message += `Invoice No: #${invId}\n`;
+    message += `Date: ${date}\n`;
+    message += `------------------------------\n`;
+    message += `*Item Details:*\n`;
+    cart.forEach((item, index) => {
+        message += `${index + 1}. ${item.name} (${item.qty} x ${item.price}) = ₹${item.total.toFixed(2)}\n`;
+    });
+    message += `------------------------------\n`;
+    message += `*GRAND TOTAL: ${grandTotal}*\n`;
+    message += `------------------------------\n\n`;
+    
+    // --- NEW NOTE ADDED HERE ---
+    message += `⚠ *IMPORTANT NOTE:*\n`;
+    message += `Please verify your order upon receipt. If you find any missing or extra items, kindly inform us immediately via text. Otherwise, this invoice will be considered final and added to your account.\n\n`;
+    // ---------------------------
 
-            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
-        }
+    message += `Thank you for your business!\n`;
+    message += `_Generated by Anadi Billing_`;
+
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+}
 
         function closeModal() {
             document.getElementById('modal-invoice').classList.add('hidden');
