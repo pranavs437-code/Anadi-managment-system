@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Anadi Billing System</title>
+    <!-- Excel Export Library (SheetJS) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- PDF Export Libraries (jsPDF & AutoTable) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#4338ca', // Indigo-700
+                        brand_light: '#6366f1', // Indigo-500
+                        accent: '#e0e7ff', 
+                        dark: '#0f172a'
+                    },
+                    animation: {
+                        'slide-up': 'slideUp 0.3s ease-out forwards',
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
+                    },
+                    keyframes: {
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', sans-serif; background-color: #f8fafc; }
+        
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* UI States */
+        .sidebar-active { background: linear-gradient(90deg, #4338ca 0%, #3730a3 100%); color: white; box-shadow: 0 4px 12px rgba(67, 56, 202, 0.3); }
+        .sidebar-inactive { color: #94a3b8; hover:bg-slate-800; hover:text-white; }
+        
+        .tab-active { color: #4338ca; border-top: 3px solid #4338ca; background: linear-gradient(to bottom, #e0e7ff 0%, transparent 100%); }
+        .tab-inactive { color: #64748b; border-top: 3px solid transparent; }
+
+        /* Print Specifics */
+        @media print {
+            body * { visibility: hidden; }
+            #printable-invoice, #printable-invoice * { visibility: visible; }
+            #printable-invoice { position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: white; z-index: 9999; padding: 20px; margin: 0; overflow: visible; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-slate-50 text-slate-800">
+
+    <!-- =========================
+         1. LOGIN / SIGNUP SCREEN
+         ========================= -->
+    <div id="auth-screen" class="fixed inset-0 z-[100] bg-dark flex flex-col items-center justify-center p-6 transition-all duration-500">
+        <!-- Background Decor -->
+        <div class="absolute inset-0 overflow-hidden opacity-20 pointer-events-none">
+            <div class="absolute -top-24 -left-24 w-96 h-96 bg-brand rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 right-0 w-80 h-80 bg-purple-600 rounded-full blur-3xl"></div>
+        </div>
+
+        <div class="relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-3xl shadow-2xl p-8 w-full max-w-sm text-center">
+            <div class="mb-6 inline-flex p-4 rounded-2xl bg-gradient-to-br from-brand to-purple-600 shadow-lg">
+                <i class="fa-solid fa-file-invoice-dollar text-3xl text-white"></i>
+            </div>
+            
+            <h2 class="text-3xl font-bold text-white mb-1">Anadi Billing</h2>
+            <p class="text-sm text-slate-300 mb-8">Cloud Management System</p>
+
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 ml-1 uppercase">Email</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-4 top-3.5 text-slate-500"></i>
+                        <input type="email" id="auth-email" placeholder="admin@anadi.com" class="w-full bg-slate-900/50 border border-slate-600 text-white rounded-xl pl-10 pr-4 py-3 outline-none focus:border-brand focus:ring-1 focus:ring-brand transition placeholder-slate-600">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 ml-1 uppercase">Password</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-4 top-3.5 text-slate-500"></i>
+                        <input type="password" id="auth-pass" placeholder="••••••••" class="w-full bg-slate-900/50 border border-slate-600 text-white rounded-xl pl-10 pr-4 py-3 outline-none focus:border-brand focus:ring-1 focus:ring-brand transition placeholder-slate-600">
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="handleAuth()" id="btn-auth" class="w-full bg-gradient-to-r from-brand to-purple-600 text-white font-bold py-3.5 rounded-xl mt-8 shadow-lg hover:shadow-brand/50 transition active:scale-95 flex items-center justify-center gap-2 group">
+                <span id="btn-auth-text">Login</span> <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition"></i>
+            </button>
+            
+            <p class="mt-6 text-xs text-slate-400">
+                <span id="auth-toggle-text">New here?</span> 
+                <button onclick="toggleAuthMode()" class="text-white font-bold hover:underline ml-1" id="auth-toggle-btn">Create Account</button>
+            </p>
+        </div>
+    </div>
+
+    <!-- =========================
+         2. APP LAYOUT
+         ========================= -->
+    <div id="app-content" class="hidden h-full flex flex-col md:flex-row">
+        
+        <!-- SIDEBAR (Desktop) -->
+        <aside class="hidden md:flex flex-col w-72 bg-dark text-white z-40 relative overflow-hidden">
+            <div class="p-6 flex items-center gap-3 border-b border-slate-800 bg-slate-900/50">
+                <div class="w-10 h-10 bg-gradient-to-br from-brand to-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none tracking-wide">Anadi Tech</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Billing & POS</p>
+                </div>
+            </div>
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto custom-scroll">
+                <button onclick="switchTab('billing')" id="desk-btn-billing" class="w-full text-left p-4 rounded-xl flex items-center gap-4 sidebar-active transition duration-200 group">
+                    <i class="fa-solid fa-cash-register w-5 text-center text-lg"></i> <span class="font-medium">Billing Terminal</span>
+                </button>
+                <button onclick="switchTab('manage')" id="desk-btn-manage" class="w-full text-left p-4 rounded-xl flex items-center gap-4 sidebar-inactive transition duration-200 group">
+                    <i class="fa-solid fa-boxes-stacked w-5 text-center text-lg"></i> <span class="font-medium">Management</span>
+                </button>
+                <button onclick="switchTab('history')" id="desk-btn-history" class="w-full text-left p-4 rounded-xl flex items-center gap-4 sidebar-inactive transition duration-200 group">
+                    <i class="fa-solid fa-clock-rotate-left w-5 text-center text-lg"></i> <span class="font-medium">History</span>
+                </button>
+            </nav>
+            <div class="p-4 bg-slate-900/50 border-t border-slate-800">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold" id="user-avatar">U</div>
+                    <div class="overflow-hidden"><p class="text-xs font-bold text-white truncate" id="user-email">user@email.com</p><p class="text-[10px] text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Online</p></div>
+                </div>
+                <button onclick="handleLogout()" class="w-full py-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 rounded-lg transition text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2"><i class="fa-solid fa-power-off"></i> Sign Out</button>
+            </div>
+        </aside>
+
+        <!-- MOBILE HEADER -->
+        <header class="md:hidden bg-white shadow-sm z-20 flex-shrink-0 border-b border-slate-200">
+            <div class="px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-brand rounded-lg flex items-center justify-center text-white text-sm shadow-md"><i class="fa-solid fa-file-invoice"></i></div>
+                    <div><h1 class="text-base font-bold text-slate-800 leading-none">Anadi Billing</h1><p class="text-[10px] text-slate-500 font-bold uppercase">Tap to Invoice</p></div>
+                </div>
+                <button onclick="handleLogout()" class="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition"><i class="fa-solid fa-power-off text-xs"></i></button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 overflow-hidden relative bg-slate-50 flex flex-col">
+            <!-- BILLING TAB -->
+            <section id="tab-billing" class="h-full flex flex-col md:flex-row p-2 md:p-6 gap-4 md:gap-6 animate-fade-in overflow-y-auto md:overflow-hidden pb-24 md:pb-6">
+                <!-- Left: Controls & Cart -->
+                <div class="flex-1 flex flex-col gap-4">
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="relative z-50">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Customer</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-slate-400 text-sm"></i>
+                                    <input type="text" id="cust-search-input" placeholder="Search Name or Phone..." oninput="filterCustomers()" onfocus="showCustList()" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-8 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-brand focus:ring-1 focus:ring-brand placeholder-slate-400 transition" autocomplete="off">
+                                    <button onclick="resetCustomerSelection()" id="cust-clear-btn" class="absolute right-3 top-3 text-slate-400 hover:text-red-500 hidden transition"><i class="fa-solid fa-times"></i></button>
+                                    <input type="hidden" id="bill-customer">
+                                    <div id="cust-dropdown-list" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scroll z-[60] divide-y divide-slate-50"><div class="p-3 text-xs text-slate-400 text-center">Type to search...</div></div>
+                                </div>
+                            </div>
+                            <div class="relative z-0">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Date</label>
+                                <input type="date" id="bill-date" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-brand">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 relative z-0">
+                        <div class="flex items-center justify-between mb-3"><h3 class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2"><i class="fa-solid fa-cart-plus"></i> Add Items</h3></div>
+                        <div class="flex flex-col md:flex-row gap-3">
+                            <div class="flex-[3] relative">
+                                <select id="bill-product" onchange="updatePricePreview()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:border-brand appearance-none"><option value="">Select Product...</option></select>
+                                <i class="fa-solid fa-chevron-down absolute right-4 top-4 text-slate-400 text-xs pointer-events-none"></i>
+                            </div>
+                            <div class="flex-1"><input type="number" id="bill-price" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-3 text-sm font-bold text-slate-700 outline-none focus:border-brand focus:ring-1 focus:ring-brand text-center placeholder-slate-400" placeholder="₹ Price"></div>
+                            <div class="flex-1"><input type="number" id="bill-qty" value="1" min="1" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm font-bold text-slate-700 outline-none focus:border-brand text-center" placeholder="Qty"></div>
+                            <button onclick="addToCart()" class="bg-brand text-white w-12 h-[46px] rounded-xl flex items-center justify-center shadow-lg hover:bg-indigo-800 active:scale-95 transition flex-shrink-0"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col min-h-[300px] md:min-h-0 md:overflow-hidden relative z-0">
+                        <div class="px-5 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center"><h3 class="font-bold text-slate-700 text-xs uppercase tracking-wide">Cart Items</h3><button onclick="clearCart()" class="text-[10px] bg-red-50 text-red-500 px-2 py-1 rounded border border-red-100 font-bold hover:bg-red-100 uppercase">Clear</button></div>
+                        <div class="flex-1 md:overflow-y-auto custom-scroll p-2" id="cart-container"><div class="h-full flex flex-col items-center justify-center text-slate-300 opacity-60"><i class="fa-solid fa-basket-shopping text-5xl mb-3 text-slate-200"></i><p class="text-xs font-bold uppercase">Cart is Empty</p></div></div>
+                    </div>
+                </div>
+                <!-- Right: Summary -->
+                <div class="w-full md:w-80 flex-shrink-0 flex flex-col gap-4 pb-4 md:pb-0">
+                    <div class="bg-dark text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                        <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand rounded-full blur-3xl opacity-50"></div>
+                        <h3 class="text-xs font-bold text-slate-400 uppercase mb-6 tracking-wider relative z-10">Invoice Summary</h3>
+                        <div class="space-y-3 mb-6 relative z-10">
+                            <div class="flex justify-between text-sm"><span class="text-slate-400">Items</span><span class="font-bold" id="summ-count">0</span></div>
+                            <div class="flex justify-between text-sm"><span class="text-slate-400">Subtotal</span><span class="font-bold" id="summ-subtotal">₹0.00</span></div>
+                            <div class="h-px bg-slate-700/50 my-2"></div>
+                            <div class="flex justify-between items-end"><span class="font-bold text-lg">Total</span><span class="font-bold text-3xl text-emerald-400 leading-none" id="summ-total">₹0.00</span></div>
+                        </div>
+                        <button onclick="generateBill()" class="w-full bg-white text-dark font-bold py-3.5 rounded-xl hover:bg-emerald-50 transition shadow-lg active:scale-95 flex items-center justify-center gap-2 group relative z-10"><i class="fa-solid fa-print text-brand group-hover:scale-110 transition"></i> Generate Bill</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MANAGEMENT TAB -->
+            <section id="tab-manage" class="hidden h-full overflow-y-auto custom-scroll p-4 md:p-8 animate-fade-in">
+                <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+                    <div class="space-y-4">
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2 text-lg"><div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-brand"><i class="fa-solid fa-users text-sm"></i></div>Manage Customers</h3>
+                            <div class="space-y-3">
+                                <input type="text" id="new-cust-name" placeholder="Full Name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand">
+                                <input type="tel" id="new-cust-phone" placeholder="Phone Number" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand">
+                                <div class="flex gap-3"><input type="text" id="new-cust-address" placeholder="Address / City" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand"><button onclick="addCustomer()" class="px-6 bg-brand text-white rounded-xl font-bold shadow-md hover:bg-indigo-800 transition"><i class="fa-solid fa-plus"></i></button></div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 flex flex-col h-[400px]">
+                            <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center"><span class="font-bold text-xs text-slate-500 uppercase">Customer List</span><span class="text-[10px] bg-slate-200 px-2 py-0.5 rounded-full font-bold text-slate-600" id="cust-count-badge">0</span></div>
+                            <div id="customer-list" class="flex-1 overflow-y-auto custom-scroll divide-y divide-slate-50"></div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2 text-lg"><div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600"><i class="fa-solid fa-box-open text-sm"></i></div>Manage Products</h3>
+                            <div class="space-y-3">
+                                <input type="text" id="new-prod-name" placeholder="Product Name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand">
+                                <div class="flex gap-3"><input type="number" id="new-prod-price" placeholder="Price (₹)" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand"><input type="text" id="new-prod-unit" placeholder="Unit (kg)" class="w-24 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand"><button onclick="addProduct()" class="px-6 bg-dark text-white rounded-xl font-bold shadow-md hover:bg-slate-700 transition"><i class="fa-solid fa-plus"></i></button></div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 flex flex-col h-[400px]">
+                            <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center"><span class="font-bold text-xs text-slate-500 uppercase">Product Inventory</span><span class="text-[10px] bg-slate-200 px-2 py-0.5 rounded-full font-bold text-slate-600" id="prod-count-badge">0</span></div>
+                            <div id="product-list" class="flex-1 overflow-y-auto custom-scroll divide-y divide-slate-50"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- HISTORY TAB -->
+            <section id="tab-history" class="hidden h-full overflow-y-auto custom-scroll p-4 md:p-8 animate-fade-in">
+                <div class="max-w-4xl mx-auto">
+                     <h2 class="text-2xl font-bold text-slate-800 mb-6">Invoice History</h2>
+                     <div id="history-list" class="space-y-3"><div class="text-center py-10 text-slate-400">Loading history...</div></div>
+                </div>
+            </section>
+        </main>
+
+        <!-- FLOATING ACTION BUTTON -->
+        <button onclick="openAccountsModal()" class="fixed bottom-20 right-4 md:bottom-10 md:right-10 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl z-50 flex items-center justify-center hover:bg-indigo-700 hover:scale-110 transition active:scale-95 group">
+            <i class="fa-solid fa-book-open text-xl group-hover:rotate-12 transition"></i>
+        </button>
+
+        <!-- MOBILE NAV -->
+        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-1 z-30 pb-safe shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+            <button onclick="switchTab('billing')" id="mob-btn-billing" class="flex-1 py-3 rounded-xl flex flex-col items-center justify-center gap-1 tab-active transition"><i class="fa-solid fa-cash-register text-lg"></i><span class="text-[10px] font-bold uppercase tracking-wide">Billing</span></button>
+            <button onclick="switchTab('manage')" id="mob-btn-manage" class="flex-1 py-3 rounded-xl flex flex-col items-center justify-center gap-1 tab-inactive transition"><i class="fa-solid fa-boxes-stacked text-lg"></i><span class="text-[10px] font-bold uppercase tracking-wide">Manage</span></button>
+            <button onclick="switchTab('history')" id="mob-btn-history" class="flex-1 py-3 rounded-xl flex flex-col items-center justify-center gap-1 tab-inactive transition"><i class="fa-solid fa-clock-rotate-left text-lg"></i><span class="text-[10px] font-bold uppercase tracking-wide">History</span></button>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <!-- EDIT CUSTOMER -->
+    <div id="modal-edit-customer" class="fixed inset-0 bg-dark/80 z-[200] hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">Edit Customer</h3>
+            <input type="hidden" id="edit-cust-id">
+            <div class="space-y-3">
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase">Name</label><input type="text" id="edit-cust-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand"></div>
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase">Phone</label><input type="tel" id="edit-cust-phone" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand"></div>
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase">Address</label><input type="text" id="edit-cust-address" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand"></div>
+                <div class="flex gap-3 mt-4"><button onclick="document.getElementById('modal-edit-customer').classList.add('hidden')" class="flex-1 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg">Cancel</button><button onclick="handleUpdateCustomer()" class="flex-1 py-2 bg-brand text-white font-bold rounded-lg hover:bg-indigo-800">Save</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACCOUNTS MODAL -->
+    <div id="modal-accounts" class="fixed inset-0 bg-dark/90 z-[250] hidden flex items-center justify-center p-2 md:p-6 backdrop-blur-sm transition-opacity">
+        <div class="bg-white w-full max-w-4xl h-full md:h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <div><h2 class="text-xl font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-brand"></i> Monthly Accounts</h2><p class="text-xs text-slate-500">Track outstanding bills & generate statements</p></div>
+                <button onclick="document.getElementById('modal-accounts').classList.add('hidden')" class="w-8 h-8 rounded-full bg-white border hover:bg-red-50 text-slate-400 hover:text-red-500 transition flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="p-4 border-b border-slate-100 grid grid-cols-1 md:grid-cols-4 gap-4 bg-white items-end">
+                <div class="md:col-span-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Search Customer</label><input type="text" id="acc-search" oninput="renderMonthlyAccounts()" placeholder="Name or Phone..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:border-brand"></div>
+                <div class="md:col-span-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">From Date</label><input type="date" id="acc-start-date" onchange="renderMonthlyAccounts()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:border-brand"></div>
+                <div class="md:col-span-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">To Date</label><input type="date" id="acc-end-date" onchange="renderMonthlyAccounts()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:border-brand"></div>
+                <div class="md:col-span-1 text-right">
+                    <div class="flex flex-col items-end gap-2">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Sales</p>
+                        <div class="flex gap-2 items-center">
+                            <button onclick="resetAccountFilters()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+                            <!-- START OF NEW BUTTONS -->
+<button onclick="exportData('pdf')" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1" title="Download PDF">
+    <i class="fa-solid fa-file-pdf"></i> PDF
+</button>
+<button onclick="exportData('excel')" class="bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1" title="Download Excel">
+    <i class="fa-solid fa-file-excel"></i> Excel
+</button>
+<!-- END OF NEW BUTTONS -->
+                        </div>
+                        <p class="text-2xl font-bold text-emerald-600 mt-1" id="acc-total-sales">₹0.00</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scroll p-4 bg-slate-50" id="accounts-list"><div class="text-center py-10 text-slate-400">Loading data...</div></div>
+        </div>
+    </div>
+
+    <!-- INVOICE MODAL -->
+    <div id="modal-invoice" class="fixed inset-0 bg-dark/80 z-[200] hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="font-bold text-slate-700 flex items-center gap-2"><i class="fa-solid fa-receipt text-slate-400"></i> Invoice Preview</h3>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-white hover:bg-red-50 text-slate-400 hover:text-red-500 transition shadow-sm flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-8 bg-white text-slate-800" id="printable-invoice">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-12 h-12 bg-brand text-white rounded-lg text-xl mb-2"><i class="fa-solid fa-layer-group"></i></div>
+                    <h1 class="text-2xl font-bold text-brand tracking-tight uppercase">Anadi Billing</h1>
+                    <p class="text-xs text-slate-500 mt-1">123, Tech Plaza, New Delhi, India</p>
+                    <p class="text-xs text-slate-500">Ph: +91 98765 43210</p>
+                </div>
+                <div class="flex justify-between text-sm mb-6 border-b border-dashed border-slate-300 pb-4">
+                    <div class="text-left"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bill To</p><p class="font-bold text-slate-800 text-lg leading-tight mt-1" id="inv-cust-name">Customer Name</p><p class="text-slate-500 text-xs" id="inv-cust-phone">Phone No</p><p class="text-slate-500 text-xs" id="inv-cust-address">Address</p></div>
+                    <div class="text-right"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Receipt Info</p><p class="font-bold text-slate-800 mt-1">#INV-<span id="inv-id">0000</span></p><p class="text-slate-500 text-xs" id="inv-date">YYYY-MM-DD</p></div>
+                </div>
+                <table class="w-full text-sm mb-6">
+                    <thead><tr class="bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider"><th class="text-left py-2 px-2 rounded-l-md">Item</th><th class="text-center py-2 px-2">Qty</th><th class="text-right py-2 px-2">Price</th><th class="text-right py-2 px-2 rounded-r-md">Total</th></tr></thead>
+                    <tbody id="inv-items" class="text-slate-700 font-medium"></tbody>
+                </table>
+                <div class="border-t-2 border-slate-800 pt-4 flex justify-between items-center"><span class="font-bold text-lg text-slate-800">Grand Total</span><span class="font-bold text-2xl text-brand" id="inv-total">₹0.00</span></div>
+                <div class="mt-12 text-center"><p class="text-xs text-slate-400 font-medium italic">"Thank you for your business!"</p><p class="text-[10px] text-slate-300 mt-1 uppercase">Generated by Anadi Billing System</p></div>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row gap-3 no-print">
+                <button onclick="handlePrint()" class="flex-1 bg-white text-slate-700 border border-slate-300 font-bold py-3 rounded-xl shadow-sm hover:bg-slate-50 transition flex items-center justify-center gap-2"><i class="fa-solid fa-print"></i> Print</button>
+                <button onclick="shareOnWhatsApp()" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl shadow hover:bg-green-700 transition flex items-center justify-center gap-2"><i class="fa-brands fa-whatsapp text-lg"></i> WhatsApp</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-24 md:bottom-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl opacity-0 transition-all duration-300 pointer-events-none z-[200] flex items-center gap-3 translate-y-10">
+        <div class="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-xs"><i class="fa-solid fa-check"></i></div><span class="font-bold text-sm" id="toast-msg">Action Successful</span>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getDatabase, ref, push, onValue, remove, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyB_qtGK8eWlC--BXxUghswMgLpWD09426w", authDomain: "anadibilling.firebaseapp.com", databaseURL: "https://anadibilling-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "anadibilling", storageBucket: "anadibilling.firebasestorage.app", messagingSenderId: "796359379354", appId: "1:796359379354:web:dc4e0d31c0edfc46611223", measurementId: "G-0WTWW8WNQY" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        let currentUser = null;
+        window.productsRef = [];
+        window.customersRef = [];
+        window.invoicesRef = []; 
+        let isLoginMode = true;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-screen').classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => document.getElementById('auth-screen').classList.add('hidden'), 500);
+                document.getElementById('app-content').classList.remove('hidden');
+                document.getElementById('user-email').textContent = user.email;
+                document.getElementById('user-avatar').textContent = user.email.charAt(0).toUpperCase();
+                initDataListeners();
+            } else {
+                currentUser = null;
+                document.getElementById('auth-screen').classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+                document.getElementById('app-content').classList.add('hidden');
+            }
+        });
+
+        window.toggleAuthMode = function() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('btn-auth-text').textContent = isLoginMode ? "Login" : "Sign Up";
+            document.getElementById('auth-toggle-text').textContent = isLoginMode ? "New here?" : "Have an account?";
+            document.getElementById('auth-toggle-btn').textContent = isLoginMode ? "Create Account" : "Login";
+        }
+
+        window.handleAuth = async function() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            if(!email || !pass) return showToast("Enter email & password", true);
+            const btn = document.getElementById('btn-auth');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+            btn.disabled = true;
+            try {
+                if(isLoginMode) await signInWithEmailAndPassword(auth, email, pass);
+                else await createUserWithEmailAndPassword(auth, email, pass);
+            } catch (error) {
+                showToast(error.message, true);
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }
+        }
+
+        window.handleLogout = function() { if(confirm("Sign out?")) signOut(auth); }
+
+        function initDataListeners() {
+            onValue(ref(db, 'anadibilling/customers'), (snap) => {
+                const data = snap.val();
+                window.customersRef = data ? Object.entries(data).map(([key, val]) => ({id: key, ...val})) : [];
+                renderCustomerList();
+                updateDropdowns();
+            });
+            onValue(ref(db, 'anadibilling/products'), (snap) => {
+                const data = snap.val();
+                window.productsRef = data ? Object.entries(data).map(([key, val]) => ({id: key, ...val})) : [];
+                renderProductList();
+                updateDropdowns();
+            });
+            onValue(ref(db, 'anadibilling/invoices'), (snap) => {
+                const data = snap.val();
+                window.invoicesRef = data ? Object.entries(data).map(([key, val]) => ({id: key, ...val})) : [];
+                renderHistoryTab(window.invoicesRef);
+                if(!document.getElementById('modal-accounts').classList.contains('hidden')) renderMonthlyAccounts();
+            });
+        }
+        
+        function renderHistoryTab(invoices) {
+            const list = document.getElementById('history-list');
+            if(invoices.length === 0) { list.innerHTML = '<div class="text-center py-10 text-slate-400">No invoices generated yet.</div>'; return; }
+            const sorted = [...invoices].sort((a,b) => b.timestamp - a.timestamp);
+            list.innerHTML = '';
+            sorted.forEach((inv) => {
+                 list.innerHTML += `<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center hover:bg-slate-50 transition"><div><div class="font-bold text-slate-800 text-sm">${inv.customerName}</div><div class="text-xs text-slate-400">#${inv.invId} • ${inv.date}</div></div><div class="text-right"><div class="font-bold text-brand text-sm">₹${parseFloat(inv.total).toFixed(2)}</div></div></div>`;
+            });
+        }
+
+        window.addCustomer = function() {
+            const name = document.getElementById('new-cust-name').value.trim();
+            const phone = document.getElementById('new-cust-phone').value.trim();
+            const address = document.getElementById('new-cust-address').value.trim();
+            if(!name) return showToast("Name is required", true);
+            push(ref(db, 'anadibilling/customers'), { name, phone, address }).then(() => {
+                document.getElementById('new-cust-name').value = '';
+                document.getElementById('new-cust-phone').value = '';
+                document.getElementById('new-cust-address').value = '';
+                showToast("Customer Added");
+            }).catch(e => alert(e.message));
+        }
+
+        window.updateCustomerInDB = function(id, name, phone, address) {
+            update(ref(db, 'anadibilling/customers/' + id), { name, phone, address }).then(() => {
+                showToast("Customer Updated");
+                document.getElementById('modal-edit-customer').classList.add('hidden');
+            }).catch(e => alert(e.message));
+        }
+
+        window.addProduct = function() {
+            const name = document.getElementById('new-prod-name').value.trim();
+            const price = parseFloat(document.getElementById('new-prod-price').value);
+            const unit = document.getElementById('new-prod-unit').value.trim();
+            if(!name || isNaN(price)) return showToast("Valid details required", true);
+            push(ref(db, 'anadibilling/products'), { name, price, unit }).then(() => {
+                document.getElementById('new-prod-name').value = '';
+                document.getElementById('new-prod-price').value = '';
+                document.getElementById('new-prod-unit').value = '';
+                showToast("Product Added");
+            }).catch(e => alert(e.message));
+        }
+
+        window.deleteItem = function(type, id) {
+            if(confirm("Delete this item permanently?")) remove(ref(db, `anadibilling/${type}/${id}`)).catch(e => alert("Permission Denied"));
+        }
+
+        function renderCustomerList() {
+            const list = document.getElementById('customer-list');
+            document.getElementById('cust-count-badge').textContent = window.customersRef.length;
+            list.innerHTML = '';
+            window.customersRef.forEach(c => {
+                const safeName = c.name.replace(/'/g, "\\'");
+                const safePhone = (c.phone || '').replace(/'/g, "\\'");
+                const safeAddr = (c.address || '').replace(/'/g, "\\'");
+                list.innerHTML += `<div class="px-6 py-4 flex justify-between items-center hover:bg-slate-50 group transition"><div><div class="font-bold text-slate-700 text-sm">${c.name}</div><div class="text-xs text-slate-400"><i class="fa-solid fa-phone text-[10px] mr-1"></i>${c.phone || 'N/A'}${c.address ? ` • ${c.address}` : ''}</div></div><div class="flex gap-2"><button onclick="openEditCustomerModal('${c.id}', '${safeName}', '${safePhone}', '${safeAddr}')" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 hover:bg-indigo-50 hover:text-indigo-500 transition"><i class="fa-solid fa-pencil text-xs"></i></button><button onclick="deleteItem('customers', '${c.id}')" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition"><i class="fa-solid fa-trash text-xs"></i></button></div></div>`;
+            });
+        }
+
+        function renderProductList() {
+            const list = document.getElementById('product-list');
+            document.getElementById('prod-count-badge').textContent = window.productsRef.length;
+            list.innerHTML = '';
+            window.productsRef.forEach(p => {
+                list.innerHTML += `<div class="px-6 py-4 flex justify-between items-center hover:bg-slate-50 group transition"><div><div class="font-bold text-slate-700 text-sm">${p.name}</div><div class="text-xs text-slate-400 font-mono">₹${p.price} / ${p.unit}</div></div><button onclick="deleteItem('products', '${p.id}')" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition"><i class="fa-solid fa-trash text-xs"></i></button></div>`;
+            });
+        }
+
+        function updateDropdowns() {
+            const prodSel = document.getElementById('bill-product');
+            prodSel.innerHTML = '<option value="">Select Product...</option>';
+            window.productsRef.forEach(p => prodSel.innerHTML += `<option value="${p.id}">${p.name}</option>`);
+            populateCustomerList(window.customersRef);
+        }
+
+        window.populateCustomerList = function(customers) {
+            const list = document.getElementById('cust-dropdown-list');
+            list.innerHTML = '';
+            if (customers.length === 0) { list.innerHTML = '<div class="p-3 text-xs text-slate-400 text-center">No customers found</div>'; return; }
+            customers.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'px-4 py-3 hover:bg-indigo-50 cursor-pointer transition flex justify-between items-center group';
+                item.onclick = () => selectCustomer(c.id, c.name, c.phone, c.address); 
+                item.innerHTML = `<div><div class="font-bold text-slate-700 text-sm">${c.name}</div><div class="text-[10px] text-slate-400">${c.phone || 'No Phone'}</div></div><i class="fa-solid fa-check text-brand opacity-0 group-hover:opacity-100 transition"></i>`;
+                list.appendChild(item);
+            });
+        }
+
+        window.saveInvoiceToDB = function(invoiceData) {
+            push(ref(db, 'anadibilling/invoices'), invoiceData).then(() => console.log("Invoice saved")).catch(e => alert(e.message));
+        }
+    </script>
+
+    <script>
+        let cart = [];
+        let selectedCustAddress = "";
+
+        function switchTab(tab) {
+            ['billing', 'manage', 'history'].forEach(t => {
+                const el = document.getElementById('tab-' + t);
+                const deskBtn = document.getElementById('desk-btn-' + t);
+                const mobBtn = document.getElementById('mob-btn-' + t);
+                if(t === tab) {
+                    el.classList.remove('hidden');
+                    deskBtn?.classList.replace('sidebar-inactive', 'sidebar-active');
+                    mobBtn?.classList.replace('tab-inactive', 'tab-active');
+                    mobBtn?.querySelector('i').classList.add('text-brand');
+                } else {
+                    el.classList.add('hidden');
+                    deskBtn?.classList.replace('sidebar-active', 'sidebar-inactive');
+                    mobBtn?.classList.replace('tab-active', 'tab-inactive');
+                    mobBtn?.querySelector('i').classList.remove('text-brand');
+                }
+            });
+        }
+
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        document.getElementById('bill-date').valueAsDate = today;
+        document.getElementById('acc-start-date').valueAsDate = firstDay;
+        document.getElementById('acc-end-date').valueAsDate = today;
+
+        function openAccountsModal() {
+            document.getElementById('modal-accounts').classList.remove('hidden');
+            renderMonthlyAccounts();
+        }
+
+        function resetAccountFilters() {
+            document.getElementById('acc-search').value = "";
+            document.getElementById('acc-start-date').value = "";
+            document.getElementById('acc-end-date').value = "";
+            renderMonthlyAccounts();
+        }
+
+        function renderMonthlyAccounts() {
+            const list = document.getElementById('accounts-list');
+            const totalDisplay = document.getElementById('acc-total-sales');
+            const startDate = document.getElementById('acc-start-date').value;
+            const endDate = document.getElementById('acc-end-date').value;
+            const searchQuery = document.getElementById('acc-search').value.toLowerCase();
+            
+            if(!window.invoicesRef) return;
+            
+            const filteredInvoices = window.invoicesRef.filter(inv => {
+                const dateCheck = (!startDate || inv.date >= startDate) && (!endDate || inv.date <= endDate);
+                return dateCheck;
+            });
+
+            const customerTotals = {};
+            let grandTotal = 0;
+
+            filteredInvoices.forEach(inv => {
+                const custName = inv.customerName.toLowerCase();
+                const custPhone = (inv.customerPhone || "").toLowerCase();
+                
+                if(searchQuery && !custName.includes(searchQuery) && !custPhone.includes(searchQuery)) return;
+
+                if(!customerTotals[inv.customerId]) {
+                    customerTotals[inv.customerId] = {
+                        name: inv.customerName,
+                        phone: inv.customerPhone,
+                        address: inv.customerAddress,
+                        total: 0,
+                        bills: []
+                    };
+                }
+                const amount = parseFloat(inv.total);
+                customerTotals[inv.customerId].total += amount;
+                customerTotals[inv.customerId].bills.push(inv);
+                grandTotal += amount;
+            });
+
+            list.innerHTML = '';
+            totalDisplay.textContent = '₹' + grandTotal.toFixed(2);
+
+            const sortedCustIds = Object.keys(customerTotals).sort((a,b) => customerTotals[b].total - customerTotals[a].total);
+
+            if(sortedCustIds.length === 0) {
+                list.innerHTML = `<div class="flex flex-col items-center justify-center py-10 text-slate-400"><i class="fa-solid fa-file-invoice-dollar text-4xl mb-2 opacity-50"></i><p>No transactions found.</p></div>`;
+                return;
+            }
+
+            sortedCustIds.forEach(id => {
+                const data = customerTotals[id];
+                const sDate = startDate || 'ALL';
+                const eDate = endDate || 'ALL';
+
+                list.innerHTML += `
+                    <div class="bg-white border border-slate-200 p-4 rounded-xl mb-3 flex flex-col md:flex-row md:items-center justify-between shadow-sm gap-3">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-slate-800 text-lg">${data.name}</h4>
+                            <p class="text-xs text-slate-400 font-mono">${data.bills.length} bills • ${data.phone || 'No Phone'}</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="text-right">
+                                <p class="text-[10px] uppercase font-bold text-slate-400">Total Due</p>
+                                <p class="text-xl font-bold text-brand">₹${data.total.toFixed(2)}</p>
+                            </div>
+                            <button onclick="sendMonthlyBill('${id}', '${sDate}', '${eDate}')" class="bg-green-600 hover:bg-green-700 text-white w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition active:scale-95" title="Send WhatsApp Summary">
+                                <i class="fa-brands fa-whatsapp text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.sendMonthlyBill = function(custId, start, end) {
+            const invoices = window.invoicesRef.filter(inv => {
+                const dateCheck = (start === 'ALL' || inv.date >= start) && (end === 'ALL' || inv.date <= end);
+                return inv.customerId === custId && dateCheck;
+            });
+
+            if(invoices.length === 0) return;
+
+            const custName = invoices[0].customerName;
+            const custObj = window.customersRef.find(c => c.id === custId);
+            let phone = custObj ? custObj.phone : invoices[0].customerPhone;
+            
+            let cleanPhone = (phone || '').replace(/\D/g, '');
+            if(!cleanPhone) {
+                alert("No phone number found.");
+                return;
+            }
+            if(cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
+
+            let grandTotal = 0;
+            let msg = `*ACCOUNT STATEMENT*\n`;
+            msg += `Customer: ${custName}\n`;
+            msg += `Period: ${start} to ${end}\n`;
+            msg += `------------------------\n`;
+            invoices.sort((a,b) => new Date(a.date) - new Date(b.date)); 
+            invoices.forEach(inv => {
+                const amt = parseFloat(inv.total);
+                msg += `${inv.date} (#${inv.invId}): ₹${amt.toFixed(2)}\n`;
+                grandTotal += amt;
+            });
+            msg += `------------------------\n`;
+            msg += `*TOTAL DUE: ₹${grandTotal.toFixed(2)}*\n\n`;
+            msg += `_Generated by Anadi Billing System_`;
+            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function openEditCustomerModal(id, name, phone, address) {
+            document.getElementById('edit-cust-id').value = id;
+            document.getElementById('edit-cust-name').value = name;
+            document.getElementById('edit-cust-phone').value = phone;
+            document.getElementById('edit-cust-address').value = address;
+            document.getElementById('modal-edit-customer').classList.remove('hidden');
+        }
+
+        function handleUpdateCustomer() {
+            const id = document.getElementById('edit-cust-id').value;
+            const name = document.getElementById('edit-cust-name').value;
+            const phone = document.getElementById('edit-cust-phone').value;
+            const address = document.getElementById('edit-cust-address').value;
+            if(!name) return showToast("Name required", true);
+            window.updateCustomerInDB(id, name, phone, address);
+        }
+
+        function showCustList() {
+            document.getElementById('cust-dropdown-list').classList.remove('hidden');
+        }
+        function filterCustomers() {
+            const query = document.getElementById('cust-search-input').value.toLowerCase();
+            const list = document.getElementById('cust-dropdown-list');
+            const filtered = (window.customersRef || []).filter(c => 
+                c.name.toLowerCase().includes(query) || 
+                (c.phone && c.phone.includes(query)) ||
+                (c.address && c.address.toLowerCase().includes(query))
+            );
+            populateCustomerList(filtered);
+            list.classList.remove('hidden');
+        }
+        function selectCustomer(id, name, phone, address) {
+            document.getElementById('bill-customer').value = id;
+            document.getElementById('cust-search-input').value = name;
+            selectedCustAddress = address || ""; 
+            document.getElementById('cust-dropdown-list').classList.add('hidden');
+            document.getElementById('cust-clear-btn').classList.remove('hidden');
+        }
+        function resetCustomerSelection() {
+            document.getElementById('bill-customer').value = '';
+            document.getElementById('cust-search-input').value = '';
+            selectedCustAddress = "";
+            document.getElementById('cust-clear-btn').classList.add('hidden');
+            populateCustomerList(window.customersRef || []);
+            document.getElementById('cust-search-input').focus();
+        }
+        document.addEventListener('click', function(e) {
+            const searchBox = document.getElementById('cust-search-input');
+            const dropdown = document.getElementById('cust-dropdown-list');
+            const container = searchBox.closest('.relative');
+            if (!container.contains(e.target) && !e.target.closest('#modal-edit-customer')) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        function updatePricePreview() {
+            const pid = document.getElementById('bill-product').value;
+            const product = window.productsRef && window.productsRef.find(p => p.id === pid);
+            if (product) {
+                document.getElementById('bill-price').value = product.price;
+            } else {
+                document.getElementById('bill-price').value = '';
+            }
+        }
+
+        function addToCart() {
+            const pid = document.getElementById('bill-product').value;
+            const qtyInput = document.getElementById('bill-qty');
+            const priceInput = document.getElementById('bill-price');
+            const qty = parseFloat(qtyInput.value);
+            const manualPrice = parseFloat(priceInput.value);
+            
+            if(!window.productsRef) return showToast("Loading products...", true);
+            if(!pid) return showToast("Please select a product", true);
+            if(isNaN(manualPrice) || manualPrice < 0) return showToast("Enter Valid Price", true);
+            if(isNaN(qty) || qty <= 0) return showToast("Invalid Quantity", true);
+            
+            const product = window.productsRef.find(p => p.id === pid);
+            if(!product) return showToast("Product not found", true);
+            
+            const existing = cart.find(item => item.id === pid);
+            if(existing) {
+                existing.price = manualPrice; 
+                existing.qty += qty;
+                existing.total = existing.qty * manualPrice;
+            } else {
+                cart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: manualPrice,
+                    qty: qty,
+                    total: manualPrice * qty
+                });
+            }
+            renderCart();
+            document.getElementById('bill-product').value = "";
+            priceInput.value = "";
+            qtyInput.value = 1;
+            showToast("Item added");
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-container');
+            let total = 0;
+            let count = 0;
+
+            if(cart.length === 0) {
+                container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-300 opacity-60"><i class="fa-solid fa-basket-shopping text-5xl mb-3 text-slate-200"></i><p class="text-xs font-bold uppercase">Cart is Empty</p></div>`;
+            } else {
+                container.innerHTML = '';
+                cart.forEach((item, idx) => {
+                    total += item.total;
+                    count += item.qty;
+                    container.innerHTML += `
+                        <div class="bg-slate-50 border border-slate-100 p-3 rounded-xl mb-2 flex justify-between items-center animate-slide-up group">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">${idx+1}</div>
+                                <div>
+                                    <div class="font-bold text-slate-700 text-sm leading-tight">${item.name}</div>
+                                    <div class="text-[10px] text-slate-400 font-bold uppercase">${item.qty} x ₹${item.price}</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-brand text-sm">₹${item.total.toFixed(2)}</div>
+                                <button onclick="removeFromCart(${idx})" class="text-[10px] text-red-300 hover:text-red-500 font-bold uppercase tracking-wide opacity-0 group-hover:opacity-100 transition">Remove</button>
+                            </div>
+                        </div>`;
+                });
+            }
+            document.getElementById('summ-total').textContent = '₹' + total.toFixed(2);
+            document.getElementById('summ-subtotal').textContent = '₹' + total.toFixed(2);
+            document.getElementById('summ-count').textContent = count;
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            renderCart();
+        }
+        function clearCart() {
+            if(confirm("Clear current cart?")) {
+                cart = [];
+                renderCart();
+            }
+        }
+
+        function generateBill() {
+            const custId = document.getElementById('bill-customer').value;
+            const date = document.getElementById('bill-date').value;
+            
+            if(!custId) return showToast("Select a Customer", true);
+            if(cart.length === 0) return showToast("Cart is empty", true);
+
+            const custObj = window.customersRef.find(c => c.id === custId);
+            const custName = (custObj && custObj.name) ? custObj.name : document.getElementById('cust-search-input').value;
+            const custPhone = (custObj && custObj.phone) ? custObj.phone : "";
+            const custAddr = selectedCustAddress || (custObj && custObj.address) || "";
+            
+            const total = document.getElementById('summ-total').textContent.replace('₹', '');
+            const invId = Math.floor(1000 + Math.random() * 9000);
+
+            document.getElementById('inv-cust-name').textContent = custName;
+            document.getElementById('inv-cust-phone').textContent = custPhone;
+            document.getElementById('inv-cust-address').textContent = custAddr;
+            document.getElementById('inv-date').textContent = date;
+            document.getElementById('inv-id').textContent = invId;
+            document.getElementById('inv-total').textContent = '₹' + total;
+
+            const tbody = document.getElementById('inv-items');
+            tbody.innerHTML = '';
+            cart.forEach(item => {
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-100 last:border-0">
+                        <td class="text-left py-2 px-2">${item.name}</td>
+                        <td class="text-center py-2 px-2 text-slate-500">${item.qty}</td>
+                        <td class="text-right py-2 px-2 text-slate-500">${item.price}</td>
+                        <td class="text-right py-2 px-2 font-bold">${item.total.toFixed(2)}</td>
+                    </tr>`;
+            });
+
+            window.saveInvoiceToDB({
+                invId: invId,
+                customerId: custId,
+                customerName: custName || "Unknown",
+                customerPhone: custPhone,
+                customerAddress: custAddr,
+                date: date,
+                total: total,
+                items: cart,
+                timestamp: Date.now()
+            });
+
+            document.getElementById('modal-invoice').classList.remove('hidden');
+            shareOnWhatsApp(); 
+        }
+
+        function handlePrint() {
+            window.print();
+        }
+
+        function shareOnWhatsApp() {
+            const phoneText = document.getElementById('inv-cust-phone').textContent;
+            const name = document.getElementById('inv-cust-name').textContent;
+            const invId = document.getElementById('inv-id').textContent;
+            const date = document.getElementById('inv-date').textContent;
+            const grandTotal = document.getElementById('inv-total').textContent;
+
+            let cleanPhone = phoneText.replace(/\D/g, ''); 
+            if(!cleanPhone) {
+                alert("Customer phone number is missing! Cannot share on WhatsApp.");
+                return;
+            }
+            if(cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
+
+            let message = `*INVOICE: ${name}*\n`;
+            message += `Invoice No: #${invId}\n`;
+            message += `Date: ${date}\n`;
+            message += `------------------------------\n`;
+            message += `*Item Details:*\n`;
+            cart.forEach((item, index) => {
+                message += `${index + 1}. ${item.name} (${item.qty} x ${item.price}) = ₹${item.total.toFixed(2)}\n`;
+            });
+            message += `------------------------------\n`;
+            message += `*GRAND TOTAL: ${grandTotal}*\n\n`;
+            message += `Thank you for your business!\n`;
+            message += `_Generated by Anadi Billing_`;
+
+            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-invoice').classList.add('hidden');
+            if(confirm("Start new bill?")) {
+                cart = [];
+                renderCart();
+                resetCustomerSelection();
+            }
+        }
+
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toast');
+            const txt = document.getElementById('toast-msg');
+            const icon = t.querySelector('div');
+            txt.textContent = msg;
+            if(isError) {
+                icon.className = "w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-xs";
+                icon.innerHTML = '<i class="fa-solid fa-exclamation"></i>';
+            } else {
+                icon.className = "w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-xs";
+                icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+            }
+            t.classList.remove('opacity-0', 'translate-y-10');
+            setTimeout(() => t.classList.add('opacity-0', 'translate-y-10'), 3000);
+        }
+        // --- NEW EXPORT FUNCTIONS ---
+
+// 1. Helper function to get current filtered data
+function getFilteredInvoicesForExport() {
+    const startDate = document.getElementById('acc-start-date').value;
+    const endDate = document.getElementById('acc-end-date').value;
+    const searchQuery = document.getElementById('acc-search').value.toLowerCase();
+
+    if (!window.invoicesRef) return [];
+
+    // Same logic as your display function
+    return window.invoicesRef.filter(inv => {
+        const dateCheck = (!startDate || inv.date >= startDate) && (!endDate || inv.date <= endDate);
+        const custName = inv.customerName.toLowerCase();
+        const custPhone = (inv.customerPhone || "").toLowerCase();
+        const searchCheck = !searchQuery || custName.includes(searchQuery) || custPhone.includes(searchQuery);
+        
+        return dateCheck && searchCheck;
+    }).sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date
+}
+
+// 2. Main Export Function
+window.exportData = function(type) {
+    const data = getFilteredInvoicesForExport();
+    
+    if (data.length === 0) {
+        alert("No data found to export!");
+        return;
+    }
+
+    if (type === 'excel') {
+        downloadExcel(data);
+    } else {
+        downloadPDF(data);
+    }
+}
+
+// 3. Download Excel Logic
+function downloadExcel(invoices) {
+    // Format data for Excel
+    const excelData = invoices.map(inv => ({
+        "Date": inv.date,
+        "Invoice No": inv.invId,
+        "Customer Name": inv.customerName,
+        "Phone": inv.customerPhone,
+        "Items Count": inv.items.length,
+        "Total Amount (₹)": parseFloat(inv.total)
+    }));
+
+    // Calculate Total Row
+    const grandTotal = invoices.reduce((sum, inv) => sum + parseFloat(inv.total), 0);
+    excelData.push({
+        "Date": "GRAND TOTAL",
+        "Invoice No": "",
+        "Customer Name": "",
+        "Phone": "",
+        "Items Count": "",
+        "Total Amount (₹)": grandTotal
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // Auto-width for columns
+    const wscols = [{wch:15}, {wch:10}, {wch:25}, {wch:15}, {wch:10}, {wch:15}];
+    ws['!cols'] = wscols;
+
+    XLSX.utils.book_append_sheet(wb, ws, "Sales Report");
+    XLSX.writeFile(wb, `Sales_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// 4. Download PDF Logic
+// 4. Download PDF Logic (Updated: ₹ removed, Rs added)
+function downloadPDF(invoices) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Title
+    doc.setFontSize(18);
+    doc.text("Anadi Billing - Sales Report", 14, 15);
+    
+    // Subtitle (Date Range)
+    doc.setFontSize(10);
+    const sDate = document.getElementById('acc-start-date').value || "Beginning";
+    const eDate = document.getElementById('acc-end-date').value || "Today";
+    doc.text(`Period: ${sDate} to ${eDate}`, 14, 22);
+
+    // Prepare Table Data
+    const tableRows = invoices.map(inv => [
+        inv.date,
+        inv.invId,
+        inv.customerName,
+        inv.customerPhone || "-",
+        "Rs " + parseFloat(inv.total).toFixed(2) // Yahan change kiya hai (Rs)
+    ]);
+
+    // Calculate Grand Total
+    const grandTotal = invoices.reduce((sum, inv) => sum + parseFloat(inv.total), 0);
+    
+    // Last row for Total
+    tableRows.push(["", "", "", "GRAND TOTAL", "Rs " + grandTotal.toFixed(2)]); // Yahan bhi change kiya hai
+
+    // Generate Table
+    doc.autoTable({
+        head: [['Date', 'Inv #', 'Customer', 'Phone', 'Amount (Rs)']], // Header mein bhi Rs likh diya
+        body: tableRows,
+        startY: 30,
+        theme: 'grid',
+        headStyles: { fillColor: [67, 56, 202] }, // Brand color
+        footStyles: { fillColor: [240, 240, 240], textColor: [0,0,0], fontStyle: 'bold' },
+        didParseCell: function (data) {
+            // Style the last row (Grand Total)
+            if (data.row.index === tableRows.length - 1) {
+                data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.fillColor = [220, 252, 231]; // Light green
+            }
+        }
+    });
+
+    doc.save(`Sales_Report_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+    </script>
+</body>
+</html>
