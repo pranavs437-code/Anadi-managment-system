@@ -170,8 +170,8 @@
             </div>
         </header>
 
-        <!-- MAIN CONTENT AREA -->
-        <main class="flex-1 overflow-y-auto bg-slate-100 p-4 pb-32 md:p-8">
+        <!-- MAIN CONTENT AREA (UPDATED PADDING HERE) -->
+        <main class="flex-1 overflow-y-auto bg-slate-100 p-4 pb-40 md:p-8 md:pb-40">
 
             <!-- === TAB 1: PROCESSING RECORD === -->
             <section id="tab-record" class="space-y-6 fade-in max-w-6xl mx-auto">
@@ -279,7 +279,7 @@
                     <section class="md:col-span-3 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-sm border border-yellow-200 overflow-hidden">
                         <div class="px-4 py-3 border-b border-yellow-100 flex items-center gap-2 text-yellow-800"><i class="fa-solid fa-bottle-droplet"></i><h3 class="font-bold">3. Ghee Production</h3></div>
                         <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                            <div><label class="label-text text-yellow-700">Butter Melted (Kg)</label><input type="number" id="butter-melted" placeholder="0" class="input-field bg-white border-yellow-200 focus:border-yellow-500" oninput="calculate()"></div>
+                            <div><label class="label-text text-yellow-700">whitebutter(Kg)</label><input type="number" id="butter-melted" placeholder="0" class="input-field bg-white border-yellow-200 focus:border-yellow-500" oninput="calculate()"></div>
                             <div><label class="label-text text-yellow-700">Ghee Produced (Kg/L)</label><input type="number" id="ghee-made" placeholder="0" class="input-field bg-white border-yellow-200 focus:border-yellow-500" oninput="calculate()"></div>
                             <div class="bg-yellow-400 text-yellow-900 p-3 rounded-lg text-center shadow-sm"><span class="block text-xs font-bold uppercase opacity-80">Ghee Produced</span><span class="block text-2xl font-bold"><span id="ghee-stock-display">0</span> <small class="text-sm">Kg</small></span></div>
                         </div>
