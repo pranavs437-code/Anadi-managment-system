@@ -551,13 +551,15 @@
             
             dates.forEach(dateStr => {
                 const dayData = data[dateStr];
+                // Calculate raw sums
                 const morn = Object.values(dayData.morning||{}).reduce((s,v)=>s+(parseFloat(v)||0),0);
                 const eve = Object.values(dayData.evening||{}).reduce((s,v)=>s+(parseFloat(v)||0),0);
-                const total = morn+eve;
+                const total = morn + eve;
+                
                 const dateObj = new Date(dateStr);
                 const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
                 
-                // NO ROUNDOFF in History
+                // FIXED: Added parseFloat(..toFixed(2)) to variables below
                 container.innerHTML += `
                     <div onclick="openFullReport('${dateStr}')" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden cursor-pointer hover:border-brand transition group active:scale-[0.98]">
                         <!-- Header with Edit/Delete Buttons -->
@@ -576,11 +578,20 @@
                         </div>
 
                         <div class="p-4 flex items-center justify-between">
-                            <div class="text-center"><div class="text-[10px] uppercase font-bold text-orange-400 mb-1">Morning</div><div class="font-bold text-slate-700">${morn}</div></div>
+                            <div class="text-center">
+                                <div class="text-[10px] uppercase font-bold text-orange-400 mb-1">Morning</div>
+                                <div class="font-bold text-slate-700">${parseFloat(morn.toFixed(2))}</div>
+                            </div>
                             <div class="h-8 w-px bg-slate-100"></div>
-                            <div class="text-center"><div class="text-[10px] uppercase font-bold text-indigo-400 mb-1">Evening</div><div class="font-bold text-slate-700">${eve}</div></div>
+                            <div class="text-center">
+                                <div class="text-[10px] uppercase font-bold text-indigo-400 mb-1">Evening</div>
+                                <div class="font-bold text-slate-700">${parseFloat(eve.toFixed(2))}</div>
+                            </div>
                             <div class="h-8 w-px bg-slate-100"></div>
-                            <div class="text-center"><div class="text-[10px] uppercase font-bold text-emerald-600 mb-1">Total</div><div class="font-bold text-xl text-emerald-700">${total}</div></div>
+                            <div class="text-center">
+                                <div class="text-[10px] uppercase font-bold text-emerald-600 mb-1">Total</div>
+                                <div class="font-bold text-xl text-emerald-700">${parseFloat(total.toFixed(2))}</div>
+                            </div>
                         </div>
                     </div>`;
             });
@@ -616,21 +627,38 @@
             const doc = new jsPDF();
             doc.setTextColor(22, 101, 52); doc.setFontSize(18); doc.text("Anadi Gaushala - Milk Record History", 14, 20);
             doc.setTextColor(100); doc.setFontSize(10); doc.text("Generated: " + new Date().toLocaleDateString(), 14, 28);
+            
             const tableRows = [];
             Object.keys(allHistoryData).sort().reverse().forEach(dateStr => {
                 const d = allHistoryData[dateStr];
                 const m = Object.values(d.morning||{}).reduce((s,v)=>s+(parseFloat(v)||0),0);
                 const e = Object.values(d.evening||{}).reduce((s,v)=>s+(parseFloat(v)||0),0);
                 const t = m+e;
-                // Add Tea to Distribution Sum
+                
                 const dist = (parseFloat(d.distribution_morning?.delivery)||0) + (parseFloat(d.distribution_evening?.delivery)||0) 
                            + (parseFloat(d.distribution_morning?.aashram)||0) + (parseFloat(d.distribution_evening?.aashram)||0)
                            + (parseFloat(d.distribution_morning?.tea)||0) + (parseFloat(d.distribution_evening?.tea)||0);
                 
-                // NO ROUNDOFF in PDF
-                tableRows.push([dateStr, m, e, t, dist, (t-dist)]);
+                const stock = t - dist;
+
+                // FIXED: Formatted values to 2 decimals using parseFloat(..toFixed(2))
+                tableRows.push([
+                    dateStr, 
+                    parseFloat(m.toFixed(2)), 
+                    parseFloat(e.toFixed(2)), 
+                    parseFloat(t.toFixed(2)), 
+                    parseFloat(dist.toFixed(2)), 
+                    parseFloat(stock.toFixed(2))
+                ]);
             });
-            doc.autoTable({ startY: 35, head: [['Date', 'Morning', 'Evening', 'Total', 'Dist.', 'Stock']], body: tableRows, headStyles: { fillColor: [22, 101, 52] }, theme: 'grid' });
+            
+            doc.autoTable({ 
+                startY: 35, 
+                head: [['Date', 'Morning', 'Evening', 'Total', 'Dist.', 'Stock']], 
+                body: tableRows, 
+                headStyles: { fillColor: [22, 101, 52] }, 
+                theme: 'grid' 
+            });
             doc.save("Records.pdf");
         };
 
