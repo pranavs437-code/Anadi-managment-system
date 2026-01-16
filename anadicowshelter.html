@@ -654,27 +654,28 @@
             const tea = (parseFloat(data.distribution_morning?.tea)||0) + (parseFloat(data.distribution_evening?.tea)||0);
             
             const dist = del+ash+tea;
+            const netStock = total - dist;
             
-            // NO ROUNDOFF in Report
+            // FIXED: Added .toFixed(2) inside the HTML string below
             document.getElementById('report-content-body').innerHTML = `
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100 fade-in">
                     <h3 class="text-xs font-bold text-slate-400 uppercase mb-4 flex items-center gap-2"><i class="fa-solid fa-bucket text-brand"></i> Production</h3>
-                    <div class="flex justify-between items-end border-b border-dashed border-slate-200 pb-3 mb-3"><span class="text-sm font-bold text-slate-600">Morning</span><span class="font-bold text-slate-800">${morn} L</span></div>
-                    <div class="flex justify-between items-end border-b border-dashed border-slate-200 pb-3 mb-3"><span class="text-sm font-bold text-slate-600">Evening</span><span class="font-bold text-slate-800">${eve} L</span></div>
-                    <div class="flex justify-between items-center bg-emerald-50 p-3 rounded-lg"><span class="font-bold text-emerald-800">Total</span><span class="font-bold text-2xl text-emerald-700">${total} L</span></div>
+                    <div class="flex justify-between items-end border-b border-dashed border-slate-200 pb-3 mb-3"><span class="text-sm font-bold text-slate-600">Morning</span><span class="font-bold text-slate-800">${parseFloat(morn.toFixed(2))} L</span></div>
+                    <div class="flex justify-between items-end border-b border-dashed border-slate-200 pb-3 mb-3"><span class="text-sm font-bold text-slate-600">Evening</span><span class="font-bold text-slate-800">${parseFloat(eve.toFixed(2))} L</span></div>
+                    <div class="flex justify-between items-center bg-emerald-50 p-3 rounded-lg"><span class="font-bold text-emerald-800">Total</span><span class="font-bold text-2xl text-emerald-700">${parseFloat(total.toFixed(2))} L</span></div>
                 </div>
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-100 fade-in mt-4">
                     <h3 class="text-xs font-bold text-slate-400 uppercase mb-4 flex items-center gap-2"><i class="fa-solid fa-truck-fast text-orange-500"></i> Distribution</h3>
                     <div class="grid grid-cols-2 gap-3 mb-3">
-                        <div class="bg-orange-50 p-3 rounded-lg text-center"><div class="text-xs font-bold text-orange-400 uppercase">Delivery</div><div class="font-bold text-xl text-orange-700 mt-1">${del}</div></div>
-                        <div class="bg-indigo-50 p-3 rounded-lg text-center"><div class="text-xs font-bold text-indigo-400 uppercase">Aashram</div><div class="font-bold text-xl text-indigo-700 mt-1">${ash}</div></div>
-                        <div class="bg-emerald-50 p-3 rounded-lg text-center col-span-2"><div class="text-xs font-bold text-emerald-500 uppercase">Tea (Chai)</div><div class="font-bold text-xl text-emerald-800 mt-1">${tea}</div></div>
+                        <div class="bg-orange-50 p-3 rounded-lg text-center"><div class="text-xs font-bold text-orange-400 uppercase">Delivery</div><div class="font-bold text-xl text-orange-700 mt-1">${parseFloat(del.toFixed(2))}</div></div>
+                        <div class="bg-indigo-50 p-3 rounded-lg text-center"><div class="text-xs font-bold text-indigo-400 uppercase">Aashram</div><div class="font-bold text-xl text-indigo-700 mt-1">${parseFloat(ash.toFixed(2))}</div></div>
+                        <div class="bg-emerald-50 p-3 rounded-lg text-center col-span-2"><div class="text-xs font-bold text-emerald-500 uppercase">Tea (Chai)</div><div class="font-bold text-xl text-emerald-800 mt-1">${parseFloat(tea.toFixed(2))}</div></div>
                     </div>
                 </div>
                 <div class="bg-slate-800 rounded-xl p-5 text-white shadow-lg fade-in mt-4">
                     <div class="flex justify-between items-center">
                         <div><p class="text-xs text-slate-400 uppercase font-bold mb-1">Net Stock</p></div>
-                        <h2 class="text-4xl font-bold text-yellow-400">${(total-dist)} <span class="text-lg">L</span></h2>
+                        <h2 class="text-4xl font-bold text-yellow-400">${parseFloat(netStock.toFixed(2))} <span class="text-lg">L</span></h2>
                     </div>
                 </div>`;
         }
@@ -830,15 +831,21 @@
             
             const del = parseFloat(document.getElementById('dist-delivery').value)||0;
             const ash = parseFloat(document.getElementById('dist-aashram').value)||0;
-            const tea = parseFloat(document.getElementById('dist-tea').value)||0; // Added Tea
+            const tea = parseFloat(document.getElementById('dist-tea').value)||0; 
             
-            // NO ROUNDOFF - Display as is
-            document.getElementById('display-total-prod').innerText = total;
+            // FIXED: Added .toFixed(2) to limit decimals
+            // parseFloat(...) removes unnecessary trailing zeros (e.g. "12.50" becomes "12.5")
+            // If you want strictly 2 digits always (e.g. "12.50"), remove the parseFloat wrap.
+            
+            document.getElementById('display-total-prod').innerText = parseFloat(total.toFixed(2));
             
             const rem = document.getElementById('display-remaining');
-            rem.innerText = (total - (del + ash + tea)); // Added Tea to subtract
+            const balance = total - (del + ash + tea);
             
-            if((total-(del+ash+tea)) < 0) rem.classList.add('text-red-500'); else rem.classList.remove('text-red-500');
+            // This sets the Balance Stock to max 2 decimals
+            rem.innerText = parseFloat(balance.toFixed(2));
+            
+            if(balance < 0) rem.classList.add('text-red-500'); else rem.classList.remove('text-red-500');
         };
 
         window.saveMilkRecord = function() {
