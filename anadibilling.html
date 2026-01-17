@@ -232,10 +232,10 @@
                                 <div class="flex gap-3"><input type="text" id="new-cust-address" placeholder="Address / City" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand"><button onclick="addCustomer()" class="px-6 bg-brand text-white rounded-xl font-bold shadow-md hover:bg-indigo-800 transition"><i class="fa-solid fa-plus"></i></button></div>
                             </div>
                         </div>
-                        <!-- REPLACE THIS DIV INSIDE THE MANAGEMENT TAB -->
+                        <!-- REPLACE THE ENTIRE 'Customer List' CONTAINER IN MANAGEMENT TAB WITH THIS -->
 <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 flex flex-col h-[400px]">
     
-    <!-- Updated Header with PDF Button -->
+    <!-- Header with PDF Button -->
     <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
         <div class="flex items-center gap-2">
             <span class="font-bold text-xs text-slate-500 uppercase">Customer List</span>
@@ -246,6 +246,15 @@
         </button>
     </div>
 
+    <!-- NEW SEARCH BAR -->
+    <div class="px-4 py-2 bg-white border-b border-slate-50">
+        <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+            <input type="text" id="cust-manage-search" oninput="renderCustomerList()" placeholder="Search Name, Phone, or Address..." class="w-full bg-slate-50 border border-slate-100 text-slate-700 text-xs font-bold rounded-lg pl-8 pr-3 py-2.5 outline-none focus:border-brand focus:bg-white transition">
+        </div>
+    </div>
+
+    <!-- List Container -->
     <div id="customer-list" class="flex-1 overflow-y-auto custom-scroll divide-y divide-slate-50"></div>
 </div>
                     </div>
@@ -531,17 +540,69 @@ function renderHistoryTab(invoices) {
             if(confirm("Delete this item permanently?")) remove(ref(db, `anadibilling/${type}/${id}`)).catch(e => alert("Permission Denied"));
         }
 
-        function renderCustomerList() {
-            const list = document.getElementById('customer-list');
-            document.getElementById('cust-count-badge').textContent = window.customersRef.length;
-            list.innerHTML = '';
-            window.customersRef.forEach(c => {
-                const safeName = c.name.replace(/'/g, "\\'");
-                const safePhone = (c.phone || '').replace(/'/g, "\\'");
-                const safeAddr = (c.address || '').replace(/'/g, "\\'");
-                list.innerHTML += `<div class="px-6 py-4 flex justify-between items-center hover:bg-slate-50 group transition"><div><div class="font-bold text-slate-700 text-sm">${c.name}</div><div class="text-xs text-slate-400"><i class="fa-solid fa-phone text-[10px] mr-1"></i>${c.phone || 'N/A'}${c.address ? ` • ${c.address}` : ''}</div></div><div class="flex gap-2"><button onclick="openEditCustomerModal('${c.id}', '${safeName}', '${safePhone}', '${safeAddr}')" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 hover:bg-indigo-50 hover:text-indigo-500 transition"><i class="fa-solid fa-pencil text-xs"></i></button><button onclick="deleteItem('customers', '${c.id}')" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition"><i class="fa-solid fa-trash text-xs"></i></button></div></div>`;
-            });
-        }
+        // REPLACE YOUR EXISTING renderCustomerList FUNCTION WITH THIS
+// REPLACE your existing renderCustomerList function with this one
+window.renderCustomerList = function() {
+    const list = document.getElementById('customer-list');
+    const searchInput = document.getElementById('cust-manage-search');
+    
+    // 1. Get Search Query
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
+    // 2. Filter Data based on Name, Phone, or Address
+    const filteredData = (window.customersRef || []).filter(c => {
+        const name = c.name.toLowerCase();
+        const phone = (c.phone || '').toLowerCase();
+        const address = (c.address || '').toLowerCase();
+        
+        return name.includes(query) || phone.includes(query) || address.includes(query);
+    });
+
+    // 3. Update Badge count
+    const badge = document.getElementById('cust-count-badge');
+    if(badge) badge.textContent = filteredData.length;
+
+    list.innerHTML = '';
+
+    // 4. Handle Empty State
+    if (filteredData.length === 0) {
+        list.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full text-slate-400">
+                <i class="fa-solid fa-filter-circle-xmark text-2xl mb-2 opacity-50"></i>
+                <p class="text-xs">No customers found</p>
+            </div>`;
+        return;
+    }
+
+    // 5. Render List
+    filteredData.forEach(c => {
+        const safeName = c.name.replace(/'/g, "\\'");
+        const safePhone = (c.phone || '').replace(/'/g, "\\'");
+        const safeAddr = (c.address || '').replace(/'/g, "\\'");
+        
+        // Highlight search match
+        const displayName = query ? c.name.replace(new RegExp(query, 'gi'), (match) => `<span class="bg-yellow-100 text-slate-800">${match}</span>`) : c.name;
+
+        list.innerHTML += `
+        <div class="px-6 py-4 flex justify-between items-center hover:bg-slate-50 group transition">
+            <div>
+                <div class="font-bold text-slate-700 text-sm">${displayName}</div>
+                <div class="text-xs text-slate-400">
+                    <i class="fa-solid fa-phone text-[10px] mr-1"></i>${c.phone || 'N/A'}
+                    ${c.address ? ` • ${c.address}` : ''}
+                </div>
+            </div>
+            <div class="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition">
+                <button onclick="openEditCustomerModal('${c.id}', '${safeName}', '${safePhone}', '${safeAddr}')" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 hover:bg-indigo-50 hover:text-indigo-500 transition" title="Edit">
+                    <i class="fa-solid fa-pencil text-xs"></i>
+                </button>
+                <button onclick="deleteItem('customers', '${c.id}')" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition" title="Delete">
+                    <i class="fa-solid fa-trash text-xs"></i>
+                </button>
+            </div>
+        </div>`;
+    });
+}
 
         function renderProductList() {
             const list = document.getElementById('product-list');
