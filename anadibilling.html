@@ -122,36 +122,56 @@
     <div id="app-content" class="hidden h-full flex flex-col md:flex-row">
         
         <!-- SIDEBAR (Desktop) -->
-        <aside class="hidden md:flex flex-col w-72 bg-dark text-white z-40 relative overflow-hidden">
-            <div class="p-6 flex items-center gap-3 border-b border-slate-800 bg-slate-900/50">
-                <div class="w-10 h-10 bg-gradient-to-br from-brand to-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                    <i class="fa-solid fa-layer-group"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg leading-none tracking-wide">Anadi Tech</h1>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Billing & POS</p>
-                </div>
-            </div>
-            <nav class="flex-1 p-4 space-y-2 overflow-y-auto custom-scroll">
-                <button onclick="switchTab('billing')" id="desk-btn-billing" class="w-full text-left p-4 rounded-xl flex items-center gap-4 sidebar-active transition duration-200 group">
-                    <i class="fa-solid fa-cash-register w-5 text-center text-lg"></i> <span class="font-medium">Billing Terminal</span>
-                </button>
-                <button onclick="switchTab('manage')" id="desk-btn-manage" class="w-full text-left p-4 rounded-xl flex items-center gap-4 sidebar-inactive transition duration-200 group">
-                    <i class="fa-solid fa-boxes-stacked w-5 text-center text-lg"></i> <span class="font-medium">Management</span>
-                </button>
-                <button onclick="switchTab('history')" id="desk-btn-history" class="w-full text-left p-4 rounded-xl flex items-center gap-4 sidebar-inactive transition duration-200 group">
-                    <i class="fa-solid fa-clock-rotate-left w-5 text-center text-lg"></i> <span class="font-medium">History</span>
-                </button>
-            </nav>
-            <div class="p-4 bg-slate-900/50 border-t border-slate-800">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold" id="user-avatar">U</div>
-                    <div class="overflow-hidden"><p class="text-xs font-bold text-white truncate" id="user-email">user@email.com</p><p class="text-[10px] text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Online</p></div>
-                </div>
-                <button onclick="handleLogout()" class="w-full py-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 rounded-lg transition text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2"><i class="fa-solid fa-power-off"></i> Sign Out</button>
-            </div>
-        </aside>
+       <aside class="hidden md:flex flex-col w-72 bg-dark text-white z-40 relative overflow-hidden">
+    <!-- Header -->
+    <div class="p-6 flex items-center gap-3 border-b border-slate-800 bg-slate-900/50">
+        <div class="w-10 h-10 bg-gradient-to-br from-brand to-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg">
+            <i class="fa-solid fa-layer-group"></i>
+        </div>
+        <div>
+            <h1 class="font-bold text-lg leading-none tracking-wide">Anadi Tech</h1>
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Billing & POS</p>
+        </div>
+    </div>
 
+    <!-- Navigation Menu -->
+    <nav class="flex-1 p-4 space-y-2 overflow-y-auto custom-scroll">
+        
+        <!-- 👇 NEW BACK BUTTON 👇 -->
+        <a href="index.html" class="w-full text-left p-4 rounded-xl flex items-center gap-4 text-slate-400 hover:bg-slate-800 hover:text-white transition duration-200 group">
+            <i class="fa-solid fa-arrow-left w-5 text-center text-lg group-hover:-translate-x-1 transition-transform"></i> 
+            <span class="font-medium">Back to Dashboard</span>
+        </a>
+        
+        <!-- DIVIDER LINE -->
+        <div class="border-b border-slate-800 mx-4 my-2"></div>
+        <!-- 👆 NEW CODE END 👆 -->
+
+        <button onclick="switchTab('billing')" id="desk-btn-billing" class="w-full text-left p-4 rounded-xl flex items-center gap-4 sidebar-active transition duration-200 group">
+            <i class="fa-solid fa-cash-register w-5 text-center text-lg"></i> <span class="font-medium">Billing Terminal</span>
+        </button>
+        <button onclick="switchTab('manage')" id="desk-btn-manage" class="w-full text-left p-4 rounded-xl flex items-center gap-4 sidebar-inactive transition duration-200 group">
+            <i class="fa-solid fa-boxes-stacked w-5 text-center text-lg"></i> <span class="font-medium">Management</span>
+        </button>
+        <button onclick="switchTab('history')" id="desk-btn-history" class="w-full text-left p-4 rounded-xl flex items-center gap-4 sidebar-inactive transition duration-200 group">
+            <i class="fa-solid fa-clock-rotate-left w-5 text-center text-lg"></i> <span class="font-medium">History</span>
+        </button>
+    </nav>
+
+    <!-- Footer -->
+    <div class="p-4 bg-slate-900/50 border-t border-slate-800">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold" id="user-avatar">U</div>
+            <div class="overflow-hidden">
+                <p class="text-xs font-bold text-white truncate" id="user-email">user@email.com</p>
+                <p class="text-[10px] text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Online</p>
+            </div>
+        </div>
+        <button onclick="handleLogout()" class="w-full py-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 rounded-lg transition text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2">
+            <i class="fa-solid fa-power-off"></i> Sign Out
+        </button>
+    </div>
+</aside>
         <!-- MOBILE HEADER -->
         <header class="md:hidden bg-white shadow-sm z-20 flex-shrink-0 border-b border-slate-200">
             <div class="px-4 py-3 flex justify-between items-center">
@@ -601,7 +621,7 @@ window.renderCustomerList = function() {
                 </button>
             </div>
         </div>`;
-    });
+    });2
 }
 
         function renderProductList() {
