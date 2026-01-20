@@ -10,7 +10,7 @@
     <meta name="theme-color" content="#1e293b">
     <link rel="apple-touch-icon" href="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png">
     
-    <!-- iOS Meta Tags -->
+    <!-- iOS Specific Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Anadi ERP">
@@ -35,7 +35,7 @@
         .install-btn { animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .8; } }
         
-        /* Page Loader */
+        /* Loader */
         .loader-spinner {
             border: 4px solid rgba(255, 255, 255, 0.1);
             border-left-color: #f97316;
@@ -69,8 +69,9 @@
                 </div>
             </div>
             
-            <!-- UNIVERSAL INSTALL BUTTON (Visible logic handled in JS) -->
-            <button id="installAppBtn" class="hidden bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg flex items-center gap-2 install-btn">
+            <!-- UNIVERSAL INSTALL BUTTON -->
+            <!-- Note: 'hidden' class hata di gayi hai JS handle karega -->
+            <button id="installAppBtn" style="display: none;" class="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg flex items-center gap-2 install-btn">
                 <i class="fa-solid fa-download"></i> Install App
             </button>
         </div>
@@ -131,7 +132,7 @@
             <div class="text-center">
                 <img src="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-md">
                 <h3 class="text-lg font-bold text-slate-800">Install Anadi ERP</h3>
-                <p class="text-sm text-slate-500 mt-1 mb-6">Install on your iPhone for full screen experience.</p>
+                <p class="text-sm text-slate-500 mt-1 mb-6">Full Screen App Experience</p>
                 
                 <div class="space-y-4 text-left bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <div class="flex items-center gap-3">
@@ -169,38 +170,49 @@
             });
         });
 
-        // --- 2. INSTALL LOGIC (ANDROID & iOS) ---
+        // --- 2. INSTALL BUTTON LOGIC (Fixed for iOS) ---
         
-        // Variables
         let deferredPrompt; // For Android
         const installBtn = document.getElementById('installAppBtn');
         const iosModal = document.getElementById('iosInstallModal');
 
-        // Detect iOS
-        const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-        const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+        // Robust iOS Detection (Covers iPhone, iPod & iPad)
+        const isIos = () => {
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            return /iphone|ipad|ipod/.test(userAgent) || 
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        };
 
-        // A. Android: Listen for 'beforeinstallprompt'
+        // Detect if already installed (Standalone Mode)
+        const isInStandaloneMode = () => {
+            return ('standalone' in window.navigator) && (window.navigator.standalone);
+        };
+
+        // --- LOGIC FLOW ---
+
+        // A. Android: Browser automatically fires this
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            installBtn.classList.remove('hidden'); // Show button for Android
+            installBtn.style.display = 'flex'; // Show button for Android
         });
 
-        // B. iOS: Manually show button if not installed
+        // B. iOS: Manually check and show button
+        // Agar iOS hai aur pehle se Installed nahi hai, to button dikhao
         if (isIos() && !isInStandaloneMode()) {
-            installBtn.classList.remove('hidden'); // Show button for iOS
+            installBtn.style.display = 'flex'; // Force show button on iOS
         }
 
         // C. Universal Click Handler
         installBtn.addEventListener('click', (e) => {
+            // Case 1: Android (deferredPrompt exists)
             if (deferredPrompt) {
-                // ANDROID LOGIC
-                installBtn.classList.add('hidden');
+                installBtn.style.display = 'none';
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
-            } else if (isIos()) {
-                // iOS LOGIC
+            } 
+            // Case 2: iOS (Show Instruction Modal)
+            else if (isIos()) {
                 iosModal.classList.remove('hidden');
             }
         });
