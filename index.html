@@ -238,6 +238,102 @@
             `;
             document.body.appendChild(iosPrompt);
         }
+        <!-- SCRIPTS -->
+    <script>
+        // --- 1. LOADER LOGIC (Fixed) ---
+        // Page load hote hi Loader dikhao
+        const loader = document.getElementById('appPreloader');
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+
+        window.addEventListener('load', () => {
+            // "load" hone ke baad bhi kam se kam 2.5 second ruko
+            setTimeout(() => {
+                loader.style.opacity = '0'; // Dheere se gayab karo
+                document.body.style.overflow = 'auto'; // Scroll chalu karo
+                
+                // Animation khatam hone ke baad element hatao
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 600); 
+            }, 2500); // 2500ms = 2.5 Seconds Delay
+        });
+
+        // Module Click Animation
+        document.querySelectorAll('.module-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                // Click karte hi wapas dikhao
+                loader.style.display = 'flex';
+                // Thoda delay taaki transition smooth ho
+                requestAnimationFrame(() => {
+                    loader.style.opacity = '1';
+                });
+            });
+        });
+
+        // Back Button Fix (Agar user back aaye to loader hatao)
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                loader.style.opacity = '0';
+                setTimeout(() => { loader.style.display = 'none'; }, 600);
+            }
+        });
+
+        // --- 2. INSTALL LOGIC ---
+        let deferredPrompt;
+        const installBtn = document.getElementById('installAppBtn');
+        const iosModal = document.getElementById('iosInstallModal');
+
+        const isIos = () => {
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            return /iphone|ipad|ipod/.test(userAgent) || 
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        };
+        const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'flex';
+        });
+
+        if (isIos() && !isInStandaloneMode()) {
+            installBtn.style.display = 'flex';
+        }
+
+        installBtn.addEventListener('click', (e) => {
+            if (deferredPrompt) {
+                installBtn.style.display = 'none';
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => { deferredPrompt = null; });
+            } else if (isIos()) {
+                iosModal.classList.remove('hidden');
+            }
+        });
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    // Force update checking
+                    reg.onupdatefound = () => {
+                        const installingWorker = reg.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    console.log('New content is available; please refresh.');
+                                } else {
+                                    console.log('Content is cached for offline use.');
+                                }
+                            }
+                        };
+                    };
+                });
+            });
+        }
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
