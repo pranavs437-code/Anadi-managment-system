@@ -1,13 +1,12 @@
-const CACHE_NAME = 'anadi-erp-v2'; 
+const CACHE_NAME = 'anadi-erp-v1';
 const urlsToCache = [
   './index.html',
-  './anadiaashram.html', // Make sure aapke file names sahi ho
-  './anadibilling.html',
-  './anadicowshelter.html',
-  './expensemanagment.html',
-  './inventorystock.html'
+  './dairy.html',
+  './billing.html',
+  './gaushala.html',
+  './expense.html',
+  './inventory.html'
 ];
-
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
