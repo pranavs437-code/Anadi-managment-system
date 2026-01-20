@@ -109,35 +109,51 @@
         
         <!-- A. DESKTOP SIDEBAR -->
         <aside class="hidden md:flex flex-col w-72 bg-dark text-white shadow-2xl z-40 flex-shrink-0">
-            <div class="p-6 flex items-center gap-3 border-b border-slate-700">
-                <div class="w-10 h-10 bg-white rounded-full p-1 flex items-center justify-center">
-                    <img src="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png" class="w-full h-full object-contain">
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg leading-none text-orange-500">Anadi Dairy</h1>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Processing Unit</p>
-                </div>
-            </div>
+    <!-- Header -->
+    <div class="p-6 flex items-center gap-3 border-b border-slate-700">
+        <div class="w-10 h-10 bg-white rounded-full p-1 flex items-center justify-center">
+            <img src="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png" class="w-full h-full object-contain">
+        </div>
+        <div>
+            <h1 class="font-bold text-lg leading-none text-orange-500">Anadi Dairy</h1>
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Processing Unit</p>
+        </div>
+    </div>
 
-            <nav class="flex-1 p-4 space-y-2">
-                <button onclick="switchTab('record')" id="desk-btn-record" class="w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-active transition">
-                    <i class="fa-solid fa-blender-phone w-6 text-center"></i> <span>Processing</span>
-                </button>
-                <button onclick="switchTab('history')" id="desk-btn-history" class="w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-inactive transition">
-                    <i class="fa-solid fa-clock-rotate-left w-6 text-center"></i> <span>History & Reports</span>
-                </button>
-            </nav>
-
-            <div class="p-4 border-t border-slate-700">
-                <div class="bg-slate-800 rounded-xl p-4 mb-4">
-                    <p class="text-xs text-slate-400 uppercase font-bold mb-1">Entry Date</p>
-                    <input type="date" id="desk-process-date" class="bg-slate-700 border border-slate-600 text-white text-sm font-bold rounded-lg p-2 w-full outline-none focus:ring-2 focus:ring-brand">
-                </div>
-                <button onclick="logout()" class="w-full py-2 text-red-400 hover:text-white hover:bg-red-600/20 rounded-lg transition font-bold text-sm flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-right-from-bracket"></i> Logout
-                </button>
+    <!-- Navigation -->
+    <nav class="flex-1 p-4 space-y-2">
+        
+        <!-- 👇 NEW BACK BUTTON 👇 -->
+        <a href="index.html" class="w-full text-left p-4 rounded-xl flex items-center gap-3 text-slate-400 hover:bg-slate-800 hover:text-white transition group">
+            <div class="w-6 text-center group-hover:-translate-x-1 transition-transform">
+                <i class="fa-solid fa-arrow-left"></i>
             </div>
-        </aside>
+            <span class="font-bold">Back to Dashboard</span>
+        </a>
+        
+        <!-- DIVIDER LINE -->
+        <div class="border-b border-slate-700 mx-4 my-2"></div>
+        <!-- 👆 NEW CODE END 👆 -->
+
+        <button onclick="switchTab('record')" id="desk-btn-record" class="w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-active transition">
+            <i class="fa-solid fa-blender-phone w-6 text-center"></i> <span>Processing</span>
+        </button>
+        <button onclick="switchTab('history')" id="desk-btn-history" class="w-full text-left p-4 rounded-xl flex items-center gap-3 sidebar-inactive transition">
+            <i class="fa-solid fa-clock-rotate-left w-6 text-center"></i> <span>History & Reports</span>
+        </button>
+    </nav>
+
+    <!-- Footer -->
+    <div class="p-4 border-t border-slate-700">
+        <div class="bg-slate-800 rounded-xl p-4 mb-4">
+            <p class="text-xs text-slate-400 uppercase font-bold mb-1">Entry Date</p>
+            <input type="date" id="desk-process-date" class="bg-slate-700 border border-slate-600 text-white text-sm font-bold rounded-lg p-2 w-full outline-none focus:ring-2 focus:ring-brand">
+        </div>
+        <button onclick="logout()" class="w-full py-2 text-red-400 hover:text-white hover:bg-red-600/20 rounded-lg transition font-bold text-sm flex items-center justify-center gap-2">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+    </div>
+</aside>
 
         <!-- B. MOBILE HEADER -->
         <header class="md:hidden bg-white shadow-sm z-20 flex-shrink-0">
