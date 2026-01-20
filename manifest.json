@@ -1,23 +1,23 @@
 {
-  "name": "Anadi Managment System",
+  "name": "Anadi ERP System",
   "short_name": "Anadi ERP",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
   "orientation": "portrait",
   "icons": [
     {
       "src": "https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
