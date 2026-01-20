@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Anadi ERP - Central Dashboard</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e293b">
+    <link rel="apple-touch-icon" href="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png">
+    <!-- iOS Specific Meta Tags (Zaroori hai iPhone ke liye) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Anadi ERP">
+    <!-- Tailwind & FontAwesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body { 
+            background-color: #f1f5f9; 
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:active {
+            transform: scale(0.95);
+        }
+        @media (hover: hover) {
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            }
+        }
+        .install-btn {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .8; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white p-6 shadow-lg rounded-b-[2rem] relative z-10">
+        <div class="flex items-center justify-between max-w-5xl mx-auto">
+            <div class="flex items-center gap-4">
+                <img src="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png" class="w-14 h-14 bg-white rounded-full p-1 shadow-md object-contain">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight">Anadi Seva Prakalp</h1>
+                    <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">Integrated ERP System</p>
+                </div>
+            </div>
+            <!-- Install Button (Hidden by default) -->
+            <button id="installAppBtn" class="hidden bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg flex items-center gap-2 install-btn">
+                <i class="fa-solid fa-download"></i> Install App
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="flex-1 max-w-5xl mx-auto w-full p-6 -mt-4 relative z-0">
+        <p class="text-slate-500 font-bold mb-4 uppercase text-xs tracking-widest pl-1">Select Module</p>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+            <!-- 1. Dairy Processing -->
+            <a href="anadiaashram.html" class="card-hover bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-5 group cursor-pointer decoration-0">
+                <div class="w-16 h-16 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center text-3xl shadow-sm group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-blender-phone"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Dairy Unit</h3>
+                    <p class="text-xs text-slate-500 mt-1">Milk processing, Paneer, Curd & Ghee production.</p>
+                </div>
+                <div class="ml-auto text-slate-300"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
+
+            <!-- 2. Billing System -->
+            <a href="anadibilling.html" class="card-hover bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-5 group cursor-pointer decoration-0">
+                <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-cash-register"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Billing POS</h3>
+                    <p class="text-xs text-slate-500 mt-1">Generate invoices, Manage Customers & WhatsApp.</p>
+                </div>
+                <div class="ml-auto text-slate-300"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
+
+            <!-- 3. Gaushala Manager -->
+            <a href="anadicowshelter.html" class="card-hover bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-5 group cursor-pointer decoration-0">
+                <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-cow"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Gaushala</h3>
+                    <p class="text-xs text-slate-500 mt-1">Cow records, Milk yield & Distribution tracking.</p>
+                </div>
+                <div class="ml-auto text-slate-300"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
+
+            <!-- 4. Expense Manager -->
+            <a href="expensemanagment.html" class="card-hover bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-5 group cursor-pointer decoration-0">
+                <div class="w-16 h-16 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center text-3xl shadow-sm group-hover:bg-red-500 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Expenses</h3>
+                    <p class="text-xs text-slate-500 mt-1">Track Daily Kharcha for Gaushala & Aashram.</p>
+                </div>
+                <div class="ml-auto text-slate-300"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
+
+            <!-- 5. Inventory Stock -->
+            <a href="inventorystock.html" class="card-hover bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-5 group cursor-pointer decoration-0">
+                <div class="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-3xl shadow-sm group-hover:bg-teal-600 group-hover:text-white transition-colors">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Inventory</h3>
+                    <p class="text-xs text-slate-500 mt-1">Stock In/Out, QR Scanning & Dispatch logs.</p>
+                </div>
+                <div class="ml-auto text-slate-300"><i class="fa-solid fa-chevron-right"></i></div>
+            </a>
+
+        </div>
+    </main>
+
+    <footer class="text-center py-6 text-slate-400 text-xs font-mono">
+        Anadi Seva Prakalp © 2026 | All Systems Operational
+    </footer>
+
+    <!-- Service Worker Registration & Install Logic -->
+    <script>
+        // 1. Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => console.log('Service Worker registered', reg))
+                    .catch((err) => console.log('Service Worker failed', err));
+            });
+        }
+
+        // 2. Install App Logic
+        let deferredPrompt;
+        const installBtn = document.getElementById('installAppBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            deferredPrompt = e;
+            // Update UI to notify the user they can add to home screen
+            installBtn.classList.remove('hidden');
+        });
+
+        installBtn.addEventListener('click', (e) => {
+            // Hide our user interface that shows our A2HS button
+            installBtn.classList.add('hidden');
+            // Show the prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the A2HS prompt');
+                } else {
+                    console.log('User dismissed the A2HS prompt');
+                }
+                deferredPrompt = null;
+            });
+        });
+        /////////////////////////////////
+        // Check if user is on iOS
+const isIos = () => {
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod/.test(userAgent);
+}
+
+// Check if app is running in standalone mode (already installed)
+const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+
+// Agar iOS hai aur abhi tak install nahi hua hai, toh message dikhao
+if (isIos() && !isInStandaloneMode()) {
+    // Aap yahan ek chota sa popup dikha sakte hain
+    const iosPrompt = document.createElement('div');
+    iosPrompt.style.position = 'fixed';
+    iosPrompt.style.bottom = '0';
+    iosPrompt.style.left = '0';
+    iosPrompt.style.right = '0';
+    iosPrompt.style.backgroundColor = '#1e293b';
+    iosPrompt.style.color = 'white';
+    iosPrompt.style.padding = '20px';
+    iosPrompt.style.textAlign = 'center';
+    iosPrompt.style.zIndex = '9999';
+    iosPrompt.innerHTML = `
+        <p style="margin-bottom:10px; font-size:14px;">Install this App on your iPhone:</p>
+        <p style="font-size:12px; color:#cbd5e1;">Tap <i class="fa-solid fa-arrow-up-from-bracket"></i> (Share) and select <strong>Add to Home Screen</strong>.</p>
+        <button onclick="this.parentElement.style.display='none'" style="margin-top:10px; color:#ea580c; background:none; border:none; font-weight:bold;">Dismiss</button>
+    `;
+    document.body.appendChild(iosPrompt);
+}
+    </script>
+</body>
+</html>
