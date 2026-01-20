@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Anadi Managment System - Central Dashboard</title>
+    <title>Anadi ERP - Central Dashboard</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
-<meta name="background-color" content="#ffffff">
+    <meta name="background-color" content="#0f172a">
     <link rel="apple-touch-icon" href="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png">
     
     <!-- iOS Specific Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Anadi Managment System">
+    <meta name="apple-mobile-web-app-title" content="Anadi ERP">
     
     <!-- Tailwind & FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -25,49 +25,73 @@
             background-color: #f1f5f9; 
             -webkit-tap-highlight-color: transparent;
             font-family: 'Segoe UI', sans-serif;
+            overflow: hidden; /* Hide scroll during loading */
         }
-        .card-hover {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .card-hover:active {
-            transform: scale(0.95);
-        }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:active { transform: scale(0.95); }
         @media (hover: hover) {
-            .card-hover:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            }
-        }
-        .install-btn {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .8; }
+            .card-hover:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
         }
         
-        /* Loader Animation */
-        .loader-spinner {
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-left-color: #f97316; /* Orange-500 */
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
+        /* Install Button Animation */
+        .install-btn { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .8; } }
+        
+        /* Preloader Styles */
+        #appPreloader {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background-color: #0f172a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease-out, visibility 0.6s;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        
+        .logo-pulse { animation: logoPulse 2s infinite ease-in-out; }
+        @keyframes logoPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
         }
+
+        .loading-bar {
+            width: 150px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        .loading-bar-inner {
+            height: 100%;
+            width: 50%;
+            background: linear-gradient(90deg, #f97316, #ea580c);
+            border-radius: 4px;
+            animation: loadingMove 1.5s infinite ease-in-out;
+        }
+        @keyframes loadingMove {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(250%); }
+        }
+
+        .slide-up { animation: slideUp 0.3s ease-out forwards; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- === FULL SCREEN LOADER (Hidden by default) === -->
-    <div id="pageLoader" class="hidden fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex flex-col items-center justify-center transition-opacity duration-300">
-        <div class="loader-spinner mb-4"></div>
-        <h2 class="text-white text-xl font-bold tracking-wider animate-pulse">OPENING...</h2>
-        <p class="text-slate-400 text-xs mt-2">Please wait</p>
+    <!-- === APP STARTUP PRELOADER === -->
+    <div id="appPreloader">
+        <div class="relative">
+            <div class="absolute inset-0 bg-orange-500 blur-2xl opacity-20 rounded-full animate-pulse"></div>
+            <img src="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png" 
+                 class="w-24 h-24 object-contain relative z-10 logo-pulse bg-white rounded-full p-2 shadow-2xl">
+        </div>
+        <h1 class="text-white text-2xl font-bold mt-6 tracking-wide">Anadi ERP</h1>
+        <p class="text-slate-400 text-xs uppercase tracking-widest mt-1">System Loading</p>
+        <div class="loading-bar"><div class="loading-bar-inner"></div></div>
     </div>
 
     <!-- Header -->
@@ -80,8 +104,8 @@
                     <p class="text-slate-400 text-sm font-medium uppercase tracking-wider">Integrated ERP System</p>
                 </div>
             </div>
-            <!-- Install Button (Hidden by default) -->
-            <button id="installAppBtn" class="hidden bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg flex items-center gap-2 install-btn">
+            <!-- Install Button -->
+            <button id="installAppBtn" style="display: none;" class="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg flex items-center gap-2 install-btn">
                 <i class="fa-solid fa-download"></i> Install App
             </button>
         </div>
@@ -92,187 +116,105 @@
         <p class="text-slate-500 font-bold mb-4 uppercase text-xs tracking-widest pl-1">Select Module</p>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-
-            <!-- 1. Dairy Processing -->
-            <!-- Note: class 'module-link' added for loader trigger -->
+            <!-- 1. Dairy -->
             <a href="anadiaashram.html" class="module-link card-hover bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-5 group cursor-pointer decoration-0">
-                <div class="w-16 h-16 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center text-3xl shadow-sm group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                    <i class="fa-solid fa-blender-phone"></i>
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800">Dairy Unit</h3>
-                    <p class="text-xs text-slate-500 mt-1">Milk processing, Paneer, Curd & Ghee production.</p>
-                </div>
+                <div class="w-16 h-16 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center text-3xl shadow-sm group-hover:bg-orange-500 group-hover:text-white transition-colors"><i class="fa-solid fa-blender-phone"></i></div>
+                <div><h3 class="text-lg font-bold text-slate-800">Dairy Unit</h3><p class="text-xs text-slate-500 mt-1">Milk processing & reports.</p></div>
                 <div class="ml-auto text-slate-300"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
 
-            <!-- 2. Billing System -->
+            <!-- 2. Billing -->
             <a href="anadibilling.html" class="module-link card-hover bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-5 group cursor-pointer decoration-0">
-                <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                    <i class="fa-solid fa-cash-register"></i>
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800">Billing POS</h3>
-                    <p class="text-xs text-slate-500 mt-1">Generate invoices, Manage Customers & WhatsApp.</p>
-                </div>
+                <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors"><i class="fa-solid fa-cash-register"></i></div>
+                <div><h3 class="text-lg font-bold text-slate-800">Billing POS</h3><p class="text-xs text-slate-500 mt-1">Invoices & Customers.</p></div>
                 <div class="ml-auto text-slate-300"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
 
-            <!-- 3. Gaushala Manager -->
+            <!-- 3. Gaushala -->
             <a href="anadicowshelter.html" class="module-link card-hover bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-5 group cursor-pointer decoration-0">
-                <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                    <i class="fa-solid fa-cow"></i>
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800">Gaushala</h3>
-                    <p class="text-xs text-slate-500 mt-1">Cow records, Milk yield & Distribution tracking.</p>
-                </div>
+                <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-3xl shadow-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors"><i class="fa-solid fa-cow"></i></div>
+                <div><h3 class="text-lg font-bold text-slate-800">Gaushala</h3><p class="text-xs text-slate-500 mt-1">Cow & Milk records.</p></div>
                 <div class="ml-auto text-slate-300"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
 
-            <!-- 4. Expense Manager -->
+            <!-- 4. Expense -->
             <a href="expensemanagment.html" class="module-link card-hover bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-5 group cursor-pointer decoration-0">
-                <div class="w-16 h-16 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center text-3xl shadow-sm group-hover:bg-red-500 group-hover:text-white transition-colors">
-                    <i class="fa-solid fa-wallet"></i>
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800">Expenses</h3>
-                    <p class="text-xs text-slate-500 mt-1">Track Daily Kharcha for Gaushala & Aashram.</p>
-                </div>
+                <div class="w-16 h-16 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center text-3xl shadow-sm group-hover:bg-red-500 group-hover:text-white transition-colors"><i class="fa-solid fa-wallet"></i></div>
+                <div><h3 class="text-lg font-bold text-slate-800">Expenses</h3><p class="text-xs text-slate-500 mt-1">Daily Kharcha tracking.</p></div>
                 <div class="ml-auto text-slate-300"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
 
-            <!-- 5. Inventory Stock -->
+            <!-- 5. Inventory -->
             <a href="inventorystock.html" class="module-link card-hover bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-5 group cursor-pointer decoration-0">
-                <div class="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-3xl shadow-sm group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                    <i class="fa-solid fa-boxes-stacked"></i>
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800">Inventory</h3>
-                    <p class="text-xs text-slate-500 mt-1">Stock In/Out, QR Scanning & Dispatch logs.</p>
-                </div>
+                <div class="w-16 h-16 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-3xl shadow-sm group-hover:bg-teal-600 group-hover:text-white transition-colors"><i class="fa-solid fa-boxes-stacked"></i></div>
+                <div><h3 class="text-lg font-bold text-slate-800">Inventory</h3><p class="text-xs text-slate-500 mt-1">Stock & Dispatch.</p></div>
                 <div class="ml-auto text-slate-300"><i class="fa-solid fa-chevron-right"></i></div>
             </a>
-
         </div>
     </main>
 
     <footer class="text-center py-6 text-slate-400 text-xs font-mono">
-        Anadi Seva Prakalp © 2026 | All Systems Operational
+        Anadi Seva Prakalp © 2026
     </footer>
 
-    <!-- Scripts -->
+    <!-- iOS Install Instruction Modal -->
+    <div id="iosInstallModal" class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end justify-center">
+        <div class="bg-white w-full max-w-md rounded-t-2xl p-6 slide-up relative">
+            <button onclick="document.getElementById('iosInstallModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <div class="text-center">
+                <img src="https://anadisevaprakalp.org/wp-content/uploads/elementor/thumbs/anadi-farm-logo-2nd-copy-png-f-pf3gkbrok4it2hn25dsym3ek5sdjquv18uov85lvww.png" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-md bg-white p-1">
+                <h3 class="text-lg font-bold text-slate-800">Install Anadi ERP</h3>
+                <p class="text-sm text-slate-500 mt-1 mb-6">Full Screen App Experience</p>
+                <div class="space-y-4 text-left bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center text-xs font-bold text-slate-600">1</span>
+                        <p class="text-sm text-slate-600">Tap the <span class="font-bold"><i class="fa-solid fa-arrow-up-from-bracket mx-1"></i> Share</span> button.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center text-xs font-bold text-slate-600">2</span>
+                        <p class="text-sm text-slate-600">Select <span class="font-bold"><i class="fa-regular fa-square-plus mx-1"></i> Add to Home Screen</span>.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center text-xs font-bold text-slate-600">3</span>
+                        <p class="text-sm text-slate-600">Tap <span class="font-bold text-blue-600">Add</span>.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
     <script>
-        // --- LOADER LOGIC ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const loader = document.getElementById('pageLoader');
-            // Select all links with class 'module-link'
-            const links = document.querySelectorAll('.module-link');
-
-            links.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    // Show Loader immediately
-                    loader.classList.remove('hidden');
-                    
-                    // Thoda delay (optional) taaki animation smooth lage agar page cache se load ho raha hai
-                    // setTimeout(() => { window.location.href = this.href; }, 100); 
-                });
-            });
-
-            // Agar user "Back" button dabata hai, to loader hatana zaroori hai
-            window.addEventListener('pageshow', (event) => {
-                if (event.persisted) {
-                    loader.classList.add('hidden');
-                }
-            });
-        });
-
-        // --- SERVICE WORKER & PWA INSTALL ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then((reg) => console.log('Service Worker registered', reg))
-                    .catch((err) => console.log('Service Worker failed', err));
-            });
-        }
-
-        let deferredPrompt;
-        const installBtn = document.getElementById('installAppBtn');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.classList.remove('hidden');
-        });
-
-        installBtn.addEventListener('click', (e) => {
-            installBtn.classList.add('hidden');
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                deferredPrompt = null;
-            });
-        });
-
-        // --- IOS INSTALL INSTRUCTIONS ---
-        const isIos = () => {
-            const userAgent = window.navigator.userAgent.toLowerCase();
-            return /iphone|ipad|ipod/.test(userAgent);
-        }
-        const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
-
-        if (isIos() && !isInStandaloneMode()) {
-            const iosPrompt = document.createElement('div');
-            iosPrompt.style.position = 'fixed';
-            iosPrompt.style.bottom = '0';
-            iosPrompt.style.left = '0';
-            iosPrompt.style.right = '0';
-            iosPrompt.style.backgroundColor = '#1e293b';
-            iosPrompt.style.color = 'white';
-            iosPrompt.style.padding = '20px';
-            iosPrompt.style.textAlign = 'center';
-            iosPrompt.style.zIndex = '9999';
-            iosPrompt.innerHTML = `
-                <p style="margin-bottom:10px; font-size:14px;">Install this App on your iPhone:</p>
-                <p style="font-size:12px; color:#cbd5e1;">Tap <i class="fa-solid fa-arrow-up-from-bracket"></i> (Share) and select <strong>Add to Home Screen</strong>.</p>
-                <button onclick="this.parentElement.style.display='none'" style="margin-top:10px; color:#ea580c; background:none; border:none; font-weight:bold;">Dismiss</button>
-            `;
-            document.body.appendChild(iosPrompt);
-        }
-       
-        // --- 1. LOADER LOGIC (Fixed) ---
-        // Page load hote hi Loader dikhao
-        const loader = document.getElementById('appPreloader');
-        loader.style.display = 'flex';
-        loader.style.opacity = '1';
-
+        // --- 1. LOADER LOGIC ---
         window.addEventListener('load', () => {
-            // "load" hone ke baad bhi kam se kam 2.5 second ruko
+            const loader = document.getElementById('appPreloader');
+            
+            // Force 2.5s Delay
             setTimeout(() => {
-                loader.style.opacity = '0'; // Dheere se gayab karo
-                document.body.style.overflow = 'auto'; // Scroll chalu karo
+                loader.style.opacity = '0';
+                document.body.style.overflow = 'auto'; // Enable Scroll
                 
-                // Animation khatam hone ke baad element hatao
                 setTimeout(() => {
                     loader.style.display = 'none';
-                }, 600); 
-            }, 2500); // 2500ms = 2.5 Seconds Delay
+                }, 600);
+            }, 2500); 
         });
 
-        // Module Click Animation
+        // Module Click (Page Transition)
         document.querySelectorAll('.module-link').forEach(link => {
             link.addEventListener('click', function(e) {
-                // Click karte hi wapas dikhao
+                const loader = document.getElementById('appPreloader');
                 loader.style.display = 'flex';
-                // Thoda delay taaki transition smooth ho
-                requestAnimationFrame(() => {
-                    loader.style.opacity = '1';
-                });
+                requestAnimationFrame(() => { loader.style.opacity = '1'; });
             });
         });
 
-        // Back Button Fix (Agar user back aaye to loader hatao)
+        // Back Button Fix
         window.addEventListener('pageshow', (event) => {
             if (event.persisted) {
+                const loader = document.getElementById('appPreloader');
                 loader.style.opacity = '0';
                 setTimeout(() => { loader.style.display = 'none'; }, 600);
             }
@@ -283,23 +225,29 @@
         const installBtn = document.getElementById('installAppBtn');
         const iosModal = document.getElementById('iosInstallModal');
 
+        // Detect iOS (iPhone/iPad)
         const isIos = () => {
             const userAgent = window.navigator.userAgent.toLowerCase();
             return /iphone|ipad|ipod/.test(userAgent) || 
                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         };
+
+        // Detect Installed Mode
         const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
 
+        // A. Android
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             installBtn.style.display = 'flex';
         });
 
+        // B. iOS
         if (isIos() && !isInStandaloneMode()) {
             installBtn.style.display = 'flex';
         }
 
+        // C. Universal Click
         installBtn.addEventListener('click', (e) => {
             if (deferredPrompt) {
                 installBtn.style.display = 'none';
@@ -310,27 +258,12 @@
             }
         });
 
-        // Service Worker Registration
+        // Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
-                    // Force update checking
-                    reg.onupdatefound = () => {
-                        const installingWorker = reg.installing;
-                        installingWorker.onstatechange = () => {
-                            if (installingWorker.state === 'installed') {
-                                if (navigator.serviceWorker.controller) {
-                                    console.log('New content is available; please refresh.');
-                                } else {
-                                    console.log('Content is cached for offline use.');
-                                }
-                            }
-                        };
-                    };
-                });
+                navigator.serviceWorker.register('./sw.js');
             });
         }
-    
     </script>
 </body>
 </html>
