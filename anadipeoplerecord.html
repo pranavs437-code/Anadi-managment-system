@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Anadi Seva Prakalp - people record</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- PDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #ff7b00;
+            --primary-dark: #e66e00;
+            --secondary: #1e293b;
+            --bg-body: #f8fafc;
+            --white: #ffffff;
+            --gray-light: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --sidebar-width: 260px;
+        }
+
+        * { box-sizing: border-box; outline: none; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--secondary);
+            margin: 0; padding: 0; padding-bottom: 80px;
+        }
+
+        /* --- LAYOUT --- */
+        .app-container { display: flex; min-height: 100vh; }
+        
+        .sidebar {
+            display: none; width: var(--sidebar-width); background: var(--white);
+            height: 100vh; position: fixed; left: 0; top: 0;
+            border-right: 1px solid var(--gray-light); padding: 20px; z-index: 1000;
+        }
+
+        .main-content { flex: 1; width: 100%; padding: 20px; }
+
+        @media (min-width: 992px) {
+            body { padding-bottom: 0; }
+            .sidebar { display: flex; flex-direction: column; }
+            .bottom-nav { display: none !important; }
+            .main-content { margin-left: var(--sidebar-width); padding: 40px; }
+            .form-grid-layout { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+            .form-grid-full { grid-column: span 2; }
+            .stats-grid { grid-template-columns: repeat(4, 1fr) !important; }
+            .stat-card.full-width { grid-column: span 1 !important; }
+            #recordsList { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        }
+
+        /* --- COMPONENTS --- */
+        .logo-area { display: flex; align-items: center; gap: 12px; margin-bottom: 30px; }
+        .logo-area img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--primary); }
+        .app-title h1 { margin: 0; font-size: 18px; color: var(--primary); }
+        .app-title p { margin: 0; font-size: 12px; color: #64748b; }
+
+        .mobile-header {
+            background: var(--white); padding: 15px; display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 99; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        @media (min-width: 992px) { .mobile-header { display: none; } }
+
+        /* Nav & Bottom Bar */
+        .nav-btn {
+            display: flex; align-items: center; gap: 15px; width: 100%; padding: 15px; margin-bottom: 10px;
+            border: none; background: transparent; border-radius: 12px; color: #64748b; font-size: 16px; cursor: pointer; transition: 0.3s;
+        }
+        .nav-btn.active { background: var(--primary); color: white; }
+
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; background: var(--white);
+            display: flex; justify-content: space-around; padding: 12px; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 100;
+        }
+        .b-nav-item { border: none; background: none; display: flex; flex-direction: column; align-items: center; font-size: 11px; color: #94a3b8; }
+        .b-nav-item.active { color: var(--primary); }
+        .b-nav-item i { font-size: 20px; margin-bottom: 4px; }
+
+        /* Stats & Forms */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: var(--white); padding: 20px; border-radius: 16px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+        .stat-card.orange { background: linear-gradient(135deg, #ff9933 0%, #ff7b00 100%); color: white; }
+        .stat-val { font-size: 28px; font-weight: 700; }
+        .stat-label { font-size: 13px; color: #64748b; margin-top: 5px; }
+        .stat-card.orange .stat-label { color: rgba(255,255,255,0.9); }
+
+        .card-box { background: var(--white); padding: 25px; border-radius: 20px; box-shadow: var(--shadow); max-width: 900px; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #64748b; }
+        .form-control { width: 100%; padding: 12px 15px; border: 1px solid var(--gray-light); border-radius: 10px; font-size: 15px; }
+        
+        .photo-wrapper { display: flex; flex-direction: column; align-items: center; margin-bottom: 25px; }
+        .photo-circle {
+            width: 120px; height: 120px; border-radius: 50%; background: #f8fafc; border: 2px dashed #cbd5e1;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative;
+        }
+        .photo-circle img { width: 100%; height: 100%; object-fit: cover; display: none; }
+
+        /* Camera */
+        .camera-area { display: none; text-align: center; margin-bottom: 15px; }
+        #videoFeed { width: 100%; max-width: 300px; border-radius: 10px; transform: scaleX(-1); border: 2px solid var(--primary); }
+        .cam-btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: 600; cursor: pointer; }
+        .btn-sm { padding: 8px 15px; font-size: 14px; width: auto; }
+        .btn-outline { background: white; border: 1px solid var(--primary); color: var(--primary); }
+
+        /* Records List */
+        .search-container { position: sticky; top: 0; z-index: 50; background: var(--bg-body); padding: 15px 0; }
+        .search-input { width: 100%; padding: 15px 45px; border-radius: 30px; border: none; background: var(--white); box-shadow: var(--shadow); }
+        
+        .record-card { background: var(--white); border-radius: 16px; padding: 15px; display: flex; gap: 15px; align-items: center; box-shadow: var(--shadow); margin-bottom: 15px; position: relative; transition: 0.2s; }
+        .record-card:hover { transform: translateY(-2px); }
+        @media (min-width: 992px) { .record-card { flex-direction: column; text-align: center; padding: 25px; margin-bottom: 0; } }
+        
+        .record-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; background: #f1f5f9; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; margin-top: 5px; }
+        .bg-police { background: #e0f2fe; color: #0284c7; }
+        .bg-self { background: #dcfce7; color: #16a34a; }
+        .date-badge { position: absolute; top: 10px; right: 10px; font-size: 10px; color: #94a3b8; background: #f1f5f9; padding: 3px 8px; border-radius: 5px; }
+
+        /* Action Buttons */
+        .action-btn-group { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; }
+        @media (min-width: 992px) { .action-btn-group { justify-content: center; width: 100%; margin-top: 15px; } }
+        
+        .btn-icon { width: 35px; height: 35px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+        .btn-edit { background: #e0f2fe; color: #0284c7; }
+        .btn-pdf { background: #dcfce7; color: #16a34a; }
+        .btn-del { background: #fee2e2; color: #ef4444; }
+
+        /* --- EDIT MODAL (UPDATED) --- */
+        .custom-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;
+        }
+        .custom-modal.show { display: flex; }
+        .modal-content {
+            background: white; width: 95%; max-width: 600px; max-height: 90vh; overflow-y: auto;
+            border-radius: 20px; padding: 25px; position: relative; animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .close-modal { position: absolute; top: 15px; right: 15px; font-size: 24px; cursor: pointer; color: #94a3b8; }
+
+        /* --- PDF TEMPLATE (Hidden) --- */
+        #pdfTemplate {
+            display: none; width: 700px; padding: 30px; background: white; font-family: 'Times New Roman', serif;
+        }
+        .pdf-header { text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; }
+        .pdf-logo { width: 80px; height: 80px; }
+        .pdf-title { color: var(--primary); font-size: 24px; font-weight: bold; margin: 5px 0; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .pdf-table td { border: 1px solid #ddd; padding: 10px; font-size: 14px; }
+        .pdf-label { font-weight: bold; background: #f9f9f9; width: 30%; }
+        .pdf-photo { width: 120px; height: 120px; object-fit: cover; border: 1px solid #ccc; display: block; margin: 0 auto; }
+
+        .view-section { display: none; animation: fadeIn 0.4s ease; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="logo-area">
+            <img src="https://anadisevaprakalp.org/wp-content/uploads/2021/07/WhatsApp-Image-2020-11-13-at-6.47.42-PM-1-100x100.png" alt="Logo">
+            <div class="app-title">
+                <h1>Anadi Seva Prakalp</h1>
+                <p>Admin Dashboard</p>
+            </div>
+        </div>
+        <ul style="list-style: none; padding: 0;">
+            <li><button class="nav-btn active" onclick="switchTab('home')"><i class="fa-solid fa-chart-pie"></i> Dashboard</button></li>
+            <li><button class="nav-btn" onclick="switchTab('add')"><i class="fa-solid fa-user-plus"></i> New Admission</button></li>
+            <li><button class="nav-btn" onclick="switchTab('list')"><i class="fa-solid fa-users"></i> Records</button></li>
+        </ul>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        
+        <div class="mobile-header">
+            <div class="logo-area" style="margin-bottom:0;">
+                <img src="https://anadisevaprakalp.org/wp-content/uploads/2021/07/WhatsApp-Image-2020-11-13-at-6.47.42-PM-1-100x100.png" alt="Logo">
+                <div class="app-title">
+                    <h1>Anadi Seva</h1>
+                    <p>Record Keeper</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <section id="view-home" class="view-section active">
+            <h2 style="margin-bottom: 20px;">Dashboard Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card orange full-width">
+                    <i class="fa-solid fa-users" style="position: absolute; right: 15px; bottom: 15px; font-size: 40px; opacity: 0.2;"></i>
+                    <div class="stat-val" id="totalCount">0</div>
+                    <div class="stat-label">Total Inmates</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" id="maleCount">0</div>
+                    <div class="stat-label">Male</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" id="femaleCount">0</div>
+                    <div class="stat-label">Female</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val" id="policeCount">0</div>
+                    <div class="stat-label">Police Cases</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADD FORM -->
+        <section id="view-add" class="view-section">
+            <h2 style="margin-bottom: 20px;">New Admission</h2>
+            <div class="card-box">
+                <form id="addForm">
+                    <div class="form-group">
+                        <label class="form-label" style="color: var(--primary);">📅 Admission Date</label>
+                        <input type="date" class="form-control" id="admissionDate">
+                    </div>
+                    
+                    <div class="photo-wrapper">
+                        <div class="camera-area" id="cameraArea">
+                            <video id="videoFeed" autoplay playsinline></video>
+                            <canvas id="canvas" style="display:none;"></canvas>
+                            <div class="cam-btn-group">
+                                <button type="button" class="btn-primary btn-sm" onclick="capturePhoto()">📸 Click</button>
+                                <button type="button" class="btn-primary btn-sm btn-outline" onclick="stopCamera()">Cancel</button>
+                            </div>
+                        </div>
+                        <div class="photo-circle" id="photoBox" onclick="showPhotoOptions()">
+                            <i class="fa-solid fa-camera fa-2x" style="color:#94a3b8"></i>
+                            <img id="photoPreview" src="">
+                        </div>
+                        <div style="margin-top: 10px; display: flex; gap: 10px;">
+                            <button type="button" class="btn-primary btn-sm btn-outline" onclick="startCamera()">Camera</button>
+                            <button type="button" class="btn-primary btn-sm btn-outline" onclick="document.getElementById('photoInput').click()">Gallery</button>
+                        </div>
+                        <input type="file" id="photoInput" accept="image/*" hidden>
+                    </div>
+
+                    <div class="form-grid-layout">
+                        <div class="form-group form-grid-full">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Gender</label>
+                            <select class="form-control" id="gender">
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <div style="display: flex; gap: 10px;">
+                                <div style="flex: 1;"><label class="form-label">DOB</label><input type="date" class="form-control" id="dob"></div>
+                                <div style="flex: 1;"><label class="form-label">Age</label><input type="number" class="form-control" id="age"></div>
+                            </div>
+                        </div>
+                        <div class="form-group form-grid-full">
+                            <label class="form-label">Aadhar No</label>
+                            <input type="number" class="form-control" id="aadhar">
+                        </div>
+                        
+                        <div class="form-group form-grid-full" style="background: #f8fafc; padding: 15px; border-radius: 10px;">
+                            <label class="form-label">Source</label>
+                            <select class="form-control mb-2" id="source">
+                                <option value="Police">Police</option>
+                                <option value="Children">Children</option>
+                                <option value="Self">Self</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <div id="sourceDetails" style="display:none; margin-top: 10px;">
+                                <div class="row" style="display: flex; gap: 10px;">
+                                    <input type="text" class="form-control" id="sourceName" placeholder="Bringer Name" style="flex:1;">
+                                    <input type="tel" class="form-control" id="sourcePhone" placeholder="Bringer Phone" style="flex:1;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group"><label class="form-label">Guardian Name</label><input type="text" class="form-control" id="guardianName"></div>
+                        <div class="form-group"><label class="form-label">Guardian Phone</label><input type="tel" class="form-control" id="guardianPhone"></div>
+                        <div class="form-group form-grid-full"><label class="form-label">Permanent Address</label><textarea class="form-control" id="address" rows="2"></textarea></div>
+                        <div class="form-group form-grid-full"><label class="form-label">Temporary Address</label><textarea class="form-control" id="tempAddress" rows="2"></textarea></div>
+                    </div>
+
+                    <button type="button" id="saveBtn" class="btn-primary" style="margin-top: 20px;">Save Record</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- RECORDS LIST -->
+        <section id="view-list" class="view-section">
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 18px; top: 30px; color: #94a3b8;"></i>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search by Name, Aadhar...">
+            </div>
+            <div id="recordsList">
+                <p style="text-align:center; color:#94a3b8; margin-top:50px;">Loading...</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MOBILE NAV -->
+    <nav class="bottom-nav">
+        <button class="b-nav-item active" onclick="switchTab('home')"><i class="fa-solid fa-house"></i> Home</button>
+        <button class="b-nav-item" onclick="switchTab('add')"><i class="fa-solid fa-circle-plus" style="font-size:24px; color:var(--primary)"></i> Add</button>
+        <button class="b-nav-item" onclick="switchTab('list')"><i class="fa-solid fa-list"></i> Records</button>
+    </nav>
+</div>
+
+<!-- FULL EDIT MODAL -->
+<div class="custom-modal" id="editModal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeEditModal()">&times;</span>
+        <h3 style="margin-top:0; color:var(--primary);">Edit Full Record</h3>
+        <input type="hidden" id="editId">
+        
+        <!-- Photo Update -->
+        <div class="photo-wrapper" style="margin-bottom: 15px;">
+            <div class="photo-circle" style="width: 100px; height: 100px;" onclick="document.getElementById('editPhotoInput').click()">
+                <img id="editPhotoPreview" src="" style="display:block;">
+            </div>
+            <small style="color:var(--primary); cursor:pointer;" onclick="document.getElementById('editPhotoInput').click()">Tap to Change Photo</small>
+            <input type="file" id="editPhotoInput" accept="image/*" hidden>
+        </div>
+
+        <!-- Form Fields -->
+        <div class="form-group">
+            <label class="form-label">Admission Date</label>
+            <input type="date" class="form-control" id="editAdmissionDate">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-control" id="editName">
+        </div>
+
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+             <div style="flex:1;"><label class="form-label">Age</label><input type="number" class="form-control" id="editAge"></div>
+             <div style="flex:1;"><label class="form-label">Gender</label>
+                 <select class="form-control" id="editGender">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                 </select>
+             </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">DOB</label>
+            <input type="date" class="form-control" id="editDob">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Aadhar No</label>
+            <input type="number" class="form-control" id="editAadhar">
+        </div>
+
+        <div class="form-group" style="background:#f8fafc; padding:10px; border-radius:10px;">
+             <label class="form-label">Source Type</label>
+             <select class="form-control" id="editSource">
+                <option value="Police">Police</option>
+                <option value="Children">Children</option>
+                <option value="Self">Self</option>
+                <option value="Other">Other</option>
+             </select>
+             <div id="editSourceDetails" style="margin-top:10px;">
+                <input type="text" class="form-control mb-2" id="editSourceName" placeholder="Bringer Name">
+                <input type="text" class="form-control" id="editSourcePhone" placeholder="Bringer Phone">
+             </div>
+        </div>
+
+        <div class="form-group"><label class="form-label">Guardian Name</label><input type="text" class="form-control" id="editGName"></div>
+        <div class="form-group"><label class="form-label">Guardian Phone</label><input type="text" class="form-control" id="editGPhone"></div>
+        <div class="form-group"><label class="form-label">Perm. Address</label><textarea class="form-control" id="editAddr" rows="2"></textarea></div>
+        <div class="form-group"><label class="form-label">Temp. Address</label><textarea class="form-control" id="editTempAddr" rows="2"></textarea></div>
+
+        <button class="btn-primary" onclick="saveEdit()">Update Full Record</button>
+    </div>
+</div>
+
+<!-- HIDDEN PDF TEMPLATE -->
+<div id="pdfTemplate">
+    <div class="pdf-header">
+        <img src="https://anadisevaprakalp.org/wp-content/uploads/2021/07/WhatsApp-Image-2020-11-13-at-6.47.42-PM-1-100x100.png" class="pdf-logo">
+        <div class="pdf-title">ANADI SEVA PRAKALP</div>
+        <p style="margin:0; font-size:14px;">Old Age Home & Care Center Record</p>
+    </div>
+    
+    <img id="pdfPhoto" class="pdf-photo" src="">
+    
+    <table class="pdf-table">
+        <tr><td class="pdf-label">Registration Date</td><td id="pdfDate"></td></tr>
+        <tr><td class="pdf-label">Full Name</td><td id="pdfName"></td></tr>
+        <tr><td class="pdf-label">Age / Gender</td><td id="pdfAgeGender"></td></tr>
+        <tr><td class="pdf-label">DOB</td><td id="pdfDob"></td></tr>
+        <tr><td class="pdf-label">Aadhar No</td><td id="pdfAadhar"></td></tr>
+        <tr><td class="pdf-label">Admission Source</td><td id="pdfSource"></td></tr>
+        <tr><td class="pdf-label">Bringer Details</td><td id="pdfBringer"></td></tr>
+        <tr><td class="pdf-label">Guardian Name</td><td id="pdfGName"></td></tr>
+        <tr><td class="pdf-label">Guardian Phone</td><td id="pdfGPhone"></td></tr>
+        <tr><td class="pdf-label">Permanent Address</td><td id="pdfAddr"></td></tr>
+        <tr><td class="pdf-label">Temporary Address</td><td id="pdfTempAddr"></td></tr>
+    </table>
+    
+    <div style="margin-top: 40px; text-align: right; font-size: 12px;">
+        <p>Authorized Signature</p>
+        <p>_____________________</p>
+    </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB8zdM9Mx5qMRk71C57oCagKfSHFZZXx58",
+    authDomain: "anadipeoplerecord.firebaseapp.com",
+    databaseURL: "https://anadipeoplerecord-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "anadipeoplerecord",
+    storageBucket: "anadipeoplerecord.firebasestorage.app",
+    messagingSenderId: "739962751112",
+    appId: "1:739962751112:web:c5f37aa6b2ee286d6f773d",
+    measurementId: "G-VDWCB4D20F"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // --- GLOBALS & SETUP ---
+  document.getElementById('admissionDate').valueAsDate = new Date();
+  let imgBase64 = "";
+  let editImgBase64 = ""; // For edit modal
+  let allRecords = [];
+
+  // --- CAMERA ---
+  let stream = null;
+  const video = document.getElementById('videoFeed');
+  window.startCamera = async function() {
+      document.getElementById('cameraArea').style.display = 'block';
+      try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          video.srcObject = stream;
+      } catch (err) { alert("Camera Error: " + err); }
+  };
+  window.capturePhoto = function() {
+      const canvas = document.getElementById('canvas');
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      imgBase64 = canvas.toDataURL('image/jpeg');
+      document.getElementById('photoPreview').src = imgBase64;
+      document.getElementById('photoPreview').style.display = 'block';
+      document.querySelector('.photo-circle i').style.display = 'none';
+      stopCamera();
+  };
+  window.stopCamera = function() {
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      document.getElementById('cameraArea').style.display = 'none';
+  };
+  document.getElementById('photoInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+              imgBase64 = evt.target.result;
+              document.getElementById('photoPreview').src = imgBase64;
+              document.getElementById('photoPreview').style.display = 'block';
+              document.querySelector('.photo-circle i').style.display = 'none';
+          };
+          reader.readAsDataURL(file);
+      }
+  });
+
+  // --- FORM LOGIC ---
+  document.getElementById('source').addEventListener('change', function() {
+      document.getElementById('sourceDetails').style.display = this.value ? 'block' : 'none';
+  });
+  document.getElementById('dob').addEventListener('change', function() {
+      const dob = new Date(this.value); const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      if(today.getMonth() < dob.getMonth() || (today.getMonth()===dob.getMonth() && today.getDate() < dob.getDate())) age--;
+      document.getElementById('age').value = age;
+  });
+
+  // --- EDIT MODAL LOGIC (New) ---
+  document.getElementById('editSource').addEventListener('change', function() {
+      // Always show details box in edit for simplicity, or toggle based on logic
+      document.getElementById('editSourceDetails').style.display = 'block';
+  });
+  
+  document.getElementById('editDob').addEventListener('change', function() {
+      const dob = new Date(this.value); const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      if(today.getMonth() < dob.getMonth() || (today.getMonth()===dob.getMonth() && today.getDate() < dob.getDate())) age--;
+      document.getElementById('editAge').value = age;
+  });
+
+  document.getElementById('editPhotoInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+              editImgBase64 = evt.target.result; // Update global edit image string
+              document.getElementById('editPhotoPreview').src = editImgBase64;
+          };
+          reader.readAsDataURL(file);
+      }
+  });
+
+
+  // --- SAVE ---
+  document.getElementById('saveBtn').addEventListener('click', () => {
+      const name = document.getElementById('name').value;
+      if (!name) { alert("Please enter Name"); return; }
+      
+      const btn = document.getElementById('saveBtn'); btn.innerHTML = 'Saving...'; btn.disabled = true;
+
+      const data = {
+          admissionDate: document.getElementById('admissionDate').value,
+          name: name,
+          gender: document.getElementById('gender').value,
+          dob: document.getElementById('dob').value,
+          age: document.getElementById('age').value,
+          aadhar: document.getElementById('aadhar').value,
+          sourceType: document.getElementById('source').value,
+          sourceName: document.getElementById('sourceName').value,
+          sourcePhone: document.getElementById('sourcePhone').value,
+          guardianName: document.getElementById('guardianName').value,
+          guardianPhone: document.getElementById('guardianPhone').value,
+          address: document.getElementById('address').value,
+          tempAddress: document.getElementById('tempAddress').value,
+          photo: imgBase64 || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+          timestamp: new Date().toISOString()
+      };
+
+      push(ref(db, 'inmates_records'), data).then(() => {
+          alert("✅ Saved!");
+          document.getElementById('addForm').reset();
+          document.getElementById('admissionDate').valueAsDate = new Date();
+          imgBase64 = ""; document.getElementById('photoPreview').style.display = 'none';
+          document.querySelector('.photo-circle i').style.display = 'block';
+          btn.innerHTML = 'Save Record'; btn.disabled = false;
+          switchTab('list');
+      });
+  });
+
+  // --- READ RECORDS ---
+  onValue(ref(db, 'inmates_records'), (snapshot) => {
+      const data = snapshot.val();
+      const listDiv = document.getElementById('recordsList');
+      listDiv.innerHTML = ""; allRecords = [];
+      let m=0, f=0, p=0, t=0;
+
+      if(data) {
+          Object.keys(data).forEach(key => {
+              const r = data[key]; r.id = key; allRecords.push(r);
+              t++; if(r.gender==='Male')m++; else f++; if(r.sourceType==='Police')p++;
+          });
+          allRecords.sort((a,b) => new Date(b.admissionDate) - new Date(a.admissionDate));
+          allRecords.forEach(r => renderCard(r, listDiv));
+      } else { listDiv.innerHTML = '<p style="text-align:center; color:#999;">No records found.</p>'; }
+
+      document.getElementById('totalCount').innerText = t;
+      document.getElementById('maleCount').innerText = m;
+      document.getElementById('femaleCount').innerText = f;
+      document.getElementById('policeCount').innerText = p;
+  });
+
+  function renderCard(rec, container) {
+      const div = document.createElement('div');
+      div.className = 'record-card';
+      div.innerHTML = `
+          <div class="date-badge">📅 ${rec.admissionDate}</div>
+          <img src="${rec.photo}" class="record-img">
+          <div style="flex:1; text-align:left;">
+              <h4 style="margin:0 0 5px 0;">${rec.name}</h4>
+              <small style="color:#64748b;">${rec.gender}, ${rec.age}y</small><br>
+              <span class="badge ${rec.sourceType==='Police'?'bg-police':'bg-self'}">${rec.sourceType || 'Unknown'}</span>
+              <div style="font-size:12px; margin-top:5px; color:#666;">
+                 GDN: ${rec.guardianName || '-'}<br>Phone: ${rec.guardianPhone || '-'}
+              </div>
+          </div>
+          <div class="action-btn-group">
+              <button class="btn-icon btn-pdf" onclick="window.downloadPDF('${rec.id}')" title="Download PDF"><i class="fa-solid fa-file-pdf"></i></button>
+              <button class="btn-icon btn-edit" onclick="window.editRec('${rec.id}')" title="Edit"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn-icon btn-del" onclick="window.deleteRec('${rec.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
+          </div>
+      `;
+      container.appendChild(div);
+  }
+
+  // --- EDIT FUNCTIONS ---
+  window.editRec = function(id) {
+      const rec = allRecords.find(r => r.id === id);
+      if(!rec) return;
+      document.getElementById('editId').value = id;
+      
+      // Populate All Fields
+      document.getElementById('editAdmissionDate').value = rec.admissionDate || '';
+      document.getElementById('editName').value = rec.name;
+      document.getElementById('editAge').value = rec.age;
+      document.getElementById('editGender').value = rec.gender;
+      document.getElementById('editDob').value = rec.dob || '';
+      document.getElementById('editAadhar').value = rec.aadhar || '';
+      document.getElementById('editSource').value = rec.sourceType || 'Other';
+      document.getElementById('editSourceName').value = rec.sourceName || '';
+      document.getElementById('editSourcePhone').value = rec.sourcePhone || '';
+      document.getElementById('editGName').value = rec.guardianName;
+      document.getElementById('editGPhone').value = rec.guardianPhone;
+      document.getElementById('editAddr').value = rec.address;
+      document.getElementById('editTempAddr').value = rec.tempAddress || '';
+      
+      // Handle Photo
+      document.getElementById('editPhotoPreview').src = rec.photo;
+      editImgBase64 = rec.photo; // Store current photo in temp variable
+      
+      document.getElementById('editModal').classList.add('show');
+  };
+
+  window.closeEditModal = function() {
+      document.getElementById('editModal').classList.remove('show');
+  };
+
+  window.saveEdit = function() {
+      const id = document.getElementById('editId').value;
+      const updates = {
+          admissionDate: document.getElementById('editAdmissionDate').value,
+          name: document.getElementById('editName').value,
+          age: document.getElementById('editAge').value,
+          gender: document.getElementById('editGender').value,
+          dob: document.getElementById('editDob').value,
+          aadhar: document.getElementById('editAadhar').value,
+          sourceType: document.getElementById('editSource').value,
+          sourceName: document.getElementById('editSourceName').value,
+          sourcePhone: document.getElementById('editSourcePhone').value,
+          guardianName: document.getElementById('editGName').value,
+          guardianPhone: document.getElementById('editGPhone').value,
+          address: document.getElementById('editAddr').value,
+          tempAddress: document.getElementById('editTempAddr').value,
+          photo: editImgBase64 // Uses the new one if changed, or old one
+      };
+      
+      update(ref(db, 'inmates_records/' + id), updates).then(() => {
+          alert("✅ Full Record Updated!");
+          closeEditModal();
+      });
+  };
+
+  // --- DOWNLOAD PDF FUNCTION ---
+  window.downloadPDF = function(id) {
+      const rec = allRecords.find(r => r.id === id);
+      if(!rec) return;
+
+      // Fill Template
+      document.getElementById('pdfName').innerText = rec.name;
+      document.getElementById('pdfDate').innerText = rec.admissionDate;
+      document.getElementById('pdfAgeGender').innerText = `${rec.gender} / ${rec.age} Years`;
+      document.getElementById('pdfDob').innerText = rec.dob || 'N/A';
+      document.getElementById('pdfAadhar').innerText = rec.aadhar || 'N/A';
+      document.getElementById('pdfSource').innerText = rec.sourceType;
+      document.getElementById('pdfBringer').innerText = `${rec.sourceName || '-'} (${rec.sourcePhone || '-'})`;
+      document.getElementById('pdfGName').innerText = rec.guardianName || 'N/A';
+      document.getElementById('pdfGPhone').innerText = rec.guardianPhone || 'N/A';
+      document.getElementById('pdfAddr').innerText = rec.address || 'N/A';
+      document.getElementById('pdfTempAddr').innerText = rec.tempAddress || 'N/A';
+      document.getElementById('pdfPhoto').src = rec.photo;
+
+      // Generate PDF
+      const element = document.getElementById('pdfTemplate');
+      element.style.display = 'block'; // Make visible for capture
+      
+      const opt = {
+          margin: 0.5,
+          filename: `AnadiSeva_${rec.name}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      html2pdf().from(element).set(opt).save().then(() => {
+          element.style.display = 'none'; // Hide again
+      });
+  };
+
+  // --- UTILS ---
+  window.deleteRec = function(id) { if(confirm("Delete Permanently?")) remove(ref(db, 'inmates_records/'+id)); };
+  window.switchTab = function(t) {
+      document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active'));
+      document.getElementById('view-'+t).classList.add('active');
+      const idx = t==='home'?0:t==='add'?1:2;
+      document.querySelectorAll('.b-nav-item').forEach(e => e.classList.remove('active'));
+      document.querySelectorAll('.b-nav-item')[idx].classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active'));
+      document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  };
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      const div = document.getElementById('recordsList'); div.innerHTML = "";
+      allRecords.filter(r => r.name.toLowerCase().includes(term)).forEach(r => renderCard(r, div));
+  });
+
+</script>
+
+</body>
+</html>
