@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Anadi Seva Prakalp - people record</title>
+    <title>Anadi Seva Prakalp - People record</title>
     
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -40,20 +40,21 @@
             display: none; width: var(--sidebar-width); background: var(--white);
             height: 100vh; position: fixed; left: 0; top: 0;
             border-right: 1px solid var(--gray-light); padding: 20px; z-index: 1000;
+            flex-direction: column;
         }
 
         .main-content { flex: 1; width: 100%; padding: 20px; }
 
         @media (min-width: 992px) {
             body { padding-bottom: 0; }
-            .sidebar { display: flex; flex-direction: column; }
+            .sidebar { display: flex; }
             .bottom-nav { display: none !important; }
             .main-content { margin-left: var(--sidebar-width); padding: 40px; }
             .form-grid-layout { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
             .form-grid-full { grid-column: span 2; }
             .stats-grid { grid-template-columns: repeat(4, 1fr) !important; }
             .stat-card.full-width { grid-column: span 1 !important; }
-            #recordsList { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+            #recordsList, #homeRecordsList { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
         }
 
         /* --- COMPONENTS --- */
@@ -68,12 +69,15 @@
         }
         @media (min-width: 992px) { .mobile-header { display: none; } }
 
-        /* Nav & Bottom Bar */
+        /* Nav */
         .nav-btn {
             display: flex; align-items: center; gap: 15px; width: 100%; padding: 15px; margin-bottom: 10px;
             border: none; background: transparent; border-radius: 12px; color: #64748b; font-size: 16px; cursor: pointer; transition: 0.3s;
         }
         .nav-btn.active { background: var(--primary); color: white; }
+        
+        .back-btn { margin-top: auto; background: #fff1f2; color: #be123c; font-weight: 600; }
+        .back-btn:hover { background: #ffe4e6; }
 
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; right: 0; background: var(--white);
@@ -83,14 +87,20 @@
         .b-nav-item.active { color: var(--primary); }
         .b-nav-item i { font-size: 20px; margin-bottom: 4px; }
 
-        /* Stats & Forms */
+        /* Stats Cards */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
-        .stat-card { background: var(--white); padding: 20px; border-radius: 16px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+        .stat-card { 
+            background: var(--white); padding: 20px; border-radius: 16px; box-shadow: var(--shadow); 
+            position: relative; overflow: hidden; cursor: pointer; transition: transform 0.2s, border 0.2s; border: 2px solid transparent;
+        }
+        .stat-card:hover { transform: translateY(-3px); border-color: var(--primary); }
+        .stat-card:active { transform: scale(0.98); }
         .stat-card.orange { background: linear-gradient(135deg, #ff9933 0%, #ff7b00 100%); color: white; }
         .stat-val { font-size: 28px; font-weight: 700; }
         .stat-label { font-size: 13px; color: #64748b; margin-top: 5px; }
         .stat-card.orange .stat-label { color: rgba(255,255,255,0.9); }
 
+        /* Forms */
         .card-box { background: var(--white); padding: 25px; border-radius: 20px; box-shadow: var(--shadow); max-width: 900px; }
         .form-group { margin-bottom: 20px; }
         .form-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: #64748b; }
@@ -129,36 +139,176 @@
         /* Action Buttons */
         .action-btn-group { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; }
         @media (min-width: 992px) { .action-btn-group { justify-content: center; width: 100%; margin-top: 15px; } }
-        
         .btn-icon { width: 35px; height: 35px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
         .btn-edit { background: #e0f2fe; color: #0284c7; }
         .btn-pdf { background: #dcfce7; color: #16a34a; }
         .btn-del { background: #fee2e2; color: #ef4444; }
 
-        /* --- EDIT MODAL (UPDATED) --- */
-        .custom-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;
-        }
+        /* Modals */
+        .custom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; }
         .custom-modal.show { display: flex; }
-        .modal-content {
-            background: white; width: 95%; max-width: 600px; max-height: 90vh; overflow-y: auto;
-            border-radius: 20px; padding: 25px; position: relative; animation: slideUp 0.3s ease;
-        }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-content { background: white; width: 95%; max-width: 600px; max-height: 90vh; overflow-y: auto; border-radius: 20px; padding: 25px; position: relative; }
         .close-modal { position: absolute; top: 15px; right: 15px; font-size: 24px; cursor: pointer; color: #94a3b8; }
+        
+        /* --- PROFESSIONAL PDF STYLING (UPDATED) --- */
+        /* --- PROFESSIONAL PDF STYLING (UPDATED) --- */
+#pdfTemplate {
+    display: none; /* स्क्रीन पर नहीं दिखेगा */
+    width: 210mm; /* A4 Width */
+    min-height: 297mm; /* A4 Height */
+    background: #fff;
+    font-family: 'Times New Roman', serif; /* Official Font */
+    color: #000;
+    position: relative;
+}
 
-        /* --- PDF TEMPLATE (Hidden) --- */
-        #pdfTemplate {
-            display: none; width: 700px; padding: 30px; background: white; font-family: 'Times New Roman', serif;
-        }
-        .pdf-header { text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; }
-        .pdf-logo { width: 80px; height: 80px; }
-        .pdf-title { color: var(--primary); font-size: 24px; font-weight: bold; margin: 5px 0; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .pdf-table td { border: 1px solid #ddd; padding: 10px; font-size: 14px; }
-        .pdf-label { font-weight: bold; background: #f9f9f9; width: 30%; }
-        .pdf-photo { width: 120px; height: 120px; object-fit: cover; border: 1px solid #ccc; display: block; margin: 0 auto; }
+.pdf-container {
+    padding: 40px;
+    position: relative;
+    z-index: 2;
+}
+
+/* Watermark Background */
+.pdf-watermark {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    opacity: 0.08; /* Very Light */
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Header Section */
+.pdf-header {
+    border-bottom: 3px double #d35400; /* Double Line Orange */
+    padding-bottom: 15px;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pdf-org-details h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #d35400;
+    text-transform: uppercase;
+    margin: 0;
+    letter-spacing: 1px;
+}
+
+.pdf-org-details p {
+    margin: 5px 0 0;
+    font-size: 14px;
+    color: #444;
+}
+
+.pdf-logo-sm {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+}
+
+/* Title Badge */
+.doc-title {
+    text-align: center;
+    margin-bottom: 30px;
+}
+.doc-title span {
+    background: #000;
+    color: #fff;
+    padding: 8px 25px;
+    font-size: 16px;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-radius: 50px;
+    letter-spacing: 2px;
+}
+
+/* Content Layout */
+.pdf-content-grid {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+}
+
+.pdf-details-col {
+    flex: 1;
+}
+
+.pdf-photo-col {
+    width: 160px;
+    text-align: center;
+}
+
+.photo-box-frame {
+    width: 150px;
+    height: 180px;
+    border: 1px solid #000;
+    padding: 5px;
+    background: #fff;
+}
+.photo-box-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Data Tables */
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.info-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #ddd;
+    font-size: 15px;
+    vertical-align: top;
+}
+
+.label-cell {
+    font-weight: bold;
+    width: 35%;
+    color: #333;
+    background: #fdfdfd;
+}
+
+.value-cell {
+    font-weight: 600;
+    color: #000;
+}
+
+/* Footer & Signatures */
+.pdf-footer {
+    margin-top: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.sign-box {
+    text-align: center;
+    width: 200px;
+}
+
+.sign-line {
+    border-top: 1px dashed #000;
+    margin-bottom: 5px;
+    height: 1px;
+}
+
+.disclaimer {
+    margin-top: 40px;
+    font-size: 11px;
+    color: #666;
+    text-align: justify;
+    line-height: 1.4;
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+}
 
         .view-section { display: none; animation: fadeIn 0.4s ease; }
         .view-section.active { display: block; }
@@ -175,7 +325,7 @@
         <div class="logo-area">
             <img src="https://anadisevaprakalp.org/wp-content/uploads/2021/07/WhatsApp-Image-2020-11-13-at-6.47.42-PM-1-100x100.png" alt="Logo">
             <div class="app-title">
-                <h1>Anadi Seva Prakalp</h1>
+                <h1>Anadi Seva</h1>
                 <p>Admin Dashboard</p>
             </div>
         </div>
@@ -184,6 +334,9 @@
             <li><button class="nav-btn" onclick="switchTab('add')"><i class="fa-solid fa-user-plus"></i> New Admission</button></li>
             <li><button class="nav-btn" onclick="switchTab('list')"><i class="fa-solid fa-users"></i> Records</button></li>
         </ul>
+        <button class="nav-btn back-btn" onclick="window.location.href='index.html'">
+            <i class="fa-solid fa-globe"></i> Back to Website
+        </button>
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -202,24 +355,31 @@
         <!-- DASHBOARD -->
         <section id="view-home" class="view-section active">
             <h2 style="margin-bottom: 20px;">Dashboard Overview</h2>
+            <p style="font-size: 13px; color: #64748b; margin-top:-15px; margin-bottom: 20px;">Tap on a card to view specific records below.</p>
+            
             <div class="stats-grid">
-                <div class="stat-card orange full-width">
+                <div class="stat-card orange full-width" onclick="filterHome('total')">
                     <i class="fa-solid fa-users" style="position: absolute; right: 15px; bottom: 15px; font-size: 40px; opacity: 0.2;"></i>
                     <div class="stat-val" id="totalCount">0</div>
                     <div class="stat-label">Total Inmates</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" onclick="filterHome('Male')">
                     <div class="stat-val" id="maleCount">0</div>
                     <div class="stat-label">Male</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" onclick="filterHome('Female')">
                     <div class="stat-val" id="femaleCount">0</div>
                     <div class="stat-label">Female</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card" onclick="filterHome('police')">
                     <div class="stat-val" id="policeCount">0</div>
                     <div class="stat-label">Police Cases</div>
                 </div>
+            </div>
+
+            <div id="homeResultsArea" style="display:none; animation: fadeIn 0.5s ease;">
+                <h3 id="homeFilterTitle" style="color:var(--secondary); border-bottom: 2px solid var(--primary); display:inline-block; padding-bottom:5px; margin-bottom:20px;"></h3>
+                <div id="homeRecordsList"></div>
             </div>
         </section>
 
@@ -228,76 +388,30 @@
             <h2 style="margin-bottom: 20px;">New Admission</h2>
             <div class="card-box">
                 <form id="addForm">
-                    <div class="form-group">
-                        <label class="form-label" style="color: var(--primary);">📅 Admission Date</label>
-                        <input type="date" class="form-control" id="admissionDate">
-                    </div>
+                    <div class="form-group"><label class="form-label" style="color: var(--primary);">📅 Admission Date</label><input type="date" class="form-control" id="admissionDate"></div>
                     
                     <div class="photo-wrapper">
                         <div class="camera-area" id="cameraArea">
                             <video id="videoFeed" autoplay playsinline></video>
                             <canvas id="canvas" style="display:none;"></canvas>
-                            <div class="cam-btn-group">
-                                <button type="button" class="btn-primary btn-sm" onclick="capturePhoto()">📸 Click</button>
-                                <button type="button" class="btn-primary btn-sm btn-outline" onclick="stopCamera()">Cancel</button>
-                            </div>
+                            <div class="cam-btn-group"><button type="button" class="btn-primary btn-sm" onclick="capturePhoto()">📸 Click</button><button type="button" class="btn-primary btn-sm btn-outline" onclick="stopCamera()">Cancel</button></div>
                         </div>
-                        <div class="photo-circle" id="photoBox" onclick="showPhotoOptions()">
-                            <i class="fa-solid fa-camera fa-2x" style="color:#94a3b8"></i>
-                            <img id="photoPreview" src="">
-                        </div>
-                        <div style="margin-top: 10px; display: flex; gap: 10px;">
-                            <button type="button" class="btn-primary btn-sm btn-outline" onclick="startCamera()">Camera</button>
-                            <button type="button" class="btn-primary btn-sm btn-outline" onclick="document.getElementById('photoInput').click()">Gallery</button>
-                        </div>
+                        <div class="photo-circle" id="photoBox" onclick="showPhotoOptions()"><i class="fa-solid fa-camera fa-2x" style="color:#94a3b8"></i><img id="photoPreview" src=""></div>
+                        <div style="margin-top: 10px; display: flex; gap: 10px;"><button type="button" class="btn-primary btn-sm btn-outline" onclick="startCamera()">Camera</button><button type="button" class="btn-primary btn-sm btn-outline" onclick="document.getElementById('photoInput').click()">Gallery</button></div>
                         <input type="file" id="photoInput" accept="image/*" hidden>
                     </div>
 
                     <div class="form-grid-layout">
-                        <div class="form-group form-grid-full">
-                            <label class="form-label">Full Name</label>
-                            <input type="text" class="form-control" id="name" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Gender</label>
-                            <select class="form-control" id="gender">
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <div style="display: flex; gap: 10px;">
-                                <div style="flex: 1;"><label class="form-label">DOB</label><input type="date" class="form-control" id="dob"></div>
-                                <div style="flex: 1;"><label class="form-label">Age</label><input type="number" class="form-control" id="age"></div>
-                            </div>
-                        </div>
-                        <div class="form-group form-grid-full">
-                            <label class="form-label">Aadhar No</label>
-                            <input type="number" class="form-control" id="aadhar">
-                        </div>
-                        
-                        <div class="form-group form-grid-full" style="background: #f8fafc; padding: 15px; border-radius: 10px;">
-                            <label class="form-label">Source</label>
-                            <select class="form-control mb-2" id="source">
-                                <option value="Police">Police</option>
-                                <option value="Children">Children</option>
-                                <option value="Self">Self</option>
-                                <option value="Other">Other</option>
-                            </select>
-                            <div id="sourceDetails" style="display:none; margin-top: 10px;">
-                                <div class="row" style="display: flex; gap: 10px;">
-                                    <input type="text" class="form-control" id="sourceName" placeholder="Bringer Name" style="flex:1;">
-                                    <input type="tel" class="form-control" id="sourcePhone" placeholder="Bringer Phone" style="flex:1;">
-                                </div>
-                            </div>
-                        </div>
-
+                        <div class="form-group form-grid-full"><label class="form-label">Full Name</label><input type="text" class="form-control" id="name" required></div>
+                        <div class="form-group"><label class="form-label">Gender</label><select class="form-control" id="gender"><option value="Male">Male</option><option value="Female">Female</option></select></div>
+                        <div class="form-group"><div style="display: flex; gap: 10px;"><div style="flex: 1;"><label class="form-label">DOB</label><input type="date" class="form-control" id="dob"></div><div style="flex: 1;"><label class="form-label">Age</label><input type="number" class="form-control" id="age"></div></div></div>
+                        <div class="form-group form-grid-full"><label class="form-label">Aadhar No</label><input type="number" class="form-control" id="aadhar"></div>
+                        <div class="form-group form-grid-full" style="background: #f8fafc; padding: 15px; border-radius: 10px;"><label class="form-label">Source</label><select class="form-control mb-2" id="source"><option value="Police">Police</option><option value="Children">Children</option><option value="Self">Self</option><option value="Other">Other</option></select><div id="sourceDetails" style="display:none; margin-top: 10px;"><div class="row" style="display: flex; gap: 10px;"><input type="text" class="form-control" id="sourceName" placeholder="Bringer Name" style="flex:1;"><input type="tel" class="form-control" id="sourcePhone" placeholder="Bringer Phone" style="flex:1;"></div></div></div>
                         <div class="form-group"><label class="form-label">Guardian Name</label><input type="text" class="form-control" id="guardianName"></div>
                         <div class="form-group"><label class="form-label">Guardian Phone</label><input type="tel" class="form-control" id="guardianPhone"></div>
                         <div class="form-group form-grid-full"><label class="form-label">Permanent Address</label><textarea class="form-control" id="address" rows="2"></textarea></div>
                         <div class="form-group form-grid-full"><label class="form-label">Temporary Address</label><textarea class="form-control" id="tempAddress" rows="2"></textarea></div>
                     </div>
-
                     <button type="button" id="saveBtn" class="btn-primary" style="margin-top: 20px;">Save Record</button>
                 </form>
             </div>
@@ -309,9 +423,7 @@
                 <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 18px; top: 30px; color: #94a3b8;"></i>
                 <input type="text" class="search-input" id="searchInput" placeholder="Search by Name, Aadhar...">
             </div>
-            <div id="recordsList">
-                <p style="text-align:center; color:#94a3b8; margin-top:50px;">Loading...</p>
-            </div>
+            <div id="recordsList"><p style="text-align:center; color:#94a3b8; margin-top:50px;">Loading...</p></div>
         </section>
 
     </main>
@@ -330,100 +442,132 @@
         <span class="close-modal" onclick="closeEditModal()">&times;</span>
         <h3 style="margin-top:0; color:var(--primary);">Edit Full Record</h3>
         <input type="hidden" id="editId">
-        
-        <!-- Photo Update -->
         <div class="photo-wrapper" style="margin-bottom: 15px;">
-            <div class="photo-circle" style="width: 100px; height: 100px;" onclick="document.getElementById('editPhotoInput').click()">
-                <img id="editPhotoPreview" src="" style="display:block;">
-            </div>
-            <small style="color:var(--primary); cursor:pointer;" onclick="document.getElementById('editPhotoInput').click()">Tap to Change Photo</small>
-            <input type="file" id="editPhotoInput" accept="image/*" hidden>
+            <div class="photo-circle" style="width: 100px; height: 100px;" onclick="document.getElementById('editPhotoInput').click()"><img id="editPhotoPreview" src="" style="display:block;"></div>
+            <small style="color:var(--primary); cursor:pointer;" onclick="document.getElementById('editPhotoInput').click()">Tap to Change Photo</small><input type="file" id="editPhotoInput" accept="image/*" hidden>
         </div>
-
-        <!-- Form Fields -->
-        <div class="form-group">
-            <label class="form-label">Admission Date</label>
-            <input type="date" class="form-control" id="editAdmissionDate">
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Full Name</label>
-            <input type="text" class="form-control" id="editName">
-        </div>
-
-        <div style="display:flex; gap:10px; margin-bottom:15px;">
-             <div style="flex:1;"><label class="form-label">Age</label><input type="number" class="form-control" id="editAge"></div>
-             <div style="flex:1;"><label class="form-label">Gender</label>
-                 <select class="form-control" id="editGender">
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                 </select>
-             </div>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">DOB</label>
-            <input type="date" class="form-control" id="editDob">
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Aadhar No</label>
-            <input type="number" class="form-control" id="editAadhar">
-        </div>
-
-        <div class="form-group" style="background:#f8fafc; padding:10px; border-radius:10px;">
-             <label class="form-label">Source Type</label>
-             <select class="form-control" id="editSource">
-                <option value="Police">Police</option>
-                <option value="Children">Children</option>
-                <option value="Self">Self</option>
-                <option value="Other">Other</option>
-             </select>
-             <div id="editSourceDetails" style="margin-top:10px;">
-                <input type="text" class="form-control mb-2" id="editSourceName" placeholder="Bringer Name">
-                <input type="text" class="form-control" id="editSourcePhone" placeholder="Bringer Phone">
-             </div>
-        </div>
-
+        <div class="form-group"><label class="form-label">Admission Date</label><input type="date" class="form-control" id="editAdmissionDate"></div>
+        <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-control" id="editName"></div>
+        <div style="display:flex; gap:10px; margin-bottom:15px;"><div style="flex:1;"><label class="form-label">Age</label><input type="number" class="form-control" id="editAge"></div><div style="flex:1;"><label class="form-label">Gender</label><select class="form-control" id="editGender"><option value="Male">Male</option><option value="Female">Female</option></select></div></div>
+        <div class="form-group"><label class="form-label">DOB</label><input type="date" class="form-control" id="editDob"></div>
+        <div class="form-group"><label class="form-label">Aadhar No</label><input type="number" class="form-control" id="editAadhar"></div>
+        <div class="form-group" style="background:#f8fafc; padding:10px; border-radius:10px;"><label class="form-label">Source Type</label><select class="form-control" id="editSource"><option value="Police">Police</option><option value="Children">Children</option><option value="Self">Self</option><option value="Other">Other</option></select><div id="editSourceDetails" style="margin-top:10px;"><input type="text" class="form-control mb-2" id="editSourceName" placeholder="Bringer Name"><input type="text" class="form-control" id="editSourcePhone" placeholder="Bringer Phone"></div></div>
         <div class="form-group"><label class="form-label">Guardian Name</label><input type="text" class="form-control" id="editGName"></div>
         <div class="form-group"><label class="form-label">Guardian Phone</label><input type="text" class="form-control" id="editGPhone"></div>
         <div class="form-group"><label class="form-label">Perm. Address</label><textarea class="form-control" id="editAddr" rows="2"></textarea></div>
         <div class="form-group"><label class="form-label">Temp. Address</label><textarea class="form-control" id="editTempAddr" rows="2"></textarea></div>
-
         <button class="btn-primary" onclick="saveEdit()">Update Full Record</button>
     </div>
 </div>
 
-<!-- HIDDEN PDF TEMPLATE -->
+<!-- PROFESSIONAL PDF TEMPLATE -->
+<!-- PROFESSIONAL PDF TEMPLATE (Hidden) -->
 <div id="pdfTemplate">
-    <div class="pdf-header">
-        <img src="https://anadisevaprakalp.org/wp-content/uploads/2021/07/WhatsApp-Image-2020-11-13-at-6.47.42-PM-1-100x100.png" class="pdf-logo">
-        <div class="pdf-title">ANADI SEVA PRAKALP</div>
-        <p style="margin:0; font-size:14px;">Old Age Home & Care Center Record</p>
-    </div>
-    
-    <img id="pdfPhoto" class="pdf-photo" src="">
-    
-    <table class="pdf-table">
-        <tr><td class="pdf-label">Registration Date</td><td id="pdfDate"></td></tr>
-        <tr><td class="pdf-label">Full Name</td><td id="pdfName"></td></tr>
-        <tr><td class="pdf-label">Age / Gender</td><td id="pdfAgeGender"></td></tr>
-        <tr><td class="pdf-label">DOB</td><td id="pdfDob"></td></tr>
-        <tr><td class="pdf-label">Aadhar No</td><td id="pdfAadhar"></td></tr>
-        <tr><td class="pdf-label">Admission Source</td><td id="pdfSource"></td></tr>
-        <tr><td class="pdf-label">Bringer Details</td><td id="pdfBringer"></td></tr>
-        <tr><td class="pdf-label">Guardian Name</td><td id="pdfGName"></td></tr>
-        <tr><td class="pdf-label">Guardian Phone</td><td id="pdfGPhone"></td></tr>
-        <tr><td class="pdf-label">Permanent Address</td><td id="pdfAddr"></td></tr>
-        <tr><td class="pdf-label">Temporary Address</td><td id="pdfTempAddr"></td></tr>
-    </table>
-    
-    <div style="margin-top: 40px; text-align: right; font-size: 12px;">
-        <p>Authorized Signature</p>
-        <p>_____________________</p>
+    <!-- Watermark Logo -->
+    <img src="https://anadisevaprakalp.org/wp-content/uploads/2021/07/WhatsApp-Image-2020-11-13-at-6.47.42-PM-1-100x100.png" class="pdf-watermark">
+
+    <div class="pdf-container">
+        <!-- Header -->
+        <header class="pdf-header">
+            <div class="pdf-org-details">
+                <h1>Anadi Seva Prakalp</h1>
+                <p>Old Age Home & Care Center</p>
+                <p style="font-size:12px;">Regd. No: xxxxxxx | Contact: +91 98765 43210</p>
+                <p style="font-size:12px;">Address: Your Full Organization Address Here</p>
+            </div>
+            <img src="https://anadisevaprakalp.org/wp-content/uploads/2021/07/WhatsApp-Image-2020-11-13-at-6.47.42-PM-1-100x100.png" class="pdf-logo-sm">
+        </header>
+
+        <!-- Document Title -->
+        <div class="doc-title">
+            <span>Inmate Admission Record</span>
+        </div>
+
+        <!-- Main Body -->
+        <div class="pdf-content-grid">
+            
+            <!-- Left: Details -->
+            <div class="pdf-details-col">
+                <table class="info-table">
+                    <tr>
+                        <td class="label-cell">Registration ID</td>
+                        <td class="value-cell" id="pdfRefId">--</td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Full Name</td>
+                        <td class="value-cell" id="pdfName" style="text-transform:uppercase; font-size:16px;">--</td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Admission Date</td>
+                        <td class="value-cell" id="pdfDate">--</td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Gender / Age</td>
+                        <td class="value-cell" id="pdfAgeGender">--</td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Date of Birth</td>
+                        <td class="value-cell" id="pdfDob">--</td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Aadhar Number</td>
+                        <td class="value-cell" id="pdfAadhar">--</td>
+                    </tr>
+                </table>
+
+                <h4 style="margin: 15px 0 10px 0; border-bottom:1px solid #d35400; color:#d35400; display:inline-block;">Guardian / Source Details</h4>
+                <table class="info-table">
+                    <tr>
+                        <td class="label-cell">Admission Source</td>
+                        <td class="value-cell" id="pdfSource">--</td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Guardian Name</td>
+                        <td class="value-cell" id="pdfGName">--</td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Contact Phone</td>
+                        <td class="value-cell" id="pdfGPhone">--</td>
+                    </tr>
+                    <tr>
+                        <td class="label-cell">Permanent Address</td>
+                        <td class="value-cell" id="pdfAddr" style="font-size:13px;">--</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Right: Photo -->
+            <div class="pdf-photo-col">
+                <div class="photo-box-frame">
+                    <img id="pdfPhoto" src="" alt="Inmate Photo">
+                </div>
+                <p style="font-size:11px; margin-top:5px; font-weight:bold;">OFFICIAL PHOTO</p>
+                <div style="border:1px solid #ccc; height:60px; margin-top:15px; display:flex; align-items:center; justify-content:center;">
+                    <span style="font-size:10px; color:#ccc;">Thumb / Sign</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer">
+            <strong>Declaration:</strong> This record confirms the admission of the individual named above into Anadi Seva Prakalp. All information provided has been verified to the best of our ability. This document is for official organizational use only.
+        </div>
+
+        <!-- Footer Signatures -->
+        <div class="pdf-footer">
+            <div class="sign-box">
+                <div class="sign-line"></div>
+                <span>Guardian / Bringer Sign</span>
+            </div>
+            <div class="sign-box">
+                <img src="" style="height:40px; display:none;" id="authSignImg"> <!-- Optional for digital sign -->
+                <div class="sign-line"></div>
+                <span style="font-weight:bold; color:#d35400;">Authorized Signatory</span><br>
+                <span style="font-size:12px;">(Anadi Seva Prakalp)</span>
+            </div>
+        </div>
     </div>
 </div>
-
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
   import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
@@ -442,277 +586,296 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  // --- GLOBALS & SETUP ---
+  // --- GLOBALS ---
   document.getElementById('admissionDate').valueAsDate = new Date();
-  let imgBase64 = "";
-  let editImgBase64 = ""; // For edit modal
-  let allRecords = [];
+  let imgBase64 = "", editImgBase64 = "", allRecords = [];
+  const DEFAULT_PHOTO = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
 
-  // --- CAMERA ---
-  let stream = null;
-  const video = document.getElementById('videoFeed');
-  window.startCamera = async function() {
-      document.getElementById('cameraArea').style.display = 'block';
-      try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-          video.srcObject = stream;
-      } catch (err) { alert("Camera Error: " + err); }
-  };
-  window.capturePhoto = function() {
-      const canvas = document.getElementById('canvas');
-      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-      canvas.getContext('2d').drawImage(video, 0, 0);
-      imgBase64 = canvas.toDataURL('image/jpeg');
-      document.getElementById('photoPreview').src = imgBase64;
-      document.getElementById('photoPreview').style.display = 'block';
-      document.querySelector('.photo-circle i').style.display = 'none';
-      stopCamera();
-  };
-  window.stopCamera = function() {
-      if (stream) stream.getTracks().forEach(t => t.stop());
-      document.getElementById('cameraArea').style.display = 'none';
-  };
-  document.getElementById('photoInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-          const reader = new FileReader();
-          reader.onload = (evt) => {
-              imgBase64 = evt.target.result;
-              document.getElementById('photoPreview').src = imgBase64;
+  // --- 1. IMAGE COMPRESSION LOGIC (Quality & Size Reducer) ---
+  // यह फंक्शन इमेज को छोटा (KB में) बना देगा चाहे यूजर 10MB की फोटो क्यों न डाले
+  function compressImage(sourceUrl, quality, maxWidth, outputId) {
+      const img = new Image();
+      img.src = sourceUrl;
+      img.crossOrigin = "Anonymous"; // PDF CORS Issue Fix
+
+      img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Resize Logic (Ratio maintain करते हुए छोटा करना)
+          if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Result: Data URL with low quality (0.6 = 60%)
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          
+          if(outputId === 'add') {
+              imgBase64 = compressedDataUrl;
+              document.getElementById('photoPreview').src = compressedDataUrl;
               document.getElementById('photoPreview').style.display = 'block';
               document.querySelector('.photo-circle i').style.display = 'none';
-          };
-          reader.readAsDataURL(file);
+          } else if (outputId === 'edit') {
+              editImgBase64 = compressedDataUrl;
+              document.getElementById('editPhotoPreview').src = compressedDataUrl;
+          }
+      };
+  }
+
+  // --- 2. CAMERA FIX (Memory Leak Solved) ---
+  let stream = null; 
+  const video = document.getElementById('videoFeed');
+  
+  window.startCamera = async function() { 
+      document.getElementById('cameraArea').style.display = 'block'; 
+      try { 
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); 
+          video.srcObject = stream; 
+      } catch (err) { alert("Camera access denied or error."); } 
+  };
+
+  window.capturePhoto = function() { 
+      if (!stream) return;
+      const c = document.getElementById('canvas'); 
+      c.width = video.videoWidth; 
+      c.height = video.videoHeight; 
+      c.getContext('2d').drawImage(video, 0, 0); 
+      
+      const rawData = c.toDataURL('image/jpeg'); 
+      // Capture करने के तुरंत बाद Compress करें (Max width 800px, Quality 0.6)
+      compressImage(rawData, 0.6, 800, 'add');
+      
+      stopCamera(); 
+  };
+
+  // Memory Leak Fix: Tracks को पूरी तरह stop करना
+  window.stopCamera = function() { 
+      if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          stream = null;
+          video.srcObject = null;
       }
-  });
+      document.getElementById('cameraArea').style.display = 'none'; 
+  };
+
+  // File Upload Handling with Compression
+  document.getElementById('photoInput').addEventListener('change', (e) => handleFileSelect(e, 'add'));
+  document.getElementById('editPhotoInput').addEventListener('change', (e) => handleFileSelect(e, 'edit'));
+
+  function handleFileSelect(e, type) {
+      const f = e.target.files[0]; 
+      if (f) { 
+          const r = new FileReader(); 
+          r.onload = (evt) => { 
+              // अपलोड होते ही कम्प्रेस करें
+              compressImage(evt.target.result, 0.6, 800, type);
+          }; 
+          r.readAsDataURL(f); 
+      }
+  }
 
   // --- FORM LOGIC ---
-  document.getElementById('source').addEventListener('change', function() {
-      document.getElementById('sourceDetails').style.display = this.value ? 'block' : 'none';
-  });
-  document.getElementById('dob').addEventListener('change', function() {
-      const dob = new Date(this.value); const today = new Date();
-      let age = today.getFullYear() - dob.getFullYear();
-      if(today.getMonth() < dob.getMonth() || (today.getMonth()===dob.getMonth() && today.getDate() < dob.getDate())) age--;
-      document.getElementById('age').value = age;
-  });
+  document.getElementById('source').addEventListener('change', function() { document.getElementById('sourceDetails').style.display = this.value ? 'block' : 'none'; });
+  document.getElementById('dob').addEventListener('change', function() { calculateAge(this.value, 'age'); });
+  document.getElementById('editDob').addEventListener('change', function() { calculateAge(this.value, 'editAge'); });
 
-  // --- EDIT MODAL LOGIC (New) ---
-  document.getElementById('editSource').addEventListener('change', function() {
-      // Always show details box in edit for simplicity, or toggle based on logic
-      document.getElementById('editSourceDetails').style.display = 'block';
-  });
+  function calculateAge(dobVal, fieldId) {
+      if(!dobVal) return;
+      const d = new Date(dobVal), t = new Date(); 
+      let a = t.getFullYear() - d.getFullYear(); 
+      if(t.getMonth() < d.getMonth() || (t.getMonth()===d.getMonth() && t.getDate() < d.getDate())) a--; 
+      document.getElementById(fieldId).value = a;
+  }
   
-  document.getElementById('editDob').addEventListener('change', function() {
-      const dob = new Date(this.value); const today = new Date();
-      let age = today.getFullYear() - dob.getFullYear();
-      if(today.getMonth() < dob.getMonth() || (today.getMonth()===dob.getMonth() && today.getDate() < dob.getDate())) age--;
-      document.getElementById('editAge').value = age;
-  });
-
-  document.getElementById('editPhotoInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-          const reader = new FileReader();
-          reader.onload = (evt) => {
-              editImgBase64 = evt.target.result; // Update global edit image string
-              document.getElementById('editPhotoPreview').src = editImgBase64;
-          };
-          reader.readAsDataURL(file);
-      }
-  });
-
-
   // --- SAVE ---
   document.getElementById('saveBtn').addEventListener('click', () => {
-      const name = document.getElementById('name').value;
-      if (!name) { alert("Please enter Name"); return; }
-      
+      const name = document.getElementById('name').value; if (!name) { alert("Enter Name"); return; }
       const btn = document.getElementById('saveBtn'); btn.innerHTML = 'Saving...'; btn.disabled = true;
-
+      
       const data = {
-          admissionDate: document.getElementById('admissionDate').value,
-          name: name,
-          gender: document.getElementById('gender').value,
-          dob: document.getElementById('dob').value,
-          age: document.getElementById('age').value,
-          aadhar: document.getElementById('aadhar').value,
-          sourceType: document.getElementById('source').value,
-          sourceName: document.getElementById('sourceName').value,
-          sourcePhone: document.getElementById('sourcePhone').value,
-          guardianName: document.getElementById('guardianName').value,
-          guardianPhone: document.getElementById('guardianPhone').value,
-          address: document.getElementById('address').value,
-          tempAddress: document.getElementById('tempAddress').value,
-          photo: imgBase64 || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-          timestamp: new Date().toISOString()
+          admissionDate: document.getElementById('admissionDate').value, name: name, gender: document.getElementById('gender').value,
+          dob: document.getElementById('dob').value, age: document.getElementById('age').value, aadhar: document.getElementById('aadhar').value,
+          sourceType: document.getElementById('source').value, sourceName: document.getElementById('sourceName').value, sourcePhone: document.getElementById('sourcePhone').value,
+          guardianName: document.getElementById('guardianName').value, guardianPhone: document.getElementById('guardianPhone').value,
+          address: document.getElementById('address').value, tempAddress: document.getElementById('tempAddress').value,
+          photo: imgBase64 || DEFAULT_PHOTO, timestamp: new Date().toISOString()
       };
-
-      push(ref(db, 'inmates_records'), data).then(() => {
-          alert("✅ Saved!");
-          document.getElementById('addForm').reset();
-          document.getElementById('admissionDate').valueAsDate = new Date();
-          imgBase64 = ""; document.getElementById('photoPreview').style.display = 'none';
-          document.querySelector('.photo-circle i').style.display = 'block';
-          btn.innerHTML = 'Save Record'; btn.disabled = false;
-          switchTab('list');
-      });
+      
+      push(ref(db, 'inmates_records'), data).then(() => { 
+          alert("✅ Saved!"); 
+          document.getElementById('addForm').reset(); 
+          document.getElementById('admissionDate').valueAsDate = new Date(); 
+          imgBase64 = ""; 
+          document.getElementById('photoPreview').style.display = 'none'; 
+          document.querySelector('.photo-circle i').style.display = 'block'; 
+          btn.innerHTML = 'Save Record'; btn.disabled = false; 
+          switchTab('list'); 
+      }).catch(e => { alert("Error: " + e.message); btn.disabled = false; btn.innerHTML = 'Save Record'; });
   });
 
   // --- READ RECORDS ---
   onValue(ref(db, 'inmates_records'), (snapshot) => {
-      const data = snapshot.val();
-      const listDiv = document.getElementById('recordsList');
-      listDiv.innerHTML = ""; allRecords = [];
-      let m=0, f=0, p=0, t=0;
-
+      const data = snapshot.val(); allRecords = []; let m=0, f=0, p=0, t=0;
       if(data) {
-          Object.keys(data).forEach(key => {
-              const r = data[key]; r.id = key; allRecords.push(r);
-              t++; if(r.gender==='Male')m++; else f++; if(r.sourceType==='Police')p++;
-          });
+          Object.keys(data).forEach(key => { const r = data[key]; r.id = key; allRecords.push(r); t++; if(r.gender==='Male')m++; else f++; if(r.sourceType==='Police')p++; });
           allRecords.sort((a,b) => new Date(b.admissionDate) - new Date(a.admissionDate));
-          allRecords.forEach(r => renderCard(r, listDiv));
-      } else { listDiv.innerHTML = '<p style="text-align:center; color:#999;">No records found.</p>'; }
-
-      document.getElementById('totalCount').innerText = t;
-      document.getElementById('maleCount').innerText = m;
-      document.getElementById('femaleCount').innerText = f;
-      document.getElementById('policeCount').innerText = p;
+          renderCard(null, document.getElementById('recordsList'), true);
+      } else { document.getElementById('recordsList').innerHTML = '<p style="text-align:center; color:#999;">No records found.</p>'; }
+      document.getElementById('totalCount').innerText = t; document.getElementById('maleCount').innerText = m; document.getElementById('femaleCount').innerText = f; document.getElementById('policeCount').innerText = p;
   });
 
-  function renderCard(rec, container) {
-      const div = document.createElement('div');
-      div.className = 'record-card';
+  // --- FILTER ---
+  window.filterHome = function(type) {
+      const container = document.getElementById('homeRecordsList'); const title = document.getElementById('homeFilterTitle'); const area = document.getElementById('homeResultsArea');
+      container.innerHTML = ""; let filtered = [];
+      if (type === 'total') filtered = allRecords; else if (type === 'police') filtered = allRecords.filter(r => r.sourceType === 'Police'); else filtered = allRecords.filter(r => r.gender === type);
+      area.style.display = 'block'; title.innerText = `Showing: ${type.toUpperCase()} (${filtered.length})`;
+      if(filtered.length === 0) container.innerHTML = '<p style="color:#999;">No records.</p>'; else filtered.forEach(r => renderCard(r, container));
+      area.scrollIntoView({behavior: 'smooth'});
+  }
+
+  function renderCard(rec, container, renderAll = false) {
+      if(renderAll) { container.innerHTML = ""; allRecords.forEach(r => renderCard(r, container)); return; }
+      const div = document.createElement('div'); div.className = 'record-card';
       div.innerHTML = `
-          <div class="date-badge">📅 ${rec.admissionDate}</div>
-          <img src="${rec.photo}" class="record-img">
-          <div style="flex:1; text-align:left;">
-              <h4 style="margin:0 0 5px 0;">${rec.name}</h4>
-              <small style="color:#64748b;">${rec.gender}, ${rec.age}y</small><br>
-              <span class="badge ${rec.sourceType==='Police'?'bg-police':'bg-self'}">${rec.sourceType || 'Unknown'}</span>
-              <div style="font-size:12px; margin-top:5px; color:#666;">
-                 GDN: ${rec.guardianName || '-'}<br>Phone: ${rec.guardianPhone || '-'}
-              </div>
-          </div>
-          <div class="action-btn-group">
-              <button class="btn-icon btn-pdf" onclick="window.downloadPDF('${rec.id}')" title="Download PDF"><i class="fa-solid fa-file-pdf"></i></button>
-              <button class="btn-icon btn-edit" onclick="window.editRec('${rec.id}')" title="Edit"><i class="fa-solid fa-pen"></i></button>
-              <button class="btn-icon btn-del" onclick="window.deleteRec('${rec.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
-          </div>
-      `;
+          <div class="date-badge">📅 ${rec.admissionDate || '-'}</div><img src="${rec.photo}" class="record-img">
+          <div style="flex:1; text-align:left;"><h4 style="margin:0 0 5px 0;">${rec.name}</h4><small style="color:#64748b;">${rec.gender}, ${rec.age}y</small><br><span class="badge ${rec.sourceType==='Police'?'bg-police':'bg-self'}">${rec.sourceType||'Unknown'}</span><div style="font-size:12px; margin-top:5px; color:#666;">GDN: ${rec.guardianName||'-'}<br>Phone: ${rec.guardianPhone||'-'}</div></div>
+          <div class="action-btn-group"><button class="btn-icon btn-pdf" onclick="window.downloadPDF('${rec.id}')"><i class="fa-solid fa-file-pdf"></i></button><button class="btn-icon btn-edit" onclick="window.editRec('${rec.id}')"><i class="fa-solid fa-pen"></i></button><button class="btn-icon btn-del" onclick="window.deleteRec('${rec.id}')"><i class="fa-solid fa-trash"></i></button></div>`;
       container.appendChild(div);
   }
 
-  // --- EDIT FUNCTIONS ---
-  window.editRec = function(id) {
-      const rec = allRecords.find(r => r.id === id);
-      if(!rec) return;
-      document.getElementById('editId').value = id;
+  // --- 4. LOGIC BUG FIXED (Edit Initialization) ---
+  window.editRec = function(id) { 
+      const r = allRecords.find(x => x.id === id); if(!r) return; 
       
-      // Populate All Fields
-      document.getElementById('editAdmissionDate').value = rec.admissionDate || '';
-      document.getElementById('editName').value = rec.name;
-      document.getElementById('editAge').value = rec.age;
-      document.getElementById('editGender').value = rec.gender;
-      document.getElementById('editDob').value = rec.dob || '';
-      document.getElementById('editAadhar').value = rec.aadhar || '';
-      document.getElementById('editSource').value = rec.sourceType || 'Other';
-      document.getElementById('editSourceName').value = rec.sourceName || '';
-      document.getElementById('editSourcePhone').value = rec.sourcePhone || '';
-      document.getElementById('editGName').value = rec.guardianName;
-      document.getElementById('editGPhone').value = rec.guardianPhone;
-      document.getElementById('editAddr').value = rec.address;
-      document.getElementById('editTempAddr').value = rec.tempAddress || '';
+      // Reset logic to prevent data bleeding
+      document.getElementById('editId').value = id; 
       
-      // Handle Photo
-      document.getElementById('editPhotoPreview').src = rec.photo;
-      editImgBase64 = rec.photo; // Store current photo in temp variable
+      document.getElementById('editAdmissionDate').value = r.admissionDate||''; 
+      document.getElementById('editName').value = r.name; 
+      document.getElementById('editAge').value = r.age; 
+      document.getElementById('editGender').value = r.gender; 
+      document.getElementById('editDob').value = r.dob||''; 
+      document.getElementById('editAadhar').value = r.aadhar||''; 
       
-      document.getElementById('editModal').classList.add('show');
-  };
-
-  window.closeEditModal = function() {
-      document.getElementById('editModal').classList.remove('show');
+      document.getElementById('editSource').value = r.sourceType||'Other'; 
+      document.getElementById('editSourceName').value = r.sourceName||''; 
+      document.getElementById('editSourcePhone').value = r.sourcePhone||''; 
+      
+      document.getElementById('editGName').value = r.guardianName; 
+      document.getElementById('editGPhone').value = r.guardianPhone; 
+      document.getElementById('editAddr').value = r.address; 
+      document.getElementById('editTempAddr').value = r.tempAddress||''; 
+      
+      // Fix: Ensure editImgBase64 is set to current photo initially
+      document.getElementById('editPhotoPreview').src = r.photo; 
+      editImgBase64 = r.photo; 
+      
+      document.getElementById('editModal').classList.add('show'); 
   };
 
   window.saveEdit = function() {
       const id = document.getElementById('editId').value;
-      const updates = {
-          admissionDate: document.getElementById('editAdmissionDate').value,
-          name: document.getElementById('editName').value,
-          age: document.getElementById('editAge').value,
-          gender: document.getElementById('editGender').value,
-          dob: document.getElementById('editDob').value,
-          aadhar: document.getElementById('editAadhar').value,
-          sourceType: document.getElementById('editSource').value,
-          sourceName: document.getElementById('editSourceName').value,
-          sourcePhone: document.getElementById('editSourcePhone').value,
-          guardianName: document.getElementById('editGName').value,
-          guardianPhone: document.getElementById('editGPhone').value,
-          address: document.getElementById('editAddr').value,
-          tempAddress: document.getElementById('editTempAddr').value,
-          photo: editImgBase64 // Uses the new one if changed, or old one
+      const up = { 
+          admissionDate: document.getElementById('editAdmissionDate').value, 
+          name: document.getElementById('editName').value, 
+          age: document.getElementById('editAge').value, 
+          gender: document.getElementById('editGender').value, 
+          dob: document.getElementById('editDob').value, 
+          aadhar: document.getElementById('editAadhar').value, 
+          sourceType: document.getElementById('editSource').value, 
+          sourceName: document.getElementById('editSourceName').value, 
+          sourcePhone: document.getElementById('editSourcePhone').value, 
+          guardianName: document.getElementById('editGName').value, 
+          guardianPhone: document.getElementById('editGPhone').value, 
+          address: document.getElementById('editAddr').value, 
+          tempAddress: document.getElementById('editTempAddr').value, 
+          photo: editImgBase64 // Uses updated compressed photo or old one
       };
-      
-      update(ref(db, 'inmates_records/' + id), updates).then(() => {
-          alert("✅ Full Record Updated!");
-          closeEditModal();
-      });
+      update(ref(db, 'inmates_records/'+id), up).then(() => { alert("✅ Updated!"); window.closeEditModal(); });
   };
+  
+  window.closeEditModal = function() { document.getElementById('editModal').classList.remove('show'); };
 
-  // --- DOWNLOAD PDF FUNCTION ---
-  window.downloadPDF = function(id) {
-      const rec = allRecords.find(r => r.id === id);
-      if(!rec) return;
+  // --- PDF GENERATOR (CORS Fix Implemented in compressImage + Here) ---
+  // --- PROFESSIONAL PDF GENERATOR ---
+window.downloadPDF = function(id) {
+    const rec = allRecords.find(r => r.id === id); if(!rec) return;
 
-      // Fill Template
-      document.getElementById('pdfName').innerText = rec.name;
-      document.getElementById('pdfDate').innerText = rec.admissionDate;
-      document.getElementById('pdfAgeGender').innerText = `${rec.gender} / ${rec.age} Years`;
-      document.getElementById('pdfDob').innerText = rec.dob || 'N/A';
-      document.getElementById('pdfAadhar').innerText = rec.aadhar || 'N/A';
-      document.getElementById('pdfSource').innerText = rec.sourceType;
-      document.getElementById('pdfBringer').innerText = `${rec.sourceName || '-'} (${rec.sourcePhone || '-'})`;
-      document.getElementById('pdfGName').innerText = rec.guardianName || 'N/A';
-      document.getElementById('pdfGPhone').innerText = rec.guardianPhone || 'N/A';
-      document.getElementById('pdfAddr').innerText = rec.address || 'N/A';
-      document.getElementById('pdfTempAddr').innerText = rec.tempAddress || 'N/A';
-      document.getElementById('pdfPhoto').src = rec.photo;
+    // Data Fill
+    document.getElementById('pdfRefId').innerText = "#" + id.substring(1, 8).toUpperCase();
+    document.getElementById('pdfDate').innerText = rec.admissionDate || '-';
+    document.getElementById('pdfName').innerText = rec.name || '-';
+    document.getElementById('pdfAgeGender').innerText = `${rec.gender || '-'}  |  ${rec.age || '-'} Years`;
+    document.getElementById('pdfDob').innerText = rec.dob || 'Not Available';
+    document.getElementById('pdfAadhar').innerText = rec.aadhar || 'Not Available';
+    
+    // Source Logic
+    let sourceText = rec.sourceType || 'Other';
+    if(rec.sourceName) sourceText += ` (By: ${rec.sourceName})`;
+    document.getElementById('pdfSource').innerText = sourceText;
 
-      // Generate PDF
-      const element = document.getElementById('pdfTemplate');
-      element.style.display = 'block'; // Make visible for capture
+    document.getElementById('pdfGName').innerText = rec.guardianName || 'N/A';
+    document.getElementById('pdfGPhone').innerText = rec.guardianPhone || rec.sourcePhone || 'N/A';
+    document.getElementById('pdfAddr').innerText = rec.address || 'Address not provided';
+    
+    // Photo
+    document.getElementById('pdfPhoto').src = rec.photo;
+
+    const element = document.getElementById('pdfTemplate');
+    element.style.display = 'block';
+
+    // Settings for Best Quality
+    const opt = {
+        margin: 0, // No margin, we handle it in CSS
+        filename: `ASP_Record_${rec.name.replace(/\s+/g, '_')}_${rec.admissionDate}.pdf`,
+        image: { type: 'jpeg', quality: 1 }, // Max quality
+        html2canvas: { scale: 2, useCORS: true, logging: false }, // Scale 2 for Retina clarity
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // Show loading state (optional)
+    const btn = event.currentTarget;
+    const oldHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+    html2pdf().set(opt).from(element).save().then(() => {
+        element.style.display = 'none';
+        btn.innerHTML = oldHtml;
+    });
+};
+
+  // --- 3. SEARCH DEBOUNCING (Performance Fix) ---
+  let debounceTimer;
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+      const val = e.target.value.toLowerCase();
+      const container = document.getElementById('recordsList');
       
-      const opt = {
-          margin: 0.5,
-          filename: `AnadiSeva_${rec.name}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
-
-      html2pdf().from(element).set(opt).save().then(() => {
-          element.style.display = 'none'; // Hide again
-      });
-  };
+      container.innerHTML = '<p style="text-align:center;color:#999">Searching...</p>';
+      
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+          container.innerHTML = "";
+          const filtered = allRecords.filter(r => 
+              (r.name && r.name.toLowerCase().includes(val)) || 
+              (r.aadhar && r.aadhar.includes(val))
+          );
+          
+          if(filtered.length === 0) container.innerHTML = '<p style="text-align:center; color:#999;">No match found.</p>';
+          else filtered.forEach(r => renderCard(r, container));
+      }, 400); // 400ms delay - यूजर के टाइप करने का इंतजार करेगा
+  });
 
   // --- UTILS ---
-  window.deleteRec = function(id) { if(confirm("Delete Permanently?")) remove(ref(db, 'inmates_records/'+id)); };
-  window.switchTab = function(t) {
-      document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active'));
-      document.getElementById('view-'+t).classList.add('active');
-      const idx = t==='home'?0:t==='add'?1:2;
-      document.querySelectorAll('.b-nav-item').forEach(e => e.classList.remove('active'));
-      document.querySelectorAll('.b-nav-item')[idx].classList.add('active');
-      document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active'));
-      document.querySelectorAll('.nav-btn')[idx].classList.add('active');
-  };
-  document.getElementById('searchInput').addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase();
-      const div = document.getElementById('recordsList'); div.innerHTML = "";
-      allRecords.filter(r => r.name.toLowerCase().includes(term)).forEach(r => renderCard(r, div));
-  });
+  window.deleteRec = function(id) { if(confirm("Are you sure you want to delete this record permanently?")) remove(ref(db, 'inmates_records/'+id)); };
+  window.switchTab = function(t) { document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active')); document.getElementById('view-'+t).classList.add('active'); const idx = t==='home'?0:t==='add'?1:2; document.querySelectorAll('.b-nav-item').forEach(e => e.classList.remove('active')); document.querySelectorAll('.b-nav-item')[idx].classList.add('active'); document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active')); document.querySelectorAll('.nav-btn')[idx].classList.add('active'); };
 
 </script>
 
