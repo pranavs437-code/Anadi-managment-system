@@ -3,240 +3,486 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Anadi Godham | Rewards Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Quicksand:wght@700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+    <title>Anadi Godham | Republic Day Rewards</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <!-- Screenshot Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <style>
-        :root { --primary: #1b4332; --accent: #bc6c25; --milk: #fdfaf5; --white: #ffffff; }
+        :root { 
+            --saffron: #FF9933;
+            --green: #138808;
+            --navy: #000080;
+            --white: #ffffff;
+            --glass-panel: rgba(255, 255, 255, 0.85);
+            --glass-card: rgba(255, 255, 255, 0.95);
+        }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--milk); font-family: 'Poppins', sans-serif; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow-x: hidden; padding: 10px; }
-        .bg-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
-        .dairy-item { position: absolute; opacity: 0.12; animation: floatUp linear infinite; font-size: 30px; }
-        @keyframes floatUp { 0% { transform: translateY(110vh) rotate(0deg); } 100% { transform: translateY(-20vh) rotate(360deg); } }
-        .main-card { background: rgba(255, 255, 255, 0.95); width: 100%; max-width: 450px; padding: 2.5rem 2rem; border-radius: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); backdrop-filter: blur(10px); border: 2px solid #e9f5db; text-align: center; }
-        .logo { width: 85px; height: 85px; border-radius: 50%; border: 3px solid var(--primary); margin-bottom: 10px; }
-        h1 { font-family: 'Quicksand', sans-serif; color: var(--primary); font-size: 1.8rem; }
-        .tagline { color: var(--accent); font-size: 11px; letter-spacing: 2px; font-weight: 600; margin-bottom: 1.5rem; text-transform: uppercase; }
-        .form-group { text-align: left; margin-bottom: 0.8rem; }
-        label { font-size: 12px; font-weight: 600; color: #444; margin-left: 5px; }
-        input, textarea { width: 100%; padding: 13px; border-radius: 12px; border: 1.5px solid #eee; outline: none; background: #fafafa; font-size: 14px; }
-        .btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 15px; font-size: 16px; font-weight: 600; cursor: pointer; }
-        #reward-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--milk); display: none; flex-direction: column; align-items: center; z-index: 100; overflow-y: auto; padding: 20px; }
-        .hint { background: #e1f5fe; color: #0288d1; padding: 10px 20px; border-radius: 50px; font-size: 12px; font-weight: 700; margin-bottom: 15px; }
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; width: 100%; max-width: 1000px; justify-items: center; padding: 20px 0; }
-        .scratch-card { background: #fff; width: 280px; height: 360px; border-radius: 30px; padding: 15px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #eee; }
-        .canvas-wrap { position: relative; width: 250px; height: 260px; margin: 10px auto; border-radius: 20px; overflow: hidden; }
-        .prize-under { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff; z-index: 1; }
-        .reward-val { font-size: 18px; color: var(--primary); font-weight: 800; margin: 5px 0; }
-        .copy-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; background: #f1f1f1; padding: 8px 15px; border-radius: 10px; border: 1px dashed #999; cursor: pointer; }
-        .code-text { font-family: monospace; font-size: 15px; font-weight: bold; color: #333; }
-        .copy-icon { width: 20px; height: 20px; fill: var(--accent); }
-        canvas { position: absolute; top: 0; left: 0; z-index: 2; cursor: crosshair; touch-action: none; transition: opacity 0.5s ease; }
-        #slide-popup { position: fixed; bottom: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 200; align-items: flex-end; }
-        .popup-sheet { background: #fff; width: 100%; max-width: 600px; margin: 0 auto; padding: 40px 20px; border-radius: 40px 40px 0 0; text-align: center; transform: translateY(100%); transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); }
-        .popup-sheet.active { transform: translateY(0); }
-        .popup-sheet h3 { font-family: 'Caveat', cursive; font-size: 45px; color: var(--primary); }
-        .disclaimer { margin-top: 20px; padding: 15px; background: #fff9e6; border-radius: 20px; font-size: 13px; font-weight: 600; color: #b8860b; border: 1px dashed #ffd700; }
-        @media (min-width: 768px) { .cards-grid { grid-template-columns: repeat(3, 1fr); } }
+        
+        body { 
+            background: linear-gradient(135deg, #ffa200 0%, #FFFFFF 50%, #125518 100%); 
+            font-family: 'Poppins', sans-serif; 
+            min-height: 100vh; 
+            display: flex; justify-content: center; align-items: center; 
+            padding: 15px; 
+            color: var(--navy);
+        }
+
+        /* SPINNING CHAKRA BG */
+        .chakra-bg {
+            position: fixed; top: 50%; left: 50%; width: 140vw; height: 140vw; 
+            background: url("https://upload.wikimedia.org/wikipedia/commons/1/17/Ashoka_Chakra.svg") no-repeat center/contain;
+            opacity: 0.1; 
+            transform: translate(-50%, -50%); z-index: -1; 
+            animation: spinBg 60s linear infinite;
+        }
+        @keyframes spinBg { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* MAIN CONTAINER */
+        .app-container { 
+            width: 100%; max-width: 400px; /* Slightly reduced max-width for better fit */
+            padding: 25px 20px; 
+            border-radius: 25px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15); 
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            text-align: center; position: relative;
+            background: rgba(255,255,255,0.3);
+            backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px);
+            overflow: hidden; /* Ensures nothing goes outside */
+        }
+
+        .tricolor-strip {
+            position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+            background: linear-gradient(90deg, var(--saffron), #fff, var(--green));
+        }
+
+        /* HEADER */
+        .logo { 
+            width: 70px; height: 70px; border-radius: 50%; 
+            border: 3px solid var(--navy); padding: 3px; background: #fff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        h1 { font-family: 'Playfair Display', serif; color: var(--navy); font-size: 24px; margin: 10px 0 2px; }
+        .subtitle { color: var(--saffron); font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+
+        /* FORMS */
+        .input-group { margin-bottom: 12px; text-align: left; width: 100%; }
+        .input-group label { font-size: 12px; font-weight: 700; color: var(--navy); margin-left: 5px; margin-bottom: 3px; display: block; }
+        
+        input, textarea, select { 
+            width: 100%; padding: 12px 14px; 
+            border: 1px solid rgba(255,255,255,0.4); border-radius: 12px; 
+            background: rgba(255, 255, 255, 0.65);
+            outline: none; font-size: 14px; color: #333;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        
+        input:focus, textarea:focus {
+            background: #fff;
+            border-color: var(--navy);
+        }
+        
+        input[type="date"] {
+            font-family: 'Poppins', sans-serif;
+            text-transform: uppercase;
+        }
+
+        .primary-btn { 
+            width: 100%; padding: 14px; margin-top: 8px;
+            background: linear-gradient(90deg, var(--navy), #2a2a8a); 
+            color: white; border: none; border-radius: 50px; 
+            font-size: 16px; font-weight: 700; cursor: pointer; 
+            box-shadow: 0 8px 20px rgba(0, 0, 128, 0.3);
+            transition: 0.2s;
+        }
+        .primary-btn:active { transform: scale(0.98); }
+
+        /* --- GAME SECTION --- */
+        #game-section { display: none; min-height: 450px; }
+        
+        .card-stage { 
+            display: none; 
+            transition: all 0.5s ease;
+        }
+        .card-stage.active { display: block; }
+        
+        /* ZOOM EFFECT CLASS */
+        .card-zoomed {
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        /* CARD STYLING */
+        .scratch-card-box { 
+            background: var(--glass-card);
+            width: 100%; max-width: 280px; margin: 0 auto 20px;
+            border-radius: 18px; padding: 12px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15); 
+            border: 2px solid #fff; position: relative;
+        }
+
+        .scratch-canvas-container {
+            width: 230px; height: 230px; margin: 0 auto; 
+            border-radius: 12px; overflow: hidden; position: relative;
+            background: #f9f9f9;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        .prize-reveal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            z-index: 1;
+        }
+
+        .prize-tag { background: var(--navy); color: #fff; font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-bottom: 5px; }
+        .prize-value { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--saffron); font-weight: 700; line-height: 1.1; margin-bottom: 5px; }
+        .condition-text { 
+            font-size: 12px; color: #138808; font-weight: 700; 
+            margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 4px; 
+        }
+        .prize-code { font-family: monospace; font-size: 13px; background: #eee; padding: 5px 10px; border-radius: 6px; color: #333; font-weight: bold; }
+
+        canvas { position: absolute; top: 0; left: 0; z-index: 2; cursor: crosshair; transition: opacity 0.8s; }
+
+        /* NEXT BUTTON */
+        .next-action-btn {
+            display: none;
+            background: var(--saffron); color: white;
+            padding: 10px 25px; border-radius: 30px;
+            font-weight: 700; font-size: 14px;
+            border: none; margin-top: 15px;
+            box-shadow: 0 5px 15px rgba(255, 153, 51, 0.4);
+            animation: bounceIn 0.5s; cursor: pointer;
+        }
+        @keyframes bounceIn { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* --- FINAL SUMMARY --- */
+        #final-summary { display: none; width: 100%; animation: popIn 0.6s ease; }
+        
+        .final-card-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        
+        .final-card {
+            background: #fff; border-radius: 12px; padding: 12px;
+            border: 1px solid var(--navy); display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: left;
+        }
+        
+        .fc-left { flex: 1; }
+        .fc-tag { font-size: 9px; font-weight: 800; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .fc-prize { font-family: 'Playfair Display'; font-size: 18px; color: var(--navy); font-weight: 700; margin: 2px 0; }
+        .fc-cond { font-size: 11px; color: var(--green); font-weight: 700; }
+        
+        .fc-right { text-align: right; }
+        .fc-code { font-family: monospace; font-size: 10px; background: #f0f0f0; padding: 4px 6px; border-radius: 4px; color: #555; display: inline-block; margin-top: 5px; }
+
+        .confetti { position: fixed; width: 8px; height: 8px; z-index: 100; animation: fall linear forwards; pointer-events: none; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+
+        /* Loader */
+        .loader-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:50; justify-content:center; align-items:center; flex-direction:column; border-radius:30px; }
     </style>
 </head>
 <body>
 
-    <div class="bg-layer" id="bgItems"></div>
+    <div class="chakra-bg"></div>
 
-    <div class="main-card" id="regSection">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuMrCVkyn9HWP12QqXQSutX0EmPRQ0b4pXUA&s" class="logo">
-        <h1>Anadi Godham</h1>
-        <p class="tagline">Dairy Purity Redefined</p>
-        <form id="dairyForm">
-            <div class="form-group"><label>Name *</label><input type="text" id="name" required></div>
-            <div class="form-group"><label>Phone *</label><input type="tel" id="phone" pattern="[0-9]{10}" required></div>
-            <div class="form-group"><label>Address *</label><textarea id="address" rows="2" required></textarea></div>
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex:1"><label>DOB *</label><input type="date" id="dob" required></div>
-                <div class="form-group" style="flex:1"><label>Anniversary (Opt)</label><input type="date" id="anniv"></div>
-            </div>
-            <button type="submit" class="btn" id="submitBtn">Register & View Rewards ✨</button>
-        </form>
-    </div>
+    <div class="app-container" id="captureArea">
+        <div class="tricolor-strip"></div>
 
-    <div id="reward-modal">
-        <div class="hint" id="timerHint">📸 Scratch & Save your Unique Coupons!</div>
-        <h2 style="color: var(--primary); font-family: 'Quicksand';">Mystery Gifts 🎁</h2>
-        <div class="cards-grid">
-            <!-- 10K Card -->
-            <div class="scratch-card">
-                <span style="font-size: 11px; font-weight: 700; color: #aaa;">GIFT CARD 1</span>
-                <div class="canvas-wrap">
-                    <div class="prize-under">
-                        <span style="color: var(--accent); font-weight: 700; font-size: 12px;">IF YOUR MONTHLY BILL ₹8,000 or above</span>
-                        <span class="reward-val">🧀 500g PANEER FREE</span>
-                        <div class="copy-row" onclick="copyCode('c1-val')">
-                            <span class="code-text" id="c1-val">---</span>
-                            <svg class="copy-icon" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                        </div>
-                    </div>
-                    <canvas id="c1"></canvas>
-                </div>
-            </div>
-            <!-- 8K Card -->
-            <div class="scratch-card">
-                <span style="font-size: 11px; font-weight: 700; color: #aaa;">GIFT CARD 2</span>
-                <div class="canvas-wrap">
-                    <div class="prize-under">
-                        <span style="color: var(--accent); font-weight: 700; font-size: 12px;">IF Your MONTHLY BILL ₹6,000 or above</span>
-                        <span class="reward-val">🧀 250g PANEER FREE</span>
-                        <div class="copy-row" onclick="copyCode('c2-val')">
-                            <span class="code-text" id="c2-val">---</span>
-                            <svg class="copy-icon" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                        </div>
-                    </div>
-                    <canvas id="c2"></canvas>
-                </div>
-            </div>
-            <!-- 5K Card -->
-            <div class="scratch-card">
-                <span style="font-size: 11px; font-weight: 700; color: #aaa;">GIFT CARD 3</span>
-                <div class="canvas-wrap">
-                    <div class="prize-under">
-                        <span style="color: var(--accent); font-weight: 700; font-size: 12px;">IF YOUR MONTHLY BILL ₹4,000 or above</span>
-                        <span class="reward-val">🥛 2L CHANCH FREE</span>
-                        <div class="copy-row" onclick="copyCode('c3-val')">
-                            <span class="code-text" id="c3-val">---</span>
-                            <svg class="copy-icon" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                        </div>
-                    </div>
-                    <canvas id="c3"></canvas>
-                </div>
-            </div>
+        <!-- LOADER -->
+        <div class="loader-overlay" id="loader">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/1/17/Ashoka_Chakra.svg" width="50" style="animation:spinBg 1s infinite linear;">
+            <p style="margin-top:10px; font-weight:600; font-size:14px;">Loading...</p>
         </div>
-    </div>
 
-    <div id="slide-popup">
-        <div class="popup-sheet" id="sheet">
-            <div style="font-size: 50px;">🏠✨</div>
-            <h3>Wishing you a Happy Republic day from Anadi Godham</h3>
-            <p>Aapki details register ho chuki hain. Scratch karke aaram se screenshot le lein.</p>
-            <div class="disclaimer">💡 Har offer sirf ek baar hi use kiya ja sakta hai per customer.</div>
-            <button class="btn" style="margin-top: 25px;" onclick="closePopup()">View My Cards</button>
+        <!-- 1. REGISTRATION -->
+        <div id="reg-view">
+            <div class="logo-wrapper"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuMrCVkyn9HWP12QqXQSutX0EmPRQ0b4pXUA&s" class="logo"></div>
+            <h1>Anadi Godham</h1>
+            <p class="subtitle">Republic Day Utsav</p>
+
+            <form id="regForm">
+                <div class="input-group"><label>Full Name</label><input type="text" id="name" required></div>
+                <div class="input-group"><label>WhatsApp Number</label><input type="tel" id="phone" pattern="[0-9]{10}" required></div>
+                <div class="input-group"><label>Address</label><textarea id="address" rows="1" required></textarea></div>
+                
+                <!-- STACKED DATES (Fixed Layout Issue) -->
+                <div class="input-group">
+                    <label>Date of Birth</label>
+                    <input type="date" id="dob" required>
+                </div>
+                
+                <div class="input-group">
+                    <label>Anniversary Date <span style="font-weight:400; font-size:10px; color:#666;">(Optional)</span></label>
+                    <input type="date" id="anniv">
+                </div>
+
+                <button type="submit" class="primary-btn">Start Scratching 🎁</button>
+            </form>
         </div>
+
+        <!-- 2. GAME SECTION -->
+        <div id="game-section">
+            
+            <!-- STAGE 1: PLATINUM -->
+            <div class="card-stage active" id="stage-1">
+                <p style="font-size:13px; font-weight:700; margin-bottom:12px; color:#555;">Card 1: Platinum Reward</p>
+                
+                <div class="scratch-card-box" id="box-1">
+                    <div class="scratch-canvas-container">
+                        <div class="prize-reveal">
+                            <span class="prize-tag">PLATINUM</span>
+                            <span class="prize-value">500g Paneer</span>
+                            <span class="condition-text">On Monthly Bill > ₹8,000</span>
+                            <div class="prize-code" id="code-1">...</div>
+                        </div>
+                        <canvas id="cv1"></canvas>
+                    </div>
+                </div>
+                <button class="next-action-btn" id="btn-1" onclick="nextCard(1)">👉 Claim & Next</button>
+            </div>
+
+            <!-- STAGE 2: GOLD -->
+            <div class="card-stage" id="stage-2">
+                <p style="font-size:13px; font-weight:700; margin-bottom:12px; color:#555;">Card 2: Gold Reward</p>
+                
+                <div class="scratch-card-box" id="box-2">
+                    <div class="scratch-canvas-container">
+                        <div class="prize-reveal">
+                            <span class="prize-tag">GOLD</span>
+                            <span class="prize-value">250g Paneer</span>
+                            <span class="condition-text">On Monthly Bill > ₹6,000</span>
+                            <div class="prize-code" id="code-2">...</div>
+                        </div>
+                        <canvas id="cv2"></canvas>
+                    </div>
+                </div>
+                <button class="next-action-btn" id="btn-2" onclick="nextCard(2)">👉 Claim & Next</button>
+            </div>
+
+            <!-- STAGE 3: SILVER -->
+            <div class="card-stage" id="stage-3">
+                <p style="font-size:13px; font-weight:700; margin-bottom:12px; color:#555;">Card 3: Silver Reward</p>
+                
+                <div class="scratch-card-box" id="box-3">
+                    <div class="scratch-canvas-container">
+                        <div class="prize-reveal">
+                            <span class="prize-tag">SILVER</span>
+                            <span class="prize-value">2L Chanch</span>
+                            <span class="condition-text">On Monthly Bill > ₹4,000</span>
+                            <div class="prize-code" id="code-3">...</div>
+                        </div>
+                        <canvas id="cv3"></canvas>
+                    </div>
+                </div>
+                <button class="next-action-btn" id="btn-3" onclick="nextCard(3)">👉 Finish & View All</button>
+            </div>
+
+        </div>
+
+        <!-- 3. FINAL SUMMARY -->
+        <div id="final-summary">
+            <div class="logo-wrapper"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuMrCVkyn9HWP12QqXQSutX0EmPRQ0b4pXUA&s" class="logo" style="width:60px; height:60px;"></div>
+            <h2 style="font-family:'Playfair Display'; color:var(--navy); font-size:22px; margin:5px 0;">Congratulations!</h2>
+            <p style="font-size:12px; color:#555; margin-bottom:15px;">Take a screenshot and show at billing.</p>
+
+            <div class="final-card-list">
+                <!-- Large Card 1 -->
+                <div class="final-card" style="border-left: 5px solid var(--saffron);">
+                    <div class="fc-left">
+                        <div class="fc-tag">PLATINUM REWARD</div>
+                        <div class="fc-prize">500g Paneer</div>
+                        <div class="fc-cond">Condition: Bill > ₹8,000</div>
+                    </div>
+                    <div class="fc-right">
+                        <div class="fc-code" id="sum-code-1">...</div>
+                    </div>
+                </div>
+
+                <!-- Large Card 2 -->
+                <div class="final-card" style="border-left: 5px solid #FFD700;">
+                    <div class="fc-left">
+                        <div class="fc-tag">GOLD REWARD</div>
+                        <div class="fc-prize">250g Paneer</div>
+                        <div class="fc-cond">Condition: Bill > ₹6,000</div>
+                    </div>
+                    <div class="fc-right">
+                        <div class="fc-code" id="sum-code-2">...</div>
+                    </div>
+                </div>
+
+                <!-- Large Card 3 -->
+                <div class="final-card" style="border-left: 5px solid #C0C0C0;">
+                    <div class="fc-left">
+                        <div class="fc-tag">SILVER REWARD</div>
+                        <div class="fc-prize">2L Chanch</div>
+                        <div class="fc-cond">Condition: Bill > ₹4,000</div>
+                    </div>
+                    <div class="fc-right">
+                        <div class="fc-code" id="sum-code-3">...</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="primary-btn" id="saveBtn" onclick="saveScreenshot()">📸 Save Ticket</button>
+        </div>
+
     </div>
 
     <script>
-        // YAHAN APNA URL PASTE KAREIN
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwzNbonwJPMG_mDtk-5XxDATa-yoPNYmlSEztgrzfBsLAWC-m7WZq3z_hELfXCqFxzK/exec'; 
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwzNbonwJPMG_mDtk-5XxDATa-yoPNYmlSEztgrzfBsLAWC-m7WZq3z_hELfXCqFxzK/exec';
         
-        let tracker = { c1: false, c2: false, c3: false };
-        let popupShown = false;
-        const simpleCode = (p) => p + "-" + Math.floor(1000 + Math.random() * 9000);
-
-        // Background Icons
-        const dairyIcons = ['🐄', '🍼', '🥛', '🌿', '🧀'];
-        const bg = document.getElementById('bgItems');
-        for(let i=0; i<15; i++){
-            const el = document.createElement('div'); el.className='dairy-item';
-            el.innerText = dairyIcons[Math.floor(Math.random()*5)];
-            el.style.left = Math.random()*100+'vw'; el.style.animationDuration=(Math.random()*12+8)+'s';
-            bg.appendChild(el);
-        }
-
-        // Form Submission
-        document.getElementById('dairyForm').addEventListener('submit', function(e) {
+        // --- DATA SETUP ---
+        document.getElementById('regForm').addEventListener('submit', function(e){
             e.preventDefault();
-            const name = document.getElementById('name').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            const address = document.getElementById('address').value.trim();
-            const dob = document.getElementById('dob').value;
-            const anniv = document.getElementById('anniv').value || "N/A";
+            document.getElementById('loader').style.display = 'flex';
 
-            if (!name || !phone || !address || !dob) { alert("⚠️ Required fields missing!"); return; }
+            // Generate Codes
+            const r = () => Math.floor(1000 + Math.random() * 9000);
+            const c1 = "AG-PL-"+r(), c2 = "AG-GD-"+r(), c3 = "AG-SL-"+r();
 
-            const btn = document.getElementById('submitBtn');
-            btn.innerText = "Processing..."; btn.disabled = true;
-
-            const codes = { c1: simpleCode('AG10'), c2: simpleCode('AG08'), c3: simpleCode('AG05') };
-            document.getElementById('c1-val').innerText = codes.c1;
-            document.getElementById('c2-val').innerText = codes.c2;
-            document.getElementById('c3-val').innerText = codes.c3;
-
-            // GOOGLE SHEET SYNC
-            fetch(SCRIPT_URL, { 
-                method: 'POST', 
-                mode: 'no-cors', 
-                cache: 'no-cache',
-                body: JSON.stringify({ name, phone, address, dob, anniv, c1: codes.c1, c2: codes.c2, c3: codes.c3 }) 
-            }).then(() => {
-                document.getElementById('regSection').style.display = 'none';
-                document.getElementById('reward-modal').style.display = 'flex';
-                ['c1', 'c2', 'c3'].forEach(id => setupScratch(id));
-            }).catch(err => {
-                alert("Error! Try again.");
-                btn.disabled = false; btn.innerText = "Register & View Rewards ✨";
+            // Set Codes in DOM
+            ['1','2','3'].forEach((n, i) => {
+                const code = [c1, c2, c3][i];
+                document.getElementById('code-'+n).innerText = code;
+                document.getElementById('sum-code-'+n).innerText = code;
             });
+
+            // Get Form Data
+            const formData = {
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                dob: document.getElementById('dob').value,
+                anniv: document.getElementById('anniv').value,
+                c1, c2, c3
+            };
+            
+            // Send to Google Sheet
+            fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:JSON.stringify(formData) }).catch(e=>{});
+
+            setTimeout(() => {
+                document.getElementById('reg-view').style.display = 'none';
+                document.getElementById('game-section').style.display = 'block';
+                document.getElementById('loader').style.display = 'none';
+                initScratchCard(1);
+            }, 1000);
         });
 
-        // Scratch Logic
-        function setupScratch(id) {
-            const canvas = document.getElementById(id); const ctx = canvas.getContext('2d');
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = 250 * dpr; canvas.height = 260 * dpr;
-            ctx.scale(dpr, dpr); canvas.style.width = '250px'; canvas.style.height = '260px';
-            ctx.fillStyle = '#bdc3c7'; ctx.fillRect(0, 0, 250, 260);
-            ctx.fillStyle = '#1b4332'; ctx.font = 'bold 16px Poppins'; ctx.textAlign = 'center';
-            ctx.fillText('SCRATCH HERE 🎁', 125, 140);
+        // --- SCRATCH ENGINE ---
+        function initScratchCard(stage) {
+            const canvas = document.getElementById('cv' + stage);
+            const ctx = canvas.getContext('2d');
+            const w = 230, h = 230; // Matches CSS width/height
+            canvas.width = w; canvas.height = h;
+
+            // Gradient Overlay
+            const grd = ctx.createLinearGradient(0, 0, w, h);
+            grd.addColorStop(0, "#FF9933");
+            grd.addColorStop(0.5, "#FFFFFF");
+            grd.addColorStop(1, "#138808");
+            ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h);
+
+            // Text
+            ctx.fillStyle = "#000080";
+            ctx.font = "bold 16px Poppins"; ctx.textAlign = "center";
+            ctx.fillText("SCRATCH ME", w/2, h/2);
+            ctx.font = "30px Arial"; ctx.fillText("🇮🇳", w/2, h/2 - 30);
 
             let isDrawing = false;
-            const move = (e) => {
-                if(!isDrawing) return;
-                const rect = canvas.getBoundingClientRect();
-                const pos = e.touches ? e.touches[0] : e;
+            let completed = false;
+
+            const scratch = (x, y) => {
                 ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath(); ctx.arc(pos.clientX-rect.left, pos.clientY-rect.top, 25, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI * 2); ctx.fill();
             };
-            canvas.addEventListener('mousedown', () => isDrawing = true);
-            canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); isDrawing = true; });
-            window.addEventListener('mouseup', () => { isDrawing = false; checkFinish(id, canvas); });
-            window.addEventListener('touchend', () => { isDrawing = false; checkFinish(id, canvas); });
-            canvas.addEventListener('mousemove', move);
-            canvas.addEventListener('touchmove', (e)=>{ e.preventDefault(); move(e); });
+            
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const t = e.touches ? e.touches[0] : e;
+                return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+            };
+
+            const check = () => {
+                if (completed) return;
+                const pixels = ctx.getImageData(0, 0, w, h).data;
+                let clear = 0;
+                for (let i = 3; i < pixels.length; i += 16) if (pixels[i] === 0) clear++;
+                
+                if (clear / (pixels.length / 16) > 0.35) {
+                    completed = true;
+                    revealCard(stage);
+                }
+            };
+
+            const start = () => isDrawing = true;
+            const move = (e) => { if(isDrawing) { e.preventDefault(); const p = getPos(e); scratch(p.x, p.y); } };
+            const end = () => { if(isDrawing) { isDrawing = false; check(); } };
+
+            canvas.addEventListener('mousedown', start); canvas.addEventListener('touchstart', start, {passive:false});
+            canvas.addEventListener('mousemove', move); canvas.addEventListener('touchmove', move, {passive:false});
+            window.addEventListener('mouseup', end); window.addEventListener('touchend', end);
         }
 
-        function checkFinish(id, canvas) {
-            const ctx = canvas.getContext('2d');
-            const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-            let trans = 0;
-            for(let i=0; i<pixels.length; i+=4) if(pixels[i+3] < 128) trans++;
-            
-            if((trans / (canvas.width * canvas.height)) > 0.15) {
-                canvas.style.opacity = '0';
-                setTimeout(() => { canvas.style.pointerEvents = 'none'; }, 500);
-                tracker[id] = true;
-                if(Object.values(tracker).every(v => v) && !popupShown) {
-                    popupShown = true;
-                    document.getElementById('timerHint').innerText = "✅ Done! Popup in 5 seconds...";
-                    setTimeout(() => {
-                        const popup = document.getElementById('slide-popup');
-                        popup.style.display = 'flex';
-                        setTimeout(() => document.getElementById('sheet').classList.add('active'), 50);
-                    }, 5000);
-                }
+        // --- GAME LOGIC ---
+        function revealCard(stage) {
+            const canvas = document.getElementById('cv' + stage);
+            const box = document.getElementById('box-' + stage);
+            const btn = document.getElementById('btn-' + stage);
+
+            canvas.style.opacity = '0'; 
+            canvas.style.pointerEvents = 'none';
+
+            box.classList.add('card-zoomed');
+            btn.style.display = 'inline-block';
+            burstConfetti(30);
+        }
+
+        function nextCard(currentStage) {
+            document.getElementById('stage-' + currentStage).style.display = 'none';
+
+            if(currentStage < 3) {
+                const next = currentStage + 1;
+                const nextStageEl = document.getElementById('stage-' + next);
+                nextStageEl.classList.add('active');
+                initScratchCard(next);
+            } else {
+                document.getElementById('game-section').style.display = 'none';
+                document.getElementById('final-summary').style.display = 'block';
+                burstConfetti(100);
             }
         }
 
-        function copyCode(id) {
-            const text = document.getElementById(id).innerText;
-            const temp = document.createElement("textarea");
-            temp.value = text; document.body.appendChild(temp);
-            temp.select(); document.execCommand("copy");
-            document.body.removeChild(temp);
-            alert("✅ Code Copied: " + text);
+        // --- UTILS ---
+        function burstConfetti(amount) {
+            const colors = ['#FF9933', '#138808', '#FFFFFF', '#000080'];
+            for(let i=0; i<amount; i++) {
+                const c = document.createElement('div');
+                c.className = 'confetti';
+                c.style.left = Math.random()*100 + '%';
+                c.style.backgroundColor = colors[Math.floor(Math.random()*4)];
+                c.style.animationDuration = (Math.random()*2 + 2) + 's';
+                document.body.appendChild(c);
+            }
         }
 
-        function closePopup() {
-            document.getElementById('sheet').classList.remove('active');
-            setTimeout(() => { 
-                document.getElementById('slide-popup').style.display = 'none'; 
-                document.getElementById('timerHint').innerText = "📸 Screenshot le lein ya codes save rakhein!";
-            }, 600);
+        function saveScreenshot() {
+            const btn = document.getElementById('saveBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "Processing...";
+            
+            html2canvas(document.getElementById("captureArea"), {
+                scale: 2, useCORS: true, backgroundColor: "#ffffff"
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'Anadi_Godham_Rewards.png';
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                btn.innerHTML = "✅ Saved!";
+                setTimeout(() => btn.innerHTML = originalText, 2000);
+            });
         }
     </script>
 </body>
