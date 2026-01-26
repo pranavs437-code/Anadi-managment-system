@@ -15,7 +15,6 @@
             --green: #138808;
             --navy: #000080;
             --white: #ffffff;
-            --glass-panel: rgba(255, 255, 255, 0.85);
             --glass-card: rgba(255, 255, 255, 0.95);
         }
         
@@ -42,15 +41,15 @@
 
         /* MAIN CONTAINER */
         .app-container { 
-            width: 100%; max-width: 400px; /* Slightly reduced max-width for better fit */
+            width: 100%; max-width: 400px; 
             padding: 25px 20px; 
             border-radius: 25px; 
             box-shadow: 0 20px 50px rgba(0,0,0,0.15); 
             border: 2px solid rgba(255, 255, 255, 0.8);
             text-align: center; position: relative;
-            background: rgba(255,255,255,0.3);
-            backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px);
-            overflow: hidden; /* Ensures nothing goes outside */
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            overflow: hidden; 
         }
 
         .tricolor-strip {
@@ -73,21 +72,14 @@
         
         input, textarea, select { 
             width: 100%; padding: 12px 14px; 
-            border: 1px solid rgba(255,255,255,0.4); border-radius: 12px; 
-            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(0,0,0,0.1); border-radius: 12px; 
+            background: rgba(255, 255, 255, 0.9);
             outline: none; font-size: 14px; color: #333;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         }
         
-        input:focus, textarea:focus {
-            background: #fff;
-            border-color: var(--navy);
-        }
-        
-        input[type="date"] {
-            font-family: 'Poppins', sans-serif;
-            text-transform: uppercase;
-        }
+        input:focus, textarea:focus { background: #fff; border-color: var(--navy); }
+        input[type="date"] { font-family: 'Poppins', sans-serif; text-transform: uppercase; }
 
         .primary-btn { 
             width: 100%; padding: 14px; margin-top: 8px;
@@ -99,68 +91,53 @@
         }
         .primary-btn:active { transform: scale(0.98); }
 
-        /* --- GAME SECTION --- */
-        #game-section { display: none; min-height: 450px; }
-        
-        .card-stage { 
-            display: none; 
-            transition: all 0.5s ease;
-        }
-        .card-stage.active { display: block; }
-        
-        /* ZOOM EFFECT CLASS */
-        .card-zoomed {
-            transform: scale(1.05);
-            z-index: 10;
+        /* SAFETY FOOTER (Important for Google) */
+        .safety-footer {
+            margin-top: 25px; border-top: 1px dashed #ccc; padding-top: 15px;
+            font-size: 10px; color: #555; line-height: 1.4;
         }
 
-        /* CARD STYLING */
+        /* --- GAME SECTION --- */
+        #game-section { display: none; min-height: 450px; }
+        .card-stage { display: none; transition: all 0.5s ease; }
+        .card-stage.active { display: block; }
+        .card-zoomed { transform: scale(1.05); z-index: 10; }
+
         .scratch-card-box { 
             background: var(--glass-card);
             width: 100%; max-width: 280px; margin: 0 auto 20px;
             border-radius: 18px; padding: 12px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.15); 
-            border: 2px solid #fff; position: relative;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15); border: 2px solid #fff; position: relative;
         }
 
         .scratch-canvas-container {
             width: 230px; height: 230px; margin: 0 auto; 
             border-radius: 12px; overflow: hidden; position: relative;
-            background: #f9f9f9;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+            background: #f9f9f9; box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
         }
 
         .prize-reveal {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            z-index: 1;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1;
         }
 
         .prize-tag { background: var(--navy); color: #fff; font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-bottom: 5px; }
         .prize-value { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--saffron); font-weight: 700; line-height: 1.1; margin-bottom: 5px; }
-        .condition-text { 
-            font-size: 12px; color: #138808; font-weight: 700; 
-            margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 4px; 
-        }
+        .condition-text { font-size: 12px; color: #138808; font-weight: 700; margin-bottom: 8px; border-bottom: 1px dashed #ccc; padding-bottom: 4px; }
         .prize-code { font-family: monospace; font-size: 13px; background: #eee; padding: 5px 10px; border-radius: 6px; color: #333; font-weight: bold; }
 
         canvas { position: absolute; top: 0; left: 0; z-index: 2; cursor: crosshair; transition: opacity 0.8s; }
 
-        /* NEXT BUTTON */
         .next-action-btn {
-            display: none;
-            background: var(--saffron); color: white;
-            padding: 10px 25px; border-radius: 30px;
-            font-weight: 700; font-size: 14px;
-            border: none; margin-top: 15px;
-            box-shadow: 0 5px 15px rgba(255, 153, 51, 0.4);
+            display: none; background: var(--saffron); color: white;
+            padding: 10px 25px; border-radius: 30px; font-weight: 700; font-size: 14px;
+            border: none; margin-top: 15px; box-shadow: 0 5px 15px rgba(255, 153, 51, 0.4);
             animation: bounceIn 0.5s; cursor: pointer;
         }
         @keyframes bounceIn { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
         /* --- FINAL SUMMARY --- */
         #final-summary { display: none; width: 100%; animation: popIn 0.6s ease; }
-        
         .final-card-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
         
         .final-card {
@@ -168,19 +145,16 @@
             border: 1px solid var(--navy); display: flex; align-items: center; justify-content: space-between;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: left;
         }
-        
         .fc-left { flex: 1; }
         .fc-tag { font-size: 9px; font-weight: 800; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
         .fc-prize { font-family: 'Playfair Display'; font-size: 18px; color: var(--navy); font-weight: 700; margin: 2px 0; }
         .fc-cond { font-size: 11px; color: var(--green); font-weight: 700; }
-        
         .fc-right { text-align: right; }
         .fc-code { font-family: monospace; font-size: 10px; background: #f0f0f0; padding: 4px 6px; border-radius: 4px; color: #555; display: inline-block; margin-top: 5px; }
 
         .confetti { position: fixed; width: 8px; height: 8px; z-index: 100; animation: fall linear forwards; pointer-events: none; }
         @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
 
-        /* Loader */
         .loader-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:50; justify-content:center; align-items:center; flex-direction:column; border-radius:30px; }
     </style>
 </head>
@@ -194,7 +168,7 @@
         <!-- LOADER -->
         <div class="loader-overlay" id="loader">
             <img src="https://upload.wikimedia.org/wikipedia/commons/1/17/Ashoka_Chakra.svg" width="50" style="animation:spinBg 1s infinite linear;">
-            <p style="margin-top:10px; font-weight:600; font-size:14px;">Loading...</p>
+            <p style="margin-top:10px; font-weight:600; font-size:14px;">Generating Your Card...</p>
         </div>
 
         <!-- 1. REGISTRATION -->
@@ -208,7 +182,6 @@
                 <div class="input-group"><label>WhatsApp Number</label><input type="tel" id="phone" pattern="[0-9]{10}" required></div>
                 <div class="input-group"><label>Address</label><textarea id="address" rows="1" required></textarea></div>
                 
-                <!-- STACKED DATES (Fixed Layout Issue) -->
                 <div class="input-group">
                     <label>Date of Birth</label>
                     <input type="date" id="dob" required>
@@ -221,15 +194,20 @@
 
                 <button type="submit" class="primary-btn">Start Scratching 🎁</button>
             </form>
+
+            <!-- IMPORTANT: FOOTER ADDED TO PREVENT GOOGLE BLOCKING -->
+            <div class="safety-footer">
+                <p><strong>Official Reward Program by Anadi Godham</strong></p>
+                <p>Location: [अपनी सिटी का नाम यहाँ लिखें]</p>
+                <p style="font-size:9px; margin-top:5px; color:#777;">Data is collected only for discount distribution.</p>
+            </div>
         </div>
 
         <!-- 2. GAME SECTION -->
         <div id="game-section">
-            
             <!-- STAGE 1: PLATINUM -->
             <div class="card-stage active" id="stage-1">
                 <p style="font-size:13px; font-weight:700; margin-bottom:12px; color:#555;">Card 1: Platinum Reward</p>
-                
                 <div class="scratch-card-box" id="box-1">
                     <div class="scratch-canvas-container">
                         <div class="prize-reveal">
@@ -247,7 +225,6 @@
             <!-- STAGE 2: GOLD -->
             <div class="card-stage" id="stage-2">
                 <p style="font-size:13px; font-weight:700; margin-bottom:12px; color:#555;">Card 2: Gold Reward</p>
-                
                 <div class="scratch-card-box" id="box-2">
                     <div class="scratch-canvas-container">
                         <div class="prize-reveal">
@@ -265,7 +242,6 @@
             <!-- STAGE 3: SILVER -->
             <div class="card-stage" id="stage-3">
                 <p style="font-size:13px; font-weight:700; margin-bottom:12px; color:#555;">Card 3: Silver Reward</p>
-                
                 <div class="scratch-card-box" id="box-3">
                     <div class="scratch-canvas-container">
                         <div class="prize-reveal">
@@ -279,7 +255,6 @@
                 </div>
                 <button class="next-action-btn" id="btn-3" onclick="nextCard(3)">👉 Finish & View All</button>
             </div>
-
         </div>
 
         <!-- 3. FINAL SUMMARY -->
@@ -289,49 +264,38 @@
             <p style="font-size:12px; color:#555; margin-bottom:15px;">Take a screenshot and show at billing.</p>
 
             <div class="final-card-list">
-                <!-- Large Card 1 -->
                 <div class="final-card" style="border-left: 5px solid var(--saffron);">
                     <div class="fc-left">
                         <div class="fc-tag">PLATINUM REWARD</div>
                         <div class="fc-prize">500g Paneer</div>
                         <div class="fc-cond">Condition: Bill > ₹8,000</div>
                     </div>
-                    <div class="fc-right">
-                        <div class="fc-code" id="sum-code-1">...</div>
-                    </div>
+                    <div class="fc-right"><div class="fc-code" id="sum-code-1">...</div></div>
                 </div>
-
-                <!-- Large Card 2 -->
                 <div class="final-card" style="border-left: 5px solid #FFD700;">
                     <div class="fc-left">
                         <div class="fc-tag">GOLD REWARD</div>
                         <div class="fc-prize">250g Paneer</div>
                         <div class="fc-cond">Condition: Bill > ₹6,000</div>
                     </div>
-                    <div class="fc-right">
-                        <div class="fc-code" id="sum-code-2">...</div>
-                    </div>
+                    <div class="fc-right"><div class="fc-code" id="sum-code-2">...</div></div>
                 </div>
-
-                <!-- Large Card 3 -->
                 <div class="final-card" style="border-left: 5px solid #C0C0C0;">
                     <div class="fc-left">
                         <div class="fc-tag">SILVER REWARD</div>
                         <div class="fc-prize">2L Chanch</div>
                         <div class="fc-cond">Condition: Bill > ₹4,000</div>
                     </div>
-                    <div class="fc-right">
-                        <div class="fc-code" id="sum-code-3">...</div>
-                    </div>
+                    <div class="fc-right"><div class="fc-code" id="sum-code-3">...</div></div>
                 </div>
             </div>
-
             <button class="primary-btn" id="saveBtn" onclick="saveScreenshot()">📸 Save Ticket</button>
         </div>
 
     </div>
 
     <script>
+        // ✅ YOUR ORIGINAL GOOGLE SHEET SCRIPT URL
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwzNbonwJPMG_mDtk-5XxDATa-yoPNYmlSEztgrzfBsLAWC-m7WZq3z_hELfXCqFxzK/exec';
         
         // --- DATA SETUP ---
@@ -360,32 +324,45 @@
                 c1, c2, c3
             };
             
-            // Send to Google Sheet
-            fetch(SCRIPT_URL, { method:'POST', mode:'no-cors', body:JSON.stringify(formData) }).catch(e=>{});
+            // ✅ Send to Google Sheet (using NO-CORS mode as required)
+            fetch(SCRIPT_URL, { 
+                method: 'POST', 
+                mode: 'no-cors', // Important for Google Script
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData) 
+            })
+            .then(() => {
+                // Google Script returns opaque response in no-cors, assume success
+                startGame();
+            })
+            .catch(e => {
+                console.error("Error:", e);
+                startGame(); // Still start game if network fails
+            });
+        });
 
+        function startGame() {
             setTimeout(() => {
                 document.getElementById('reg-view').style.display = 'none';
                 document.getElementById('game-section').style.display = 'block';
                 document.getElementById('loader').style.display = 'none';
                 initScratchCard(1);
-            }, 1000);
-        });
+            }, 1500);
+        }
 
         // --- SCRATCH ENGINE ---
         function initScratchCard(stage) {
             const canvas = document.getElementById('cv' + stage);
             const ctx = canvas.getContext('2d');
-            const w = 230, h = 230; // Matches CSS width/height
+            const w = 230, h = 230; 
             canvas.width = w; canvas.height = h;
 
-            // Gradient Overlay
             const grd = ctx.createLinearGradient(0, 0, w, h);
             grd.addColorStop(0, "#FF9933");
             grd.addColorStop(0.5, "#FFFFFF");
             grd.addColorStop(1, "#138808");
             ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h);
 
-            // Text
             ctx.fillStyle = "#000080";
             ctx.font = "bold 16px Poppins"; ctx.textAlign = "center";
             ctx.fillText("SCRATCH ME", w/2, h/2);
@@ -410,7 +387,6 @@
                 const pixels = ctx.getImageData(0, 0, w, h).data;
                 let clear = 0;
                 for (let i = 3; i < pixels.length; i += 16) if (pixels[i] === 0) clear++;
-                
                 if (clear / (pixels.length / 16) > 0.35) {
                     completed = true;
                     revealCard(stage);
@@ -426,15 +402,12 @@
             window.addEventListener('mouseup', end); window.addEventListener('touchend', end);
         }
 
-        // --- GAME LOGIC ---
         function revealCard(stage) {
             const canvas = document.getElementById('cv' + stage);
             const box = document.getElementById('box-' + stage);
             const btn = document.getElementById('btn-' + stage);
-
             canvas.style.opacity = '0'; 
             canvas.style.pointerEvents = 'none';
-
             box.classList.add('card-zoomed');
             btn.style.display = 'inline-block';
             burstConfetti(30);
@@ -442,7 +415,6 @@
 
         function nextCard(currentStage) {
             document.getElementById('stage-' + currentStage).style.display = 'none';
-
             if(currentStage < 3) {
                 const next = currentStage + 1;
                 const nextStageEl = document.getElementById('stage-' + next);
@@ -455,7 +427,6 @@
             }
         }
 
-        // --- UTILS ---
         function burstConfetti(amount) {
             const colors = ['#FF9933', '#138808', '#FFFFFF', '#000080'];
             for(let i=0; i<amount; i++) {
@@ -472,7 +443,6 @@
             const btn = document.getElementById('saveBtn');
             const originalText = btn.innerHTML;
             btn.innerHTML = "Processing...";
-            
             html2canvas(document.getElementById("captureArea"), {
                 scale: 2, useCORS: true, backgroundColor: "#ffffff"
             }).then(canvas => {
