@@ -1,6 +1,6 @@
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
-import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
+import { getDatabase, ref, set, onValue, push, update } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
 import { 
     getAuth, 
     signInWithPopup, 
@@ -168,6 +168,7 @@ function loadRealtimeData() {
             
             if (!appState.stock) appState.stock = {};
             if (!appState.logs) appState.logs = [];
+             if (!appState.payments) appState.payments = {}; 
 
             let needSave = false;
 
@@ -179,7 +180,7 @@ function loadRealtimeData() {
                     needSave = true;
                 }
             }
-
+        
             // --- 2. LOGS ID FIX (Ye naya hai - Old Logs ko ID dega) ---
             if (appState.logs.length > 0) {
                 appState.logs.forEach((log, index) => {
@@ -484,14 +485,15 @@ window.processDispatch = function() {
     const id = input.dataset.id;
     const qtyToRemove = parseFloat(input.value);
     
-    // --- NEW: Capture Customer Details ---
+    // Customer Details capture
     const custName = document.getElementById('res-cust-name').value.trim() || 'Guest';
     const custPhone = document.getElementById('res-cust-phone').value.trim() || '-';
     const custAddr = document.getElementById('res-cust-addr').value.trim() || '-';
-    // -------------------------------------
-
+    
+    // Dataset values
     const batchFromScan = input.dataset.batch || 'N/A';
     const isVip = input.dataset.vip === 'true';
+    const price = parseFloat(input.dataset.price) || 0; // Price bhi utha li
 
     // Validation
     if(!id || !appState.stock[id]) return alert("Product Error");
@@ -500,17 +502,53 @@ window.processDispatch = function() {
     if(!qtyToRemove || qtyToRemove <= 0) return alert("Invalid Qty");
     if(qtyToRemove > currentStock) return alert(`Low Stock! Max: ${currentStock}`);
 
-    // 1. Stock Update
+    // 1. Stock Update (Local AppState)
     appState.stock[id] -= qtyToRemove;
     
-    // 2. Log Entry (Packing all details in JSON)
     const pName = getProductName(id);
-    
+
+    // ---------------------------------------------------------
+    // ✅ NEW: Dispatch Data Object (Structured for Firebase)
+    // ---------------------------------------------------------
+    const dispatchData = {
+        orderId: 'ORD-' + Date.now(),
+        timestamp: Date.now(),
+        date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+        time: new Date().toLocaleTimeString(),
+        customer: {
+            name: custName,
+            phone: custPhone,
+            address: custAddr
+        },
+        items: {
+            productId: id,
+            productName: pName,
+            qty: qtyToRemove,
+            batch: batchFromScan,
+            price: price,
+            total: price * qtyToRemove
+        },
+        status: 'Dispatched'
+    };
+
+    // ---------------------------------------------------------
+    // ✅ REALTIME FIREBASE SAVE (Separate 'orders' Node)
+    // ---------------------------------------------------------
+    // Isse data 'Anadi_inventory_data/orders' folder me alag se save hoga
+    const ordersRef = ref(db, 'Anadi_inventory_data/orders');
+    const newOrderRef = push(ordersRef); // Naya unique key banayega
+    set(newOrderRef, dispatchData)
+        .then(() => console.log("Order saved to Orders Node"))
+        .catch(err => console.error("Order Save Error", err));
+
+
+    // 2. Log Entry (Old Logic intact for UI compatibility)
+    // Logs me bhi daal rahe hain taaki aapka purana 'Logs' tab chalta rahe
     const noteObj = {
         msg: 'Scan Sale',
         batch: batchFromScan,
         vip: isVip,
-        // Saving Customer Data inside JSON note
+        mrp: price,
         customer: {
             name: custName,
             phone: custPhone,
@@ -519,16 +557,18 @@ window.processDispatch = function() {
     };
 
     addLog('Dispatch', pName, `-${qtyToRemove}`, JSON.stringify(noteObj));
+    
+    // 3. Save Full State (Stock Updates ke liye)
     saveDataToFirebase();
     
-    // 3. Fast Feedback
+    // 4. Fast Feedback
     if ('speechSynthesis' in window) {
         const msg = new SpeechSynthesisUtterance("Order Dispatched");
         msg.rate = 1.5; 
         window.speechSynthesis.speak(msg);
     }
     
-    // 4. Auto Resume
+    // 5. Auto Resume
     continueScanning(); 
 };
 
@@ -1681,47 +1721,44 @@ window.renderUserBillingTab = function(searchQuery = '') {
 
     const userMap = {};
 
-    // 1. Aggregate Data (Grouping by Clean Phone)
+    // 1. Data Aggregate (Logs se totals calculate karein)
     (appState.logs || []).forEach(log => {
         if(log.type !== 'Dispatch') return;
         try {
             const note = JSON.parse(log.notes);
             if(!note.customer || !note.customer.phone) return;
 
-            // --- CHANGE: Clean Phone ko Key banayein ---
             const rawPhone = note.customer.phone;
             const uniquePhone = cleanPhone(rawPhone);
 
-            // Agar phone invalid hai (kam digits), to skip karein
             if(!uniquePhone || uniquePhone.length < 10) return; 
             
             if(!userMap[uniquePhone]) {
                 userMap[uniquePhone] = {
-                    name: note.customer.name, // Pehla naam use karenge
-                    phone: rawPhone,          // Display ke liye original dikhayenge
-                    cleanPhone: uniquePhone,  // Logic ke liye clean wala
+                    name: note.customer.name,
+                    phone: rawPhone,
+                    cleanPhone: uniquePhone,
                     totalAmount: 0,
                     orderCount: 0
                 };
             }
 
+            // Price calculation
             const products = getAllProducts();
             const prodDetails = products.find(p => p.name === log.product);
-            const price = prodDetails ? (prodDetails.lastPrice || 0) : 0;
+            const price = (note.mrp || (prodDetails ? prodDetails.lastPrice : 0)) || 0;
             const qty = Math.abs(log.qty);
-            const cost = price * qty;
-
-            userMap[uniquePhone].totalAmount += cost;
+            
+            userMap[uniquePhone].totalAmount += (price * qty);
             userMap[uniquePhone].orderCount += 1;
 
         } catch(e) {}
     });
 
-    // 2. Filter Logic (Array me convert karein)
+    // 2. Filter Users based on Search
     const users = Object.values(userMap).filter(u => {
         const name = u.name.toLowerCase();
         const phone = u.phone.toString();
-        // Search clean phone se bhi match karein
         return name.includes(searchQuery) || phone.includes(searchQuery) || u.cleanPhone.includes(searchQuery);
     });
 
@@ -1732,37 +1769,77 @@ window.renderUserBillingTab = function(searchQuery = '') {
         return;
     }
 
-    // 3. Render filtered users
-    // Note: Onclick me hum 'cleanPhone' bhejenge
+    // 3. Render Users with Payment Checkbox
     users.forEach(u => {
+        // Check Payment Status from AppState
+        const isPaid = (appState.payments && appState.payments[u.cleanPhone] === true);
+        
+        // Toggle ID unique hona chahiye
+        const toggleId = `pay_${u.cleanPhone}`;
+
         container.innerHTML += `
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 cursor-pointer hover:bg-slate-50 transition animate-fade-in" 
-                onclick="generateAndSendBill('${u.cleanPhone}', '${u.name}')">
-                <div class="flex justify-between items-center mb-2">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-lg shrink-0">
-                            ${u.name.charAt(0).toUpperCase()}
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-3 animate-fade-in relative overflow-hidden">
+                
+                <!-- Status Bar (Green if Paid, Red if Pending) -->
+                <div class="absolute left-0 top-0 bottom-0 w-1.5 ${isPaid ? 'bg-green-500' : 'bg-red-500'} transition-colors duration-300"></div>
+
+                <div class="pl-3">
+                    <div class="flex justify-between items-start mb-2">
+                        <!-- User Info -->
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-lg shrink-0 border border-slate-200">
+                                ${u.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-lg leading-tight">${highlightMatch(u.name, searchQuery)}</h4>
+                                <span class="text-xs text-slate-500 font-mono block mt-0.5">
+                                    <i class="fa-solid fa-phone text-[10px] mr-1"></i>${highlightMatch(u.phone, searchQuery)}
+                                </span>
+                            </div>
                         </div>
-                        <div>
-                            <h4 class="font-bold text-slate-800 text-lg">${highlightMatch(u.name, searchQuery)}</h4>
-                            <span class="text-xs text-slate-500 font-mono">
-                                <i class="fa-solid fa-phone text-[10px] mr-1"></i>${highlightMatch(u.phone, searchQuery)}
-                            </span>
-                            <span class="text-[10px] text-slate-400 block mt-0.5">
-                                ${u.orderCount} Orders till now
-                            </span>
+
+                        <!-- Amount & Status -->
+                        <div class="text-right">
+                            <span class="block text-xs text-slate-400 uppercase font-bold">Total Due</span>
+                            <span class="text-xl font-bold text-slate-800">₹${u.totalAmount.toLocaleString('en-IN')}</span>
+                            
+                            <!-- Payment Status Text -->
+                            <div class="mt-1 text-[10px] font-bold uppercase tracking-wider ${isPaid ? 'text-green-600' : 'text-red-500'}">
+                                ${isPaid ? '<i class="fa-solid fa-check-circle"></i> PAID' : '<i class="fa-solid fa-clock"></i> PENDING'}
+                            </div>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <span class="block text-xs text-slate-400 uppercase font-bold">Total Lifetime</span>
-                        <span class="text-xl font-bold text-red-600">₹${u.totalAmount.toLocaleString('en-IN')}</span>
+
+                    <div class="border-t border-slate-100 my-3"></div>
+
+                    <!-- ACTION BUTTONS ROW -->
+                    <div class="flex justify-between items-center">
+                        
+                        <!-- 1. Send Bill Button -->
+                        <button onclick="generateAndSendBill('${u.cleanPhone}', '${u.name}')" 
+                            class="bg-green-50 text-green-700 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-green-100 transition border border-green-200">
+                            <i class="fa-brands fa-whatsapp text-lg"></i> Send Bill
+                        </button>
+
+                        <!-- 2. PAYMENT TOGGLE SWITCH -->
+                        <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Payment Recd?</span>
+                            <label for="${toggleId}" class="flex items-center cursor-pointer relative">
+                                <input type="checkbox" id="${toggleId}" class="sr-only" 
+                                    ${isPaid ? 'checked' : ''} 
+                                    onchange="handlePaymentToggle('${u.cleanPhone}', this)">
+                                <div class="w-9 h-5 bg-slate-300 rounded-full toggle-bg transition-colors duration-300 border border-slate-400"></div>
+                                <div class="dot absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition transform duration-300 shadow-sm"></div>
+                            </label>
+                        </div>
+
                     </div>
                 </div>
-                
-                <button class="w-full mt-2 bg-green-50 text-green-700 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-green-100 transition">
-                    <i class="fa-brands fa-whatsapp text-lg"></i> Send Full Bill
-                </button>
             </div>
+            <style>
+                #${toggleId}:checked ~ .toggle-bg { background-color: #10b981; border-color: #10b981; }
+                #${toggleId}:checked ~ .dot { transform: translateX(100%); }
+            </style>
         `;
     });
 };
@@ -1890,5 +1967,30 @@ window.editBatchNumber = function(oldBatch) {
         alert(`Success! Updated batch "${oldBatch}" to "${finalNewBatch}" in ${updateCount} records.`);
     } else {
         alert("No matching batch records found to update.");
+    }
+};
+window.handlePaymentToggle = function(phone, checkbox) {
+    // 1. Ensure payments object exists
+    if(!appState.payments) appState.payments = {};
+
+    // 2. Set Status (True = Paid, False = Pending)
+    appState.payments[phone] = checkbox.checked;
+
+    // 3. Save to Firebase
+    saveDataToFirebase();
+
+    // 4. Update UI immediately (To show Green/Red text instantly)
+    // Hum current search query ke sath refresh karenge taaki list reset na ho
+    const searchInput = document.getElementById('modal-search-input');
+    const currentQuery = searchInput ? searchInput.value.trim().toLowerCase() : '';
+    
+    renderUserBillingTab(currentQuery);
+
+    // 5. Sound Feedback
+    if ('speechSynthesis' in window) {
+        const msgText = checkbox.checked ? "Payment Received" : "Marked Pending";
+        const msg = new SpeechSynthesisUtterance(msgText);
+        msg.rate = 1.5; 
+        window.speechSynthesis.speak(msg);
     }
 };
