@@ -483,7 +483,13 @@
   document.getElementById('admissionDate').valueAsDate = new Date();
   let imgBase64 = "", editImgBase64 = "", allRecords = [];
   const DEFAULT_PHOTO = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-
+  // --- DATE FORMATTER HELPER ---
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const parts = dateString.split('-'); // YYYY-MM-DD को तोड़ता है
+    if (parts.length !== 3) return dateString;
+    return `${parts[2]}-${parts[1]}-${parts[0]}`; // DD-MM-YYYY बना देता है
+}
   // --- IMAGE COMPRESSION ---
   function compressImage(sourceUrl, quality, maxWidth, outputId) {
       const img = new Image();
@@ -693,10 +699,10 @@
       let cardStyle = '';
       
       if (rec.status === 'Deceased') {
-          statusBadge = `<div style="background:#fee2e2; color:#b91c1c; padding:5px 10px; border-radius:5px; font-weight:bold; margin-top:5px; font-size:11px;">🔴 DECEASED (Died: ${rec.exitDate || 'Unknown'})</div>`;
+          statusBadge = `<div style="background:#fee2e2; color:#b91c1c; padding:5px 10px; border-radius:5px; font-weight:bold; margin-top:5px; font-size:11px;">🔴 DECEASED (Died: ${formatDate(rec.exitDate)})</div>`;
           cardStyle = 'border-left: 5px solid #ef4444;'; 
       } else if (rec.status === 'Released' || rec.status === 'Left') {
-          statusBadge = `<div style="background:#ffedd5; color:#c2410c; padding:5px 10px; border-radius:5px; font-weight:bold; margin-top:5px; font-size:11px;">🟠 LEFT (Date: ${rec.exitDate || 'Unknown'})</div>`;
+          statusBadge = `<div style="background:#ffedd5; color:#c2410c; padding:5px 10px; border-radius:5px; font-weight:bold; margin-top:5px; font-size:11px;">🟠 LEFT (Date: ${formatDate(rec.exitDate)})</div>`;
           cardStyle = 'border-left: 5px solid #f97316;'; 
       }
 
@@ -704,7 +710,7 @@
       if(cardStyle) div.style = cardStyle;
 
       div.innerHTML = `
-          <div class="date-badge">📅 ${rec.admissionDate || '-'}</div><img src="${rec.photo}" class="record-img">
+          <div class="date-badge">📅 ${formatDate(rec.admissionDate)}</div><img src="${rec.photo}" class="record-img">
           <div style="flex:1; text-align:left;"><h4 style="margin:0 0 5px 0;">${rec.name}</h4><small style="color:#64748b;">${rec.gender}, ${rec.age}y</small><br><span class="badge ${rec.sourceType==='Police'?'bg-police':'bg-self'}">${rec.sourceType||'Unknown'}</span>
           ${statusBadge}
           <div style="font-size:12px; margin-top:5px; color:#666;">GDN: ${rec.guardianName||'-'}<br>Phone: ${rec.guardianPhone||'-'}</div></div>
@@ -773,10 +779,10 @@ window.downloadPDF = function(id) {
     const rec = allRecords.find(r => r.id === id); if(!rec) return;
 
     document.getElementById('pdfRefId').innerText = "#" + id.substring(1, 8).toUpperCase();
-    document.getElementById('pdfDate').innerText = rec.admissionDate || '-';
+    document.getElementById('pdfDate').innerText = formatDate(rec.admissionDate);
     document.getElementById('pdfName').innerText = rec.name || '-';
     document.getElementById('pdfAgeGender').innerText = `${rec.gender || '-'}  |  ${rec.age || '-'} Years`;
-    document.getElementById('pdfDob').innerText = rec.dob || 'Not Available';
+    document.getElementById('pdfDob').innerText = rec.dob ? formatDate(rec.dob) : 'Not Available';
     document.getElementById('pdfAadhar').innerText = rec.aadhar || 'Not Available';
     
     let sourceText = rec.sourceType || 'Other';
@@ -794,7 +800,7 @@ window.downloadPDF = function(id) {
     if (rec.status && rec.status !== 'Active') {
         exitBox.style.display = 'block';
         document.getElementById('pdfExitStatusVal').innerText = rec.status;
-        document.getElementById('pdfExitDateVal').innerText = rec.exitDate || '-';
+        document.getElementById('pdfExitDateVal').innerText = formatDate(rec.exitDate);
         document.getElementById('pdfExitReasonVal').innerText = rec.exitReason || '-';
         
         // Color Coding
