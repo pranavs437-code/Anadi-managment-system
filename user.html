@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Customer Portal | Track Orders</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Icons & Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                extend: {
+                    colors: {
+                        brand: '#4f46e5', // Indigo
+                        brandDark: '#3730a3',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f8fafc; }
+        /* Smooth Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* Hide Number Input Arrows */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-slate-50 text-slate-800">
+
+    <!-- 1. LOGIN SCREEN -->
+    <div id="login-screen" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden animate-slide-up relative">
+        <!-- Decorative Header -->
+        <div class="bg-brand h-32 flex items-center justify-center relative overflow-hidden">
+            <div class="absolute w-40 h-40 bg-white/10 rounded-full -top-10 -left-10 blur-2xl"></div>
+            <div class="absolute w-40 h-40 bg-indigo-900/20 rounded-full -bottom-10 -right-10 blur-xl"></div>
+            <i class="fa-solid fa-bag-shopping text-5xl text-white/90 drop-shadow-md"></i>
+        </div>
+
+        <div class="p-8 pt-10 text-center">
+            <h2 class="text-2xl font-extrabold text-slate-800">Welcome Back</h2>
+            <p class="text-slate-400 text-sm mt-1 mb-8">Enter your mobile number to view history</p>
+
+            <div class="relative group">
+                <i class="fa-solid fa-mobile-screen absolute left-4 top-4 text-slate-400 group-focus-within:text-brand transition"></i>
+                <input type="number" id="phone-input" placeholder="98765 43210" 
+                    class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition tracking-widest placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 text-slate-700">
+            </div>
+
+            <button onclick="checkBill()" id="btn-login" class="w-full mt-6 bg-brand hover:bg-brandDark text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-500/30 transition transform active:scale-95 flex items-center justify-center gap-2">
+                <span>View My Orders</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            
+            <p id="error-msg" class="text-red-500 text-xs font-bold mt-4 bg-red-50 py-2 rounded-lg hidden animate-pulse"></p>
+        </div>
+        
+        <div class="bg-slate-50 p-4 text-center text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+            Secure Customer Portal
+        </div>
+    </div>
+
+    <!-- 2. DASHBOARD (Hidden) -->
+    <div id="dashboard" class="hidden fixed inset-0 z-50 bg-slate-50 flex flex-col sm:relative sm:w-full sm:max-w-md sm:h-[85vh] sm:rounded-3xl sm:shadow-2xl sm:border sm:border-slate-200 sm:overflow-hidden animate-fade-in">
+        
+        <!-- Header -->
+        <div class="bg-brand text-white p-6 pb-12 rounded-b-[2.5rem] shadow-xl shrink-0 relative overflow-hidden z-10">
+            <!-- Background Decoration -->
+            <i class="fa-solid fa-receipt absolute -right-6 -top-6 text-9xl opacity-10 rotate-12"></i>
+            
+            <div class="flex justify-between items-start relative z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <i class="fa-solid fa-user text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-indigo-200 font-bold uppercase tracking-wider">Customer</p>
+                        <p class="text-sm font-bold truncate max-w-[150px]" id="display-name">Guest User</p>
+                    </div>
+                </div>
+                <button onclick="logout()" class="bg-white/10 hover:bg-white/20 p-2 rounded-lg text-xs backdrop-blur-md transition">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+
+            <div class="mt-8 text-center relative z-10">
+                <p class="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-1">Total Lifetime Spend</p>
+                <h1 class="text-4xl font-extrabold tracking-tight">₹ <span id="grand-total">0</span></h1>
+            </div>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto -mt-6 pt-8 px-4 pb-20 custom-scrollbar" id="main-content">
+            
+            <!-- Filters / Title -->
+            <div class="flex items-center justify-between mb-4 px-2">
+                <h3 class="font-bold text-slate-700 text-sm">Transaction History</h3>
+                <span class="text-[10px] bg-white px-2 py-1 rounded-md border text-slate-400 font-mono shadow-sm" id="txn-count">0 Orders</span>
+            </div>
+
+            <!-- List Container -->
+            <div id="bill-list" class="space-y-3">
+                <!-- Data will be injected here -->
+            </div>
+            
+            <!-- Empty State (Hidden by default) -->
+            <div id="empty-state" class="hidden flex flex-col items-center justify-center py-20 text-center opacity-60">
+                <i class="fa-solid fa-box-open text-6xl text-slate-300 mb-4"></i>
+                <p class="text-slate-500 font-bold">No orders found</p>
+                <p class="text-xs text-slate-400">Your purchase history will appear here.</p>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="absolute inset-0 bg-white z-50 flex flex-col items-center justify-center hidden">
+            <i class="fa-solid fa-circle-notch fa-spin text-4xl text-brand mb-3"></i>
+            <p class="text-xs font-bold text-slate-400 animate-pulse">Fetching records...</p>
+        </div>
+    </div>
+
+    <!-- JS LOGIC -->
+    <!-- IS SCRIPT TAG KO COPY KARKE PURANE SCRIPT TAG SE REPLACE KAREIN -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDR1rzGFqynhkan3zGChtjmZv1s0JJ73Ls",
+            authDomain: "newbillingtry.firebaseapp.com",
+            databaseURL: "https://newbillingtry-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "newbillingtry",
+            storageBucket: "newbillingtry.firebasestorage.app",
+            messagingSenderId: "399103082623",
+            appId: "1:399103082623:web:225ba06a04c04ed3957f4a",
+            measurementId: "G-4MDEEBR10F"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        let unsubscribe = null;
+        let allBillsCache = []; 
+        let currentLimit = 20;  // Start with 20 items (Fast Load)
+
+        // --- MAIN FUNCTIONS ---
+        
+        window.checkBill = function() {
+            const phone = document.getElementById('phone-input').value.trim();
+            const btn = document.getElementById('btn-login');
+            
+            if (!phone || phone.length < 10) {
+                showError("Please enter a valid mobile number");
+                return;
+            }
+
+            document.getElementById('error-msg').classList.add('hidden');
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Connecting...';
+            btn.disabled = true;
+
+            const userRef = ref(db, `bills/${phone}`);
+            
+            if (unsubscribe) unsubscribe();
+
+            // Real-time Listener
+            unsubscribe = onValue(userRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    processData(data, phone); // Calculate Data
+
+                    // Show Dashboard
+                    if(document.getElementById('dashboard').classList.contains('hidden')) {
+                        document.getElementById('login-screen').classList.add('hidden');
+                        document.getElementById('dashboard').classList.remove('hidden');
+                    }
+                } else {
+                    if(!document.getElementById('login-screen').classList.contains('hidden')) {
+                        showError("No records found for this number.");
+                        resetBtn();
+                    } else {
+                        renderEmptyState();
+                    }
+                }
+            }, (error) => {
+                console.error(error);
+                showError("Network Connection Lost.");
+                resetBtn();
+            });
+        };
+
+        function processData(data, phone) {
+            // 1. Array banaya aur reverse kiya (Latest First)
+            allBillsCache = Object.entries(data).reverse();
+            
+            // 2. Total Amount Calculation
+            let grandTotal = 0;
+            let userName = "Valued Customer";
+            
+            allBillsCache.forEach(([id, bill]) => {
+                grandTotal += parseFloat(bill.amount || 0);
+                if (bill.details && bill.details.consumerName) userName = bill.details.consumerName;
+            });
+
+            // 3. Header Update
+            document.getElementById('grand-total').innerText = grandTotal.toLocaleString();
+            document.getElementById('display-name').innerHTML = `${userName} <span class="ml-2 inline-flex h-2 w-2 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>`;
+            document.getElementById('txn-count').innerText = `${allBillsCache.length} Orders`;
+
+            // 4. List Render karein
+            renderListChunk();
+            resetBtn();
+        }
+
+        function renderListChunk() {
+            const listContainer = document.getElementById('bill-list');
+            
+            // Sirf utna data lo jitna limit hai (Pagination)
+            const visibleBills = allBillsCache.slice(0, currentLimit);
+            
+            // HTML Generation
+            const htmlString = visibleBills.map(([id, bill], index) => {
+                const amount = parseFloat(bill.amount);
+                
+                // --- NEW 1: Decent Order ID (Example: Order #0050) ---
+                // Total length se index minus karke hum sequential number nikalte hain
+                const orderNumber = (allBillsCache.length - index).toString().padStart(4, '0');
+
+                // Items List HTML
+                let itemsHtml = '';
+                if (bill.details && bill.details.items) {
+                    itemsHtml = bill.details.items.map(item => `
+                        <div class="flex justify-between py-2 border-b border-dashed border-slate-100 last:border-0 text-xs">
+                            <span class="text-slate-600 font-medium">${item.name} <span class="text-slate-400 bg-slate-100 px-1 rounded ml-1">x${item.qty}</span></span>
+                            <span class="text-slate-800 font-bold">₹${item.qty * item.price}</span>
+                        </div>`).join('');
+                } else {
+                    itemsHtml = `<div class="text-xs text-slate-400 italic py-1">${bill.item || "Details not available"}</div>`;
+                }
+
+                const timeStr = bill.details && bill.details.timestamp ? 
+                    new Date(bill.details.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                
+                const uniqueId = `bill-${index}`;
+
+                return `
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden transition hover:shadow-md mb-3">
+                        <div onclick="toggleDetails('${uniqueId}')" class="p-4 flex justify-between items-center cursor-pointer bg-white active:bg-slate-50 select-none">
+                            <div class="flex items-center gap-3">
+                                
+                                <!-- NEW 2: Cow Icon -->
+                                <div class="bg-indigo-50 text-brand w-12 h-12 rounded-full flex items-center justify-center shadow-inner shrink-0">
+                                    <i class="fa-solid fa-cow text-xl"></i>
+                                </div>
+
+                                <div>
+                                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                                        ${new Date(bill.date).toLocaleString('default', { month: 'short' })} ${new Date(bill.date).getDate()}, ${new Date(bill.date).getFullYear()} 
+                                    </div>
+                                    <!-- Decent Order ID Display -->
+                                    <div class="text-sm text-slate-700 font-bold mt-0.5">Order #${orderNumber}</div>
+                                    <div class="text-[10px] text-slate-400">${timeStr}</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-emerald-600 text-lg">₹${amount.toLocaleString()}</div>
+                                <div class="text-[10px] text-slate-400 flex items-center justify-end gap-1 mt-1">
+                                    <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" id="arrow-${uniqueId}"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="${uniqueId}" class="hidden bg-slate-50 border-t border-slate-100 px-4 py-3">
+                            <div class="space-y-1 bg-white p-3 rounded-lg border border-slate-100 shadow-sm">${itemsHtml}</div>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            listContainer.innerHTML = htmlString;
+
+            // --- NEW 3: Load More Button Logic ---
+            const existingBtn = document.getElementById('load-more-btn');
+            if(existingBtn) existingBtn.remove();
+
+            // Agar aur data bacha hai, tabhi button dikhana
+            if (allBillsCache.length > currentLimit) {
+                const remaining = allBillsCache.length - currentLimit;
+                
+                const btnContainer = document.createElement('div');
+                btnContainer.className = "pt-2 pb-6"; // Spacing
+                btnContainer.innerHTML = `
+                    <button id="load-more-btn" onclick="loadMoreItems()" class="w-full py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl shadow-sm hover:bg-slate-50 transition active:scale-95 flex items-center justify-center gap-2 text-sm">
+                        <span>Load More Transactions</span>
+                        <span class="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-md">${remaining}+</span>
+                    </button>
+                `;
+                listContainer.appendChild(btnContainer);
+            }
+        }
+
+        // Global Function for Button
+        window.loadMoreItems = () => {
+            currentLimit += 20; // Agle 20 load karo
+            renderListChunk();  // List update karo
+        };
+
+        function renderEmptyState() {
+            document.getElementById('bill-list').innerHTML = `
+                <div class="flex flex-col items-center justify-center py-20 text-center opacity-60">
+                    <i class="fa-solid fa-box-open text-6xl text-slate-300 mb-4"></i>
+                    <p class="text-slate-500 font-bold">No orders found</p>
+                </div>`;
+            document.getElementById('grand-total').innerText = "0";
+            document.getElementById('txn-count').innerText = "0 Orders";
+        }
+
+        window.toggleDetails = (id) => {
+            const el = document.getElementById(id);
+            const arrow = document.getElementById('arrow-' + id);
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+                arrow.classList.add('rotate-180');
+            } else {
+                el.classList.add('hidden');
+                arrow.classList.remove('rotate-180');
+            }
+        };
+
+        window.logout = () => {
+            if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('phone-input').value = "";
+            currentLimit = 20;
+            allBillsCache = [];
+            resetBtn();
+        };
+
+        function showError(msg) {
+            const err = document.getElementById('error-msg');
+            err.innerText = msg;
+            err.classList.remove('hidden');
+            resetBtn();
+        }
+
+        function resetBtn() {
+            const btn = document.getElementById('btn-login');
+            btn.innerHTML = '<span>View My Orders</span> <i class="fa-solid fa-arrow-right"></i>';
+            btn.disabled = false;
+        }
+    </script>
+</body>
+</html>
