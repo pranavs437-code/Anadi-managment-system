@@ -3,145 +3,319 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Customer Portal | Track Orders</title>
+    <title>Anadi Godham | Customer App</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Icons & Fonts -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
             theme: {
-                fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                fontFamily: { 
+                    sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    serif: ['"Playfair Display"', 'serif']
+                },
                 extend: {
                     colors: {
-                        brand: '#4f46e5', // Indigo
-                        brandDark: '#3730a3',
+                        brand: '#064e3b', // Deep Green
+                        brandDark: '#022c22', 
+                        brandLight: '#ecfdf5', 
+                        accent: '#dcfce7',
+                    },
+                    borderRadius: {
+                        'arch': '100px 100px 20px 20px',
                     },
                     animation: {
-                        'fade-in': 'fadeIn 0.5s ease-out',
-                        'slide-up': 'slideUp 0.4s ease-out',
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'zoom-in': 'zoomIn 0.2s ease-out',
                     },
                     keyframes: {
                         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+                        zoomIn: { '0%': { transform: 'scale(0.9)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } }
                     }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #f8fafc; }
-        /* Smooth Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        body { background-color: #ffffff; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* Hide Number Input Arrows */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        /* Floating Nav - LIGHT GREEN Background */
+        .glass-nav {
+            background: rgba(240, 253, 244, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(220, 252, 231, 1);
+        }
+
+        /* --- BILLS BUTTON ANIMATION --- */
+        @keyframes expandContract {
+            0%, 15% { width: 40px; border-radius: 50%; background-color: #dcfce7; color: #166534; } 
+            25% { width: 90px; border-radius: 24px; background-color: #064e3b; color: #ffffff; } 
+            75% { width: 90px; border-radius: 24px; background-color: #064e3b; color: #ffffff; }
+            85%, 100% { width: 40px; border-radius: 50%; background-color: #dcfce7; color: #166534; }
+        }
+        @keyframes fadeText {
+            0%, 20% { opacity: 0; width: 0; display: none; }
+            30% { opacity: 1; width: auto; display: block; }
+            70% { opacity: 1; width: auto; display: block; }
+            80%, 100% { opacity: 0; width: 0; display: none; }
+        }
+        @keyframes spinOnce {
+            0% { transform: rotate(0deg); }
+            15% { transform: rotate(360deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .attention-loop { animation: expandContract 5s infinite ease-in-out; }
+        .attention-loop .anim-text { animation: fadeText 5s infinite ease-in-out; }
+        .attention-loop .anim-icon { animation: spinOnce 5s infinite linear; }
+
+        .bills-active {
+            width: 90px !important;
+            border-radius: 24px !important;
+            background-color: #064e3b !important;
+            color: white !important;
+        }
+        .bills-active .anim-text {
+            opacity: 1 !important;
+            width: auto !important;
+            display: block !important;
+        }
+        .bills-active .anim-icon { transform: none !important; }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 bg-slate-50 text-slate-800">
+<body class="min-h-screen text-slate-800 bg-white selection:bg-green-100">
 
     <!-- 1. LOGIN SCREEN -->
-    <div id="login-screen" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden animate-slide-up relative">
-        <!-- Decorative Header -->
-        <div class="bg-brand h-32 flex items-center justify-center relative overflow-hidden">
-            <div class="absolute w-40 h-40 bg-white/10 rounded-full -top-10 -left-10 blur-2xl"></div>
-            <div class="absolute w-40 h-40 bg-indigo-900/20 rounded-full -bottom-10 -right-10 blur-xl"></div>
-            <i class="fa-solid fa-bag-shopping text-5xl text-white/90 drop-shadow-md"></i>
-        </div>
-
-        <div class="p-8 pt-10 text-center">
-            <h2 class="text-2xl font-extrabold text-slate-800">Welcome Back</h2>
-            <p class="text-slate-400 text-sm mt-1 mb-8">Enter your mobile number to view history</p>
-
-            <div class="relative group">
-                <i class="fa-solid fa-mobile-screen absolute left-4 top-4 text-slate-400 group-focus-within:text-brand transition"></i>
-                <input type="number" id="phone-input" placeholder="98765 43210" 
-                    class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-lg outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition tracking-widest placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400 text-slate-700">
+    <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-green-50 animate-fade-in">
+        <div class="w-full max-w-sm bg-white rounded-3xl shadow-xl overflow-hidden relative">
+            <div class="bg-brand h-48 flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute w-40 h-40 bg-white/10 rounded-full -top-10 -left-10 blur-2xl"></div>
+                <div class="absolute w-40 h-40 bg-green-400/20 rounded-full -bottom-10 -right-10 blur-xl"></div>
+                <img src="https://anadi.co.in/wp-content/uploads/2024/10/WhatsApp_Image_2024-10-06_at_3.59.51_AM-removebg-preview.png" alt="Anadi Farms" class="h-24 w-auto object-contain drop-shadow-md mb-2">
+                <h1 class="text-white font-serif text-2xl tracking-wide">Anadi Godham</h1>
             </div>
 
-            <button onclick="checkBill()" id="btn-login" class="w-full mt-6 bg-brand hover:bg-brandDark text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-500/30 transition transform active:scale-95 flex items-center justify-center gap-2">
-                <span>View My Orders</span>
-                <i class="fa-solid fa-arrow-right"></i>
-            </button>
-            
-            <p id="error-msg" class="text-red-500 text-xs font-bold mt-4 bg-red-50 py-2 rounded-lg hidden animate-pulse"></p>
-        </div>
-        
-        <div class="bg-slate-50 p-4 text-center text-[10px] text-slate-400 uppercase font-bold tracking-wider">
-            Secure Customer Portal
+            <div class="p-8">
+                <h2 class="text-xl font-bold text-center text-slate-800 mb-6">Customer Login</h2>
+                <div class="relative group mb-6">
+                    <i class="fa-solid fa-mobile-screen absolute left-4 top-4 text-slate-400"></i>
+                    <input type="number" id="phone-input" placeholder="Enter Mobile Number" 
+                        class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-lg outline-none focus:border-brand focus:ring-1 focus:ring-brand transition placeholder:text-slate-400 text-slate-700">
+                </div>
+
+                <button onclick="checkBill()" id="btn-login" class="w-full bg-brand hover:bg-green-800 text-white py-4 rounded-xl font-bold shadow-lg shadow-green-900/20 transition transform active:scale-95">
+                    Get Started
+                </button>
+                <p id="error-msg" class="text-red-600 text-xs font-bold mt-4 text-center hidden"></p>
+            </div>
         </div>
     </div>
 
-    <!-- 2. DASHBOARD (Hidden) -->
-    <div id="dashboard" class="hidden fixed inset-0 z-50 bg-slate-50 flex flex-col sm:relative sm:w-full sm:max-w-md sm:h-[85vh] sm:rounded-3xl sm:shadow-2xl sm:border sm:border-slate-200 sm:overflow-hidden animate-fade-in">
+    <!-- 2. MAIN APP -->
+    <div id="main-app" class="hidden relative max-w-md mx-auto min-h-screen bg-white shadow-2xl overflow-x-hidden">
         
-        <!-- Header -->
-        <div class="bg-brand text-white p-6 pb-12 rounded-b-[2.5rem] shadow-xl shrink-0 relative overflow-hidden z-10">
-            <!-- Background Decoration -->
-            <i class="fa-solid fa-receipt absolute -right-6 -top-6 text-9xl opacity-10 rotate-12"></i>
-            
-            <div class="flex justify-between items-start relative z-10">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                        <i class="fa-solid fa-user text-sm"></i>
-                    </div>
-                    <div>
-                        <p class="text-[10px] text-indigo-200 font-bold uppercase tracking-wider">Customer</p>
-                        <p class="text-sm font-bold truncate max-w-[150px]" id="display-name">Guest User</p>
-                    </div>
+        <!-- HEADER (FIXED POSITION) -->
+        <div class="fixed top-0 left-0 right-0 mx-auto max-w-md bg-brand text-white px-6 py-3 z-[60] shadow-md flex justify-between items-center transition-all">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center p-1">
+                    <img src="https://anadi.co.in/wp-content/uploads/2024/10/WhatsApp_Image_2024-10-06_at_3.59.51_AM-removebg-preview.png" alt="Logo" class="w-full h-full object-contain">
                 </div>
-                <button onclick="logout()" class="bg-white/10 hover:bg-white/20 p-2 rounded-lg text-xs backdrop-blur-md transition">
-                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                <div>
+                    <h1 class="font-serif font-bold text-lg leading-tight">Anadi Godham</h1>
+                    <p class="text-[10px] text-green-200 uppercase tracking-widest">Pure Organic</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="switchTab('orders')" class="bg-white/20 hover:bg-white/30 px-4 py-1.5 rounded-full flex items-center gap-2 transition active:scale-95 backdrop-blur-sm">
+                    <i class="fa-solid fa-receipt text-sm"></i>
+                    <span class="font-bold text-xs uppercase tracking-wide">Bills</span>
+                </button>
+                <button onclick="logout()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition">
+                    <i class="fa-solid fa-right-from-bracket"></i>
                 </button>
             </div>
+        </div>
 
-            <div class="mt-8 text-center relative z-10">
-                <p class="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-1">Total Lifetime Spend</p>
+        <!-- === VIEW: HOME (CATALOG) === -->
+        <div id="view-home" class="animate-fade-in pb-32 pt-20"> 
+            <div class="bg-green-50 pt-8 pb-10 px-6 text-center relative overflow-hidden">
+                <i class="fa-brands fa-envira absolute top-4 left-4 text-6xl text-brand/5 rotate-45"></i>
+                <i class="fa-solid fa-leaf absolute bottom-4 right-4 text-6xl text-brand/5 -rotate-12"></i>
+                <h2 class="text-brand font-bold text-3xl mb-2 font-serif">PURE PIYO TO <br>JAANO!</h2>
+                <p class="text-slate-500 text-sm mb-6">Our farms to your Family<br><strong>Anadi Farms</strong></p>
+                <button class="bg-brand text-white px-8 py-2.5 rounded-full font-bold text-sm shadow-lg shadow-green-900/20 active:scale-95 transition">Get Started</button>
+            </div>
+
+            <!-- Categories Grid -->
+            <div class="px-4 -mt-6 relative z-10">
+                <div class="grid grid-cols-3 gap-x-4 gap-y-6" id="product-grid">
+                    <!-- Products injected by JS -->
+                </div>
+            </div>
+
+            <!-- OIL BANNER -->
+            <div class="px-4 mt-10">
+                <div onclick="openProduct(6)" class="bg-yellow-50 rounded-2xl p-5 border border-yellow-100 flex items-center justify-between cursor-pointer active:scale-95 transition">
+                    <div>
+                        <span class="text-[10px] font-bold text-yellow-600 bg-yellow-100 px-2 py-1 rounded mb-2 inline-block">Best Seller</span>
+                        <h3 class="text-xl font-serif font-bold text-yellow-900 leading-tight">Wood Pressed<br>Mustard Oil</h3>
+                        <p class="text-xs text-yellow-700 mt-1">100% Pure & Natural</p>
+                    </div>
+                    <img src="https://images.unsplash.com/photo-1615486511484-92e590508937?auto=format&fit=crop&q=80&w=200" class="w-20 h-20 object-contain drop-shadow-lg mix-blend-multiply">
+                </div>
+            </div>
+
+            <!-- Featured Section (NATIVE PRODUCTS) -->
+            <div class="px-4 mt-8 mb-6">
+                <h3 class="text-xl font-bold text-center text-slate-800 mb-6">Our Native Organic<br>Products</h3>
+                
+                <!-- Added Grid for Native Products -->
+                <div class="grid grid-cols-2 gap-4" id="native-products-grid">
+                    <!-- Native Products injected by JS -->
+                </div>
+            </div>
+            
+            <div class="px-6 mb-10">
+                 <div class="bg-white border border-green-100 shadow-sm p-3 rounded-xl flex items-center justify-between">
+                    <span class="text-sm font-bold text-slate-700">We're here to help! 👋</span>
+                    <span class="text-xs text-brand font-bold">Chat with us</span>
+                 </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="bg-brandDark text-white pt-10 pb-28 px-6 mt-10 rounded-t-3xl">
+                <div class="grid grid-cols-1 gap-8">
+                    <div>
+                        <h3 class="font-serif text-lg mb-4 text-green-50 border-b border-green-800 pb-2 inline-block">Support</h3>
+                        <ul class="space-y-3 text-sm text-green-100/70 font-medium">
+                            <li><a href="#" class="hover:text-white transition">Contact</a></li>
+                            <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
+                            <li><a href="#" class="hover:text-white transition">Refund and Returns Policy</a></li>
+                            <li><a href="#" class="hover:text-white transition">Shipping policy</a></li>
+                            <li><a href="#" class="hover:text-white transition">Terms of Service</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-serif text-lg mb-4 text-green-50 border-b border-green-800 pb-2 inline-block">Customer</h3>
+                        <ul class="space-y-3 text-sm text-green-100/70 font-medium">
+                            <li><a href="#" class="hover:text-white transition">My account</a></li>
+                            <li><a href="#" class="hover:text-white transition">Track Order</a></li>
+                            <li><a href="#" class="hover:text-white transition">Wishlist</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-serif text-lg mb-4 text-green-50 border-b border-green-800 pb-2 inline-block">Pages</h3>
+                        <ul class="space-y-3 text-sm text-green-100/70 font-medium">
+                            <li><a href="#" class="hover:text-white transition">Home</a></li>
+                            <li><a href="#" class="hover:text-white transition">Contact</a></li>
+                            <li><a href="#" class="hover:text-white transition">About Us</a></li>
+                            <li><a href="#" class="hover:text-white transition">Track Order</a></li>
+                        </ul>
+                    </div>
+                    <div class="text-center mt-8 pt-8 border-t border-green-900 text-[10px] text-green-100/40">
+                        &copy; 2024 Anadi Godham. All rights reserved.
+                    </div>
+                </div>
+            </footer>
+        </div>
+
+        <!-- === VIEW: ORDERS (HISTORY) === -->
+        <div id="view-orders" class="hidden animate-fade-in p-4 pb-32 pt-20">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-slate-800">My Orders</h2>
+                <span class="text-xs bg-green-100 text-brand px-2 py-1 rounded font-bold" id="txn-count">0 Orders</span>
+            </div>
+            <div class="bg-gradient-to-br from-brand to-green-900 text-white p-6 rounded-2xl shadow-lg mb-6 relative overflow-hidden">
+                <i class="fa-solid fa-wallet absolute -right-4 -bottom-4 text-8xl opacity-10"></i>
+                <p class="text-green-200 text-xs font-bold uppercase tracking-widest mb-1">Lifetime Spend</p>
                 <h1 class="text-4xl font-extrabold tracking-tight">₹ <span id="grand-total">0</span></h1>
+                <p class="text-sm mt-2 opacity-80" id="display-name">Guest User</p>
             </div>
-        </div>
-
-        <!-- Scrollable Content -->
-        <div class="flex-1 overflow-y-auto -mt-6 pt-8 px-4 pb-20 custom-scrollbar" id="main-content">
-            
-            <!-- Filters / Title -->
-            <div class="flex items-center justify-between mb-4 px-2">
-                <h3 class="font-bold text-slate-700 text-sm">Transaction History</h3>
-                <span class="text-[10px] bg-white px-2 py-1 rounded-md border text-slate-400 font-mono shadow-sm" id="txn-count">0 Orders</span>
-            </div>
-
-            <!-- List Container -->
-            <div id="bill-list" class="space-y-3">
-                <!-- Data will be injected here -->
-            </div>
-            
-            <!-- Empty State (Hidden by default) -->
-            <div id="empty-state" class="hidden flex flex-col items-center justify-center py-20 text-center opacity-60">
-                <i class="fa-solid fa-box-open text-6xl text-slate-300 mb-4"></i>
+            <div id="bill-list" class="space-y-3"></div>
+             <div id="empty-state" class="hidden flex flex-col items-center justify-center py-10 text-center opacity-60">
+                <i class="fa-solid fa-basket-shopping text-6xl text-slate-300 mb-4"></i>
                 <p class="text-slate-500 font-bold">No orders found</p>
-                <p class="text-xs text-slate-400">Your purchase history will appear here.</p>
             </div>
         </div>
 
-        <!-- Loading Overlay -->
-        <div id="loading-overlay" class="absolute inset-0 bg-white z-50 flex flex-col items-center justify-center hidden">
-            <i class="fa-solid fa-circle-notch fa-spin text-4xl text-brand mb-3"></i>
-            <p class="text-xs font-bold text-slate-400 animate-pulse">Fetching records...</p>
+        <!-- === PRODUCT POPUP MODAL === -->
+        <div id="product-modal" class="hidden fixed inset-0 z-[100] flex items-end sm:items-center justify-center pointer-events-none">
+            <div onclick="closePopup()" class="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto transition opacity-0" id="modal-backdrop"></div>
+            
+            <div id="modal-card" class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 relative pointer-events-auto transform translate-y-full transition-transform duration-300 shadow-2xl pb-10">
+                
+                <button onclick="closePopup()" class="absolute top-4 right-4 bg-slate-100 p-2 rounded-full text-slate-500 hover:bg-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+                <div class="flex flex-col items-center -mt-12 mb-4">
+                    <img id="modal-img" src="" class="w-32 h-32 rounded-2xl object-cover shadow-lg border-4 border-white bg-white">
+                </div>
+
+                <div class="text-center mb-6">
+                    <h2 id="modal-title" class="text-2xl font-serif font-bold text-slate-800 mb-1">Product Name</h2>
+                    <p class="text-brand font-bold text-xl">₹<span id="modal-price">00</span></p>
+                </div>
+
+                <div class="space-y-4 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                    <div class="bg-green-50 p-4 rounded-xl border border-green-100">
+                        <h4 class="text-xs font-bold text-brand uppercase tracking-wider mb-2">Description</h4>
+                        <p id="modal-desc" class="text-sm text-slate-600 leading-relaxed">Product details go here.</p>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Key Benefits</h4>
+                        <ul id="modal-benefits" class="space-y-2 text-sm text-slate-700"></ul>
+                    </div>
+                </div>
+
+                <!-- WHATSAPP ORDER BUTTON -->
+                <button onclick="orderViaWhatsapp()" class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 rounded-xl mt-6 shadow-lg shadow-green-900/10 active:scale-95 transition flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-xl"></i>
+                    <span>Order Now / Know More</span>
+                </button>
+            </div>
         </div>
+
+        <!-- === COMBINED BOTTOM CONTROL CENTER === -->
+        <div class="fixed bottom-6 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
+            <div class="w-full max-w-md px-5 flex items-center gap-3">
+                
+                <div class="flex-1 glass-nav h-16 rounded-full shadow-2xl flex items-center justify-evenly pointer-events-auto relative overflow-hidden">
+                    <!-- Home Button -->
+                    <button onclick="switchTab('home')" class="nav-btn w-20 flex flex-col items-center gap-1 group" id="btn-home">
+                        <div class="icon-container w-10 h-10 rounded-full flex items-center justify-center bg-brand text-white shadow-lg shadow-green-900/20 transition-all duration-300">
+                            <i class="fa-solid fa-house text-sm"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-brand hidden label">Home</span>
+                    </button>
+                    <!-- Animated Bills Button -->
+                    <button onclick="switchTab('orders')" class="nav-btn h-10 flex items-center justify-center gap-2 overflow-hidden transition-all duration-300 attention-loop" id="btn-orders">
+                        <i class="fa-solid fa-receipt text-lg anim-icon"></i>
+                        <span class="text-[10px] font-bold whitespace-nowrap anim-text">Bills</span>
+                    </button>
+                </div>
+
+                <!-- WhatsApp Button -->
+                <a href="https://wa.me/919876543210" target="_blank" class="shrink-0 w-16 h-16 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-2xl pointer-events-auto transition active:scale-95 hover:scale-105 border-4 border-white/20">
+                    <i class="fa-brands fa-whatsapp text-3xl"></i>
+                </a>
+
+            </div>
+        </div>
+
     </div>
 
     <!-- JS LOGIC -->
-    <!-- IS SCRIPT TAG KO COPY KARKE PURANE SCRIPT TAG SE REPLACE KAREIN -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDR1rzGFqynhkan3zGChtjmZv1s0JJ73Ls",
@@ -159,211 +333,356 @@
         
         let unsubscribe = null;
         let allBillsCache = []; 
-        let currentLimit = 20;  // Start with 20 items (Fast Load)
+        let currentLimit = 20;
+        let currentProductTitle = ""; // To store current modal product
 
-        // --- MAIN FUNCTIONS ---
-        
+        // --- MAIN CATALOG DATA ---
+        const products = [
+            { 
+                name: "A2 Milk", price: 90,
+                img: "https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&q=80&w=200", color: "green",
+                desc: "Pure, farm-fresh A2 Gir Cow Milk. Unprocessed and full of nutrients.",
+                benefits: ["Easier to digest", "Rich in Calcium", "No Added Hormones"]
+            },
+            { 
+                name: "Butter Milk", price: 30,
+                img: "https://images.unsplash.com/photo-1626139576127-452147775581?auto=format&fit=crop&q=80&w=200", color: "green",
+                desc: "Traditional Chhach made from A2 curd. The perfect natural coolant.",
+                benefits: ["Probiotic", "Cools Body", "Improves Digestion"]
+            },
+            { 
+                name: "A2 Curd", price: 45,
+                img: "https://images.unsplash.com/photo-1565551351111-6677f240dbb5?auto=format&fit=crop&q=80&w=200", color: "green",
+                desc: "Thick, creamy curd set naturally in earthen pots.",
+                benefits: ["Rich in Protein", "Good for Gut Health", "Calcium Source"]
+            },
+            { 
+                name: "Desi Ghee", price: 1800,
+                img: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&q=80&w=200", color: "amber",
+                desc: "Bilona method Ghee made from A2 milk. Golden goodness.",
+                benefits: ["Boosts Immunity", "Good for Heart", "Ayurvedic Properties"]
+            },
+            { 
+                name: "White Butter", price: 800,
+                img: "https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?auto=format&fit=crop&q=80&w=200", color: "stone",
+                desc: "Freshly churned Makhan. Unsalted and pure.",
+                benefits: ["Lubricates Joints", "Rich in Vitamin A", "Delicious Taste"]
+            },
+            { 
+                name: "Shudh Paneer", price: 450,
+                img: "https://images.unsplash.com/photo-1559561853-08451507cbe7?auto=format&fit=crop&q=80&w=200", color: "green",
+                desc: "Soft, spongy Paneer made from fresh milk using lemon.",
+                benefits: ["High Protein", "Builds Muscle", "Fresh & Soft"]
+            },
+            { 
+                name: "Mustard Oil", price: 250,
+                img: "https://images.unsplash.com/photo-1615486511484-92e590508937?auto=format&fit=crop&q=80&w=200", color: "yellow",
+                desc: "Cold pressed Wood-Pressed Mustard Oil (Kachi Ghani).",
+                benefits: ["Heart Healthy", "Natural Flavor", "Chemical Free"]
+            },
+        ];
+
+        // --- NATIVE PRODUCTS DATA (7 ITEMS) ---
+        const nativeProducts = [
+            {
+                name: "Dhoop Sticks",
+                price: 120,
+                img: "https://images.unsplash.com/photo-1610996135234-a698a3df7e3c?auto=format&fit=crop&q=80&w=300",
+                desc: "Natural bamboo-less dhoop sticks made from organic herbs and cow dung.",
+                benefits: ["Purifies Air", "Positive Energy", "Chemical Free"]
+            },
+            {
+                name: "Sambrani Cup",
+                price: 150,
+                img: "https://m.media-amazon.com/images/I/71w+2-X+fmL._AC_UF1000,1000_QL80_.jpg", // Generic placeholder
+                desc: "Filled with natural Loban and Guggul for spiritual cleansing.",
+                benefits: ["Removes Negativity", "Calms Mind", "Traditional Aroma"]
+            },
+            {
+                name: "Chotti Hawan Tikki",
+                price: 100,
+                img: "https://images.unsplash.com/photo-1603046784862-094157d66576?auto=format&fit=crop&q=80&w=300",
+                desc: "Small size cow dung cakes for daily mini-hawan or purification.",
+                benefits: ["Daily Puja", "Eco Friendly", "Easy to Burn"]
+            },
+            {
+                name: "Badi Hawan Tikki",
+                price: 180,
+                img: "https://images.unsplash.com/photo-1603046784862-094157d66576?auto=format&fit=crop&q=80&w=300",
+                desc: "Larger cakes mixed with herbs for extended hawan ceremonies.",
+                benefits: ["Long Burning", "Ritual Ready", "Pure Desi Cow Dung"]
+            },
+            {
+                name: "Goumutra Ark",
+                price: 200,
+                img: "https://5.imimg.com/data5/ANDROID/Default/2021/6/LG/XN/UB/19323759/product-jpeg-500x500.jpg",
+                desc: "Distilled indigenous cow urine ark for medicinal use.",
+                benefits: ["Detoxifies Body", "Cures Skin Diseases", "Boosts Immunity"]
+            },
+            {
+                name: "Nasya",
+                price: 150,
+                img: "https://m.media-amazon.com/images/I/61kM2l2eGTL.jpg",
+                desc: "A2 Ghee nasal drops for clearing sinus and improving memory.",
+                benefits: ["Clears Sinus", "Improves Vision", "Reduces Stress"]
+            },
+            {
+                name: "Organic Khaad",
+                price: 300,
+                img: "https://cdn.shopify.com/s/files/1/0569/5366/7744/files/vermicompost.jpg?v=1635338165",
+                desc: "Rich vermicompost manure for your home garden.",
+                benefits: ["Boosts Plant Growth", "Chemical Free", "Soil Health"]
+            }
+        ];
+
+        window.openProduct = function(index) {
+            const p = products[index];
+            showModal(p.name, p.price, p.desc, p.benefits, p.img);
+        }
+
+        window.openNativeProduct = function(index) {
+            const p = nativeProducts[index];
+            showModal(p.name, p.price, p.desc, p.benefits, p.img);
+        }
+
+        function showModal(title, price, desc, benefits, img) {
+            currentProductTitle = title; // Store for WhatsApp
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-price').innerText = price;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('modal-img').src = img;
+            
+            const list = document.getElementById('modal-benefits');
+            list.innerHTML = benefits.map(b => `<li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand text-xs"></i> ${b}</li>`).join('');
+
+            const modal = document.getElementById('product-modal');
+            const card = document.getElementById('modal-card');
+            const backdrop = document.getElementById('modal-backdrop');
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                card.classList.remove('translate-y-full');
+            }, 10);
+        }
+
+        window.orderViaWhatsapp = function() {
+            const phone = "919876543210"; // REPLACE WITH ADMIN NUMBER
+            const msg = `Hello Anadi Farms, I want to know more about *${currentProductTitle}* and place an order.`;
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+        }
+
+        window.closePopup = function() {
+            const card = document.getElementById('modal-card');
+            const backdrop = document.getElementById('modal-backdrop');
+            
+            card.classList.add('translate-y-full');
+            backdrop.classList.add('opacity-0');
+
+            setTimeout(() => {
+                document.getElementById('product-modal').classList.add('hidden');
+            }, 300);
+        }
+
+        function initCatalog() {
+            // 1. Main Product Grid
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = products.map((p, index) => `
+                <div onclick="openProduct(${index})" class="flex flex-col items-center cursor-pointer active:scale-95 transition">
+                    <div class="w-full aspect-[3/4] rounded-arch border-2 border-${p.color}-100 p-2 shadow-sm bg-white mb-2 relative overflow-hidden group">
+                        <div class="w-full h-full rounded-arch overflow-hidden bg-gray-100">
+                            <img src="${p.img}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt="${p.name}">
+                        </div>
+                        <div class="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md">
+                            <i class="fa-solid fa-leaf text-[8px] text-green-600"></i>
+                        </div>
+                    </div>
+                    <span class="font-bold text-slate-800 text-sm text-center leading-tight">${p.name}</span>
+                </div>
+            `).join('');
+
+            // 2. Native Products Grid
+            const nativeGrid = document.getElementById('native-products-grid');
+            nativeGrid.innerHTML = nativeProducts.map((p, index) => `
+                <div onclick="openNativeProduct(${index})" class="bg-stone-50 rounded-2xl p-4 text-center border border-stone-200 cursor-pointer active:scale-95 transition hover:shadow-md">
+                    <div class="h-24 w-full bg-white rounded-lg mb-3 bg-cover bg-center border border-stone-100" style="background-image: url('${p.img}');"></div>
+                    <h4 class="font-serif text-sm font-bold text-stone-800 leading-tight mb-1">${p.name}</h4>
+                    <span class="text-xs text-brand font-bold">₹${p.price}</span>
+                </div>
+            `).join('');
+        }
+
         window.checkBill = function() {
             const phone = document.getElementById('phone-input').value.trim();
             const btn = document.getElementById('btn-login');
             
             if (!phone || phone.length < 10) {
-                showError("Please enter a valid mobile number");
+                showError("Enter a valid mobile number");
                 return;
             }
 
             document.getElementById('error-msg').classList.add('hidden');
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Connecting...';
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
             btn.disabled = true;
 
-            const userRef = ref(db, `bills/${phone}`);
-            
+            const userRef = query(ref(db, `bills/${phone}`), limitToLast(100));
             if (unsubscribe) unsubscribe();
 
-            // Real-time Listener
             unsubscribe = onValue(userRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const data = snapshot.val();
-                    processData(data, phone); // Calculate Data
-
-                    // Show Dashboard
-                    if(document.getElementById('dashboard').classList.contains('hidden')) {
-                        document.getElementById('login-screen').classList.add('hidden');
-                        document.getElementById('dashboard').classList.remove('hidden');
-                    }
-                } else {
-                    if(!document.getElementById('login-screen').classList.contains('hidden')) {
-                        showError("No records found for this number.");
-                        resetBtn();
-                    } else {
-                        renderEmptyState();
-                    }
-                }
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                initCatalog(); 
+                if (snapshot.exists()) processData(snapshot.val()); 
+                else renderEmptyState();
+                btn.innerHTML = 'Get Started';
+                btn.disabled = false;
             }, (error) => {
-                console.error(error);
-                showError("Network Connection Lost.");
-                resetBtn();
+                showError("Connection error.");
+                btn.innerHTML = 'Get Started';
+                btn.disabled = false;
             });
         };
 
-        function processData(data, phone) {
-            // 1. Array banaya aur reverse kiya (Latest First)
+        function processData(data) {
             allBillsCache = Object.entries(data).reverse();
-            
-            // 2. Total Amount Calculation
             let grandTotal = 0;
             let userName = "Valued Customer";
-            
             allBillsCache.forEach(([id, bill]) => {
                 grandTotal += parseFloat(bill.amount || 0);
                 if (bill.details && bill.details.consumerName) userName = bill.details.consumerName;
             });
-
-            // 3. Header Update
             document.getElementById('grand-total').innerText = grandTotal.toLocaleString();
-            document.getElementById('display-name').innerHTML = `${userName} <span class="ml-2 inline-flex h-2 w-2 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span>`;
+            document.getElementById('display-name').innerText = userName;
             document.getElementById('txn-count').innerText = `${allBillsCache.length} Orders`;
-
-            // 4. List Render karein
             renderListChunk();
-            resetBtn();
         }
 
         function renderListChunk() {
             const listContainer = document.getElementById('bill-list');
-            
-            // Sirf utna data lo jitna limit hai (Pagination)
             const visibleBills = allBillsCache.slice(0, currentLimit);
             
-            // HTML Generation
             const htmlString = visibleBills.map(([id, bill], index) => {
                 const amount = parseFloat(bill.amount);
-                
-                // --- NEW 1: Decent Order ID (Example: Order #0050) ---
-                // Total length se index minus karke hum sequential number nikalte hain
                 const orderNumber = (allBillsCache.length - index).toString().padStart(4, '0');
-
-                // Items List HTML
+                
                 let itemsHtml = '';
                 if (bill.details && bill.details.items) {
                     itemsHtml = bill.details.items.map(item => `
-                        <div class="flex justify-between py-2 border-b border-dashed border-slate-100 last:border-0 text-xs">
-                            <span class="text-slate-600 font-medium">${item.name} <span class="text-slate-400 bg-slate-100 px-1 rounded ml-1">x${item.qty}</span></span>
-                            <span class="text-slate-800 font-bold">₹${item.qty * item.price}</span>
+                        <div class="flex justify-between py-1 text-xs text-slate-600">
+                            <span>${item.name} x${item.qty}</span>
+                            <span class="font-bold">₹${item.qty * item.price}</span>
                         </div>`).join('');
                 } else {
-                    itemsHtml = `<div class="text-xs text-slate-400 italic py-1">${bill.item || "Details not available"}</div>`;
+                    itemsHtml = `<div class="text-xs text-slate-400 italic">${bill.item || "Details not available"}</div>`;
                 }
 
-                const timeStr = bill.details && bill.details.timestamp ? 
-                    new Date(bill.details.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
-                
-                const uniqueId = `bill-${index}`;
+                const dateObj = new Date(bill.date);
+                const dateStr = `${dateObj.getDate()} ${dateObj.toLocaleString('default', { month: 'short' })}`;
 
                 return `
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden transition hover:shadow-md mb-3">
-                        <div onclick="toggleDetails('${uniqueId}')" class="p-4 flex justify-between items-center cursor-pointer bg-white active:bg-slate-50 select-none">
+                    <div class="bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex flex-col gap-2">
+                        <div class="flex justify-between items-start">
                             <div class="flex items-center gap-3">
-                                
-                                <!-- NEW 2: Cow Icon -->
-                                <div class="bg-indigo-50 text-brand w-12 h-12 rounded-full flex items-center justify-center shadow-inner shrink-0">
-                                    <i class="fa-solid fa-cow text-xl"></i>
+                                <div class="bg-green-50 text-brand w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shadow-inner">
+                                    ${dateStr}
                                 </div>
-
                                 <div>
-                                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                                        ${new Date(bill.date).toLocaleString('default', { month: 'short' })} ${new Date(bill.date).getDate()}, ${new Date(bill.date).getFullYear()} 
-                                    </div>
-                                    <!-- Decent Order ID Display -->
-                                    <div class="text-sm text-slate-700 font-bold mt-0.5">Order #${orderNumber}</div>
-                                    <div class="text-[10px] text-slate-400">${timeStr}</div>
+                                    <div class="text-xs font-bold text-slate-800">Order #${orderNumber}</div>
+                                    <div class="text-[10px] text-slate-400">${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <div class="font-bold text-emerald-600 text-lg">₹${amount.toLocaleString()}</div>
-                                <div class="text-[10px] text-slate-400 flex items-center justify-end gap-1 mt-1">
-                                    <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300" id="arrow-${uniqueId}"></i>
-                                </div>
+                                <div class="font-bold text-brand">₹${amount}</div>
+                                <span class="text-[10px] bg-green-100 text-green-700 px-1.5 rounded">Paid</span>
                             </div>
                         </div>
-                        <div id="${uniqueId}" class="hidden bg-slate-50 border-t border-slate-100 px-4 py-3">
-                            <div class="space-y-1 bg-white p-3 rounded-lg border border-slate-100 shadow-sm">${itemsHtml}</div>
+                        <div class="bg-slate-50 rounded-lg p-2 mt-1 border border-slate-100">
+                            ${itemsHtml}
                         </div>
                     </div>`;
             }).join('');
 
             listContainer.innerHTML = htmlString;
-
-            // --- NEW 3: Load More Button Logic ---
+            
             const existingBtn = document.getElementById('load-more-btn');
             if(existingBtn) existingBtn.remove();
-
-            // Agar aur data bacha hai, tabhi button dikhana
+            
             if (allBillsCache.length > currentLimit) {
-                const remaining = allBillsCache.length - currentLimit;
-                
                 const btnContainer = document.createElement('div');
-                btnContainer.className = "pt-2 pb-6"; // Spacing
-                btnContainer.innerHTML = `
-                    <button id="load-more-btn" onclick="loadMoreItems()" class="w-full py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl shadow-sm hover:bg-slate-50 transition active:scale-95 flex items-center justify-center gap-2 text-sm">
-                        <span>Load More Transactions</span>
-                        <span class="bg-slate-200 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-md">${remaining}+</span>
-                    </button>
-                `;
+                btnContainer.innerHTML = `<button onclick="window.loadMoreItems()" id="load-more-btn" class="w-full py-3 text-xs text-brand font-bold bg-green-50 rounded-lg mt-2">Load Previous Orders</button>`;
                 listContainer.appendChild(btnContainer);
             }
         }
 
-        // Global Function for Button
-        window.loadMoreItems = () => {
-            currentLimit += 20; // Agle 20 load karo
-            renderListChunk();  // List update karo
-        };
+        window.loadMoreItems = () => { currentLimit += 20; renderListChunk(); };
 
         function renderEmptyState() {
-            document.getElementById('bill-list').innerHTML = `
-                <div class="flex flex-col items-center justify-center py-20 text-center opacity-60">
-                    <i class="fa-solid fa-box-open text-6xl text-slate-300 mb-4"></i>
-                    <p class="text-slate-500 font-bold">No orders found</p>
-                </div>`;
+            document.getElementById('empty-state').classList.remove('hidden');
             document.getElementById('grand-total').innerText = "0";
-            document.getElementById('txn-count').innerText = "0 Orders";
         }
-
-        window.toggleDetails = (id) => {
-            const el = document.getElementById(id);
-            const arrow = document.getElementById('arrow-' + id);
-            if (el.classList.contains('hidden')) {
-                el.classList.remove('hidden');
-                arrow.classList.add('rotate-180');
-            } else {
-                el.classList.add('hidden');
-                arrow.classList.remove('rotate-180');
-            }
-        };
-
-        window.logout = () => {
-            if (unsubscribe) { unsubscribe(); unsubscribe = null; }
-            document.getElementById('dashboard').classList.add('hidden');
-            document.getElementById('login-screen').classList.remove('hidden');
-            document.getElementById('phone-input').value = "";
-            currentLimit = 20;
-            allBillsCache = [];
-            resetBtn();
-        };
 
         function showError(msg) {
             const err = document.getElementById('error-msg');
             err.innerText = msg;
             err.classList.remove('hidden');
-            resetBtn();
         }
 
-        function resetBtn() {
-            const btn = document.getElementById('btn-login');
-            btn.innerHTML = '<span>View My Orders</span> <i class="fa-solid fa-arrow-right"></i>';
-            btn.disabled = false;
-        }
+        window.switchTab = (tab) => {
+            const homeView = document.getElementById('view-home');
+            const ordersView = document.getElementById('view-orders');
+            const btnHome = document.getElementById('btn-home');
+            const btnOrders = document.getElementById('btn-orders');
+            
+            const setHomeActive = () => {
+                const iconContainer = btnHome.querySelector('.icon-container');
+                const label = btnHome.querySelector('.label');
+                const icon = btnHome.querySelector('i');
+                iconContainer.className = "icon-container w-10 h-10 rounded-full flex items-center justify-center bg-brand text-white shadow-lg shadow-green-900/20 transition-all duration-300";
+                label.classList.add('hidden');
+                icon.className = "fa-solid fa-house text-sm";
+                btnOrders.classList.remove('bills-active'); 
+                btnOrders.classList.add('attention-loop');
+            };
+
+            const setOrdersActive = () => {
+                const iconContainer = btnHome.querySelector('.icon-container');
+                const label = btnHome.querySelector('.label');
+                const icon = btnHome.querySelector('i');
+                iconContainer.className = "icon-container flex items-center justify-center text-slate-400 transition-all duration-300";
+                label.classList.remove('hidden');
+                icon.className = "fa-solid fa-house text-xl mb-0.5";
+                btnOrders.classList.remove('attention-loop');
+                btnOrders.classList.add('bills-active');
+            };
+
+            if (tab === 'home') {
+                homeView.classList.remove('hidden');
+                ordersView.classList.add('hidden');
+                setHomeActive();
+            } else if (tab === 'orders') {
+                homeView.classList.add('hidden');
+                ordersView.classList.remove('hidden');
+                setOrdersActive();
+            }
+            window.scrollTo(0,0);
+        };
+
+        window.logout = () => {
+            if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+            document.getElementById('main-app').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('phone-input').value = "";
+            switchTab('home');
+            allBillsCache = [];
+        };
+        
+        // Expose functions to HTML
+        window.openProduct = window.openProduct;
+        window.openNativeProduct = window.openNativeProduct;
+        window.closePopup = window.closePopup;
+        window.orderViaWhatsapp = window.orderViaWhatsapp;
+        window.loadMoreItems = window.loadMoreItems;
     </script>
 </body>
 </html>
