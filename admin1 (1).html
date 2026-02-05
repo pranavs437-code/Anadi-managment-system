@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AdminOS | Billing</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Add these inside <head> tag, before closing </head> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- QR Lib -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                fontFamily: { sans: ['Inter', 'sans-serif'] },
+                extend: {
+                    colors: {
+                        brand: '#4338ca', // Indigo 700 (Matches your screenshot button)
+                        darkBlue: '#111827', // Dark card bg
+                        bg: '#f3f4f6'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #f3f4f6;
+        }
+
+        /* Hide Scrollbar but allow scrolling */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="h-screen flex bg-bg text-slate-700 overflow-hidden">
+
+    <!-- TOAST & MODAL CONTAINERS -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[70] flex flex-col gap-2"></div>
+    <div id="modal-overlay"
+        class="fixed inset-0 bg-black/60 z-[60] hidden backdrop-blur-sm flex items-center justify-center p-4"></div>
+    <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
+
+    <!-- 1. SIDEBAR -->
+    <aside id="sidebar"
+        class="fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 z-50 transform -translate-x-full transition-transform duration-300 lg:static lg:translate-x-0 flex flex-col">
+        <div class="h-16 flex items-center px-6 border-b border-slate-100 font-bold text-xl tracking-tight text-brand">
+            <i class="fa-solid fa-cube mr-2"></i> AdminOS
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1">
+            <button onclick="router('dashboard')" id="nav-dashboard"
+                class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-brand font-medium transition">
+                <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
+            </button>
+            <button onclick="router('billing')" id="nav-billing"
+                class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-brand font-medium transition">
+                <i class="fa-solid fa-file-invoice w-5"></i> Billing
+            </button>
+            <button onclick="router('manage')" id="nav-manage"
+                class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-brand font-medium transition">
+                <i class="fa-solid fa-box w-5"></i> Inventory
+            </button>
+            <button onclick="router('history')" id="nav-history"
+                class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-brand font-medium transition">
+                <i class="fa-solid fa-clock-rotate-left w-5"></i> History
+            </button>
+            <button onclick="router('share')" id="nav-share"
+                class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-brand font-medium transition">
+                <i class="fa-solid fa-qrcode w-5"></i> App Link
+            </button>
+        </nav>
+    </aside>
+
+    <!-- 2. MAIN CONTENT -->
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden">
+
+        <!-- Mobile Header -->
+        <header class="lg:hidden h-14 bg-white border-b flex items-center justify-between px-4 z-30 shrink-0">
+            <button onclick="toggleSidebar()" class="text-slate-600"><i class="fa-solid fa-bars text-xl"></i></button>
+            <h1 class="font-bold text-slate-800" id="page-title-mob">Billing</h1>
+            <div class="w-6"></div>
+        </header>
+
+        <!-- VIEW: BILLING (New Design) -->
+        <section id="view-billing" class="flex-1 overflow-y-auto p-4 lg:p-6 fade-in">
+
+            <div class="flex flex-col xl:flex-row gap-6 h-full">
+
+                <!-- LEFT PANEL: Inputs & List -->
+                <div class="flex-1 flex flex-col gap-4">
+
+                    <!-- 1. Customer & Date Card -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs font-bold text-slate-400 uppercase ml-1">Customer</label>
+                                <div class="relative mt-1">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-slate-400"></i>
+                                    <input list="dl-consumers" id="pos-customer" placeholder="Search Name or Phone..."
+                                        class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand outline-none font-semibold transition"
+                                        onchange="Billing.selectUser()">
+                                    <datalist id="dl-consumers"></datalist>
+                                </div>
+                                <div id="cust-display" class="hidden text-xs text-brand font-bold mt-1 ml-1">Selected:
+                                    <span id="cust-name"></span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-400 uppercase ml-1">Date</label>
+                                <div class="relative mt-1">
+                                    <input type="date" id="pos-date"
+                                        class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand outline-none font-semibold transition">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Add Items Card -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <h3 class="text-sm font-bold text-slate-500 uppercase mb-3"><i
+                                class="fa-solid fa-cart-plus mr-1"></i> Add Items</h3>
+                        <div class="flex flex-col md:flex-row gap-3 items-end">
+                            <div class="w-full md:flex-[2]">
+                                <select id="pos-product-select" onchange="Billing.updatePrice()"
+                                    class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand outline-none font-semibold text-slate-700 h-[50px]">
+                                    <option value="">Select Product...</option>
+                                    <!-- Options injected via JS -->
+                                </select>
+                            </div>
+                            <!-- FIND THIS INPUT IN #view-billing AND REPLACE IT -->
+                            <div class="w-full md:flex-1 relative">
+                                <span class="absolute left-3 top-3.5 text-slate-400 font-bold">₹</span>
+                                <!-- Removed 'readonly' and changed bg-slate-100 to bg-white -->
+                                <input type="number" id="pos-price" placeholder="Price"
+                                    class="w-full pl-8 pr-4 py-3 rounded-xl bg-white border border-slate-200 focus:border-brand focus:ring-1 focus:ring-brand outline-none text-slate-700 font-bold h-[50px] transition">
+                            </div>
+                            <div class="w-full md:flex-1">
+                                <input type="number" id="pos-qty" value="1" min="1"
+                                    class="w-full text-center px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand outline-none font-bold h-[50px]">
+                            </div>
+                            <button onclick="Billing.addItemManual()"
+                                class="w-full md:w-[50px] h-[50px] bg-brand hover:bg-indigo-800 text-white rounded-xl shadow-lg shadow-brand/30 flex items-center justify-center transition active:scale-95">
+                                <i class="fa-solid fa-plus text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3. Cart Items List -->
+                    <div
+                        class="bg-white rounded-2xl border border-slate-200 shadow-sm flex-1 flex flex-col min-h-[300px]">
+                        <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-700">Cart Items</h3>
+                            <button onclick="Billing.clearCart()"
+                                class="text-xs font-bold text-red-500 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100">CLEAR</button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-2" id="cart-list">
+                            <!-- Items injected here -->
+                            <div class="h-full flex flex-col items-center justify-center text-slate-300">
+                                <i class="fa-solid fa-basket-shopping text-5xl mb-3 opacity-20"></i>
+                                <p class="text-sm font-medium">Cart is empty</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT PANEL: Summary Card (Sticky) -->
+                <div class="w-full xl:w-[380px] shrink-0">
+                    <div class="bg-[#111827] text-white p-6 rounded-2xl shadow-xl sticky top-4">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase mb-6 tracking-widest">Invoice Summary</h3>
+
+                        <div class="space-y-4 mb-8">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 text-sm">Items</span>
+                                <span class="font-bold" id="summ-count">0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 text-sm">Subtotal</span>
+                                <span class="font-bold">₹<span id="summ-sub">0.00</span></span>
+                            </div>
+                            <div class="h-px bg-slate-700 my-2"></div>
+                            <div class="flex justify-between items-center text-xl">
+                                <span class="font-bold">Total</span>
+                                <span class="font-bold text-emerald-400 text-2xl">₹<span
+                                        id="summ-total">0.00</span></span>
+                            </div>
+                        </div>
+
+                        <button onclick="Billing.checkout()"
+                            class="w-full bg-white text-slate-900 py-4 rounded-xl font-bold hover:bg-slate-100 transition shadow-lg flex items-center justify-center gap-2 active:scale-95">
+                            <i class="fa-solid fa-print"></i> Generate Bill
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- OTHER VIEWS (Hidden) -->
+        <!-- Dashboard -->
+        <!-- REPLACE THE ENTIRE <section id="view-dashboard"> WITH THIS -->
+<section id="view-dashboard" class="hidden flex-1 overflow-y-auto p-6 fade-in">
+    <h2 class="text-2xl font-bold mb-6 text-slate-800">Dashboard Overview</h2>
+    
+    <!-- ROW 1: General Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- Total Sales -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs text-slate-400 uppercase font-bold tracking-wider">Total Lifetime Sales</p>
+                <h3 class="text-3xl font-bold text-emerald-600 mt-2">₹ <span id="dash-sales">0</span></h3>
+            </div>
+            <div class="bg-emerald-50 p-3 rounded-full text-emerald-600"><i class="fa-solid fa-wallet text-xl"></i></div>
+        </div>
+        
+        <!-- Total Orders -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs text-slate-400 uppercase font-bold tracking-wider">Total Orders</p>
+                <h3 class="text-3xl font-bold text-brand mt-2" id="dash-orders">0</h3>
+            </div>
+            <div class="bg-indigo-50 p-3 rounded-full text-brand"><i class="fa-solid fa-bag-shopping text-xl"></i></div>
+        </div>
+        
+        <!-- Total Products -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs text-slate-400 uppercase font-bold tracking-wider">Total Products</p>
+                <h3 class="text-3xl font-bold text-orange-500 mt-2" id="dash-products">0</h3>
+            </div>
+            <div class="bg-orange-50 p-3 rounded-full text-orange-500"><i class="fa-solid fa-boxes-stacked text-xl"></i></div>
+        </div>
+    </div>
+
+    <!-- ROW 2: Time Based Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Today's Earning -->
+        <div class="bg-gradient-to-r from-blue-600 to-blue-500 p-6 rounded-2xl shadow-lg text-white relative overflow-hidden">
+            <i class="fa-solid fa-calendar-day absolute -right-4 -bottom-4 text-8xl opacity-10"></i>
+            <p class="text-blue-100 text-xs uppercase font-bold tracking-wider">Today's Earning</p>
+            <h3 class="text-4xl font-bold mt-2">₹ <span id="dash-today">0</span></h3>
+            <p class="text-xs text-blue-100 mt-1 opacity-80" id="dash-today-date">...</p>
+        </div>
+
+        <!-- Monthly Earning -->
+        <div class="bg-gradient-to-r from-purple-600 to-purple-500 p-6 rounded-2xl shadow-lg text-white relative overflow-hidden">
+            <i class="fa-solid fa-calendar-days absolute -right-4 -bottom-4 text-8xl opacity-10"></i>
+            <p class="text-purple-100 text-xs uppercase font-bold tracking-wider">Current Month Earning</p>
+            <h3 class="text-4xl font-bold mt-2">₹ <span id="dash-month">0</span></h3>
+            <p class="text-xs text-purple-100 mt-1 opacity-80" id="dash-month-name">...</p>
+        </div>
+    </div>
+
+    <!-- ROW 3: Date Range Filter -->
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h3 class="font-bold text-slate-700 mb-4 border-b pb-2">Custom Date Filter</h3>
+        
+        <div class="flex flex-col md:flex-row items-end gap-4">
+            <div class="w-full md:w-auto">
+                <label class="text-xs font-bold text-slate-400 block mb-1">From Date</label>
+                <input type="date" id="filter-start" class="border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 outline-none focus:border-brand w-full md:w-40 text-sm">
+            </div>
+            <div class="w-full md:w-auto">
+                <label class="text-xs font-bold text-slate-400 block mb-1">To Date</label>
+                <input type="date" id="filter-end" class="border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 outline-none focus:border-brand w-full md:w-40 text-sm">
+            </div>
+            <button onclick="Dashboard.applyFilter()" class="bg-slate-800 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-slate-900 transition shadow-lg w-full md:w-auto">
+                Calculate
+            </button>
+            
+            <!-- Result Display -->
+            <div class="flex-1 text-right mt-4 md:mt-0">
+                <p class="text-xs text-slate-400 font-bold uppercase">Range Earnings</p>
+                <h3 class="text-2xl font-bold text-slate-800">₹ <span id="filter-result">0.00</span></h3>
+            </div>
+        </div>
+    </div>
+    <!-- PASTE THIS INSIDE #view-dashboard, AT THE VERY BOTTOM -->
+
+<!-- 1. FLOATING ACTION BAR (Visible on Dashboard) -->
+<div class="fixed bottom-6 left-4 right-4 md:left-72 md:right-8 z-40">
+    <button onclick="Dashboard.openQuickAction()" class="w-full bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-slate-700 transform active:scale-95 transition">
+        <div class="flex items-center gap-3">
+            <div class="bg-emerald-500 w-10 h-10 rounded-full flex items-center justify-center text-white animate-pulse">
+                <i class="fa-brands fa-whatsapp text-xl"></i>
+            </div>
+            <div class="text-left">
+                <p class="font-bold text-sm">Quick Customer List</p>
+                <p class="text-[10px] text-slate-400">View Totals & Send Bills</p>
+            </div>
+        </div>
+        <i class="fa-solid fa-chevron-up text-slate-400"></i>
+    </button>
+</div>
+
+<!-- 2. QUICK VIEW MODAL (Hidden by default) -->
+<div id="quick-modal" class="fixed inset-0 bg-black/80 z-[60] hidden backdrop-blur-sm flex items-end md:items-center justify-center fade-in">
+    <!-- Bottom Sheet on Mobile, Center Card on PC -->
+    <div class="bg-white w-full md:w-[500px] h-[85vh] md:h-[600px] rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+        
+        <!-- Header -->
+        <!-- FIND THE HEADER DIV INSIDE #quick-modal AND REPLACE IT WITH THIS -->
+<div class="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-center shrink-0">
+    <div>
+        <h3 class="font-bold text-slate-800 text-lg">Customer Ledger</h3>
+        <p class="text-xs text-slate-500">Total spent by each customer</p>
+    </div>
+    
+    <div class="flex items-center gap-2">
+        <!-- NEW PDF BUTTON -->
+        <button onclick="Dashboard.downloadLedgerPDF()" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition">
+            <i class="fa-solid fa-file-pdf"></i> <span class="hidden sm:inline">Download PDF</span>
+        </button>
+        
+        <!-- CLOSE BUTTON -->
+        <button onclick="document.getElementById('quick-modal').classList.add('hidden')" class="bg-white p-2 rounded-full text-slate-500 hover:text-red-500 shadow-sm border transition">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+    </div>
+</div>
+
+        <!-- Search Bar -->
+        <div class="p-4 bg-white border-b border-slate-100 shrink-0">
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
+                <input type="text" onkeyup="Dashboard.renderQuickList(this.value)" placeholder="Search Name or Phone..." class="w-full pl-10 pr-4 py-2.5 bg-slate-100 border-none rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+        </div>
+
+        <!-- List Area -->
+        <div id="quick-list-body" class="flex-1 overflow-y-auto p-2 space-y-1 bg-slate-50 pb-20">
+            <!-- Items will be injected here via JS -->
+        </div>
+    </div>
+</div>
+</section>
+        <!-- Manage -->
+        <!-- REPLACE THE EXISTING <section id="view-manage"> WITH THIS -->
+        <section id="view-manage" class="hidden flex-1 overflow-y-auto p-6 fade-in">
+            <h2 class="text-2xl font-bold mb-6">Inventory & Users</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- PRODUCT MANAGEMENT -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold mb-4 flex justify-between items-center">
+                        <span>Manage Products</span>
+                        <button onclick="Manage.resetProdForm()"
+                            class="text-xs text-brand font-bold hover:underline hidden" id="btn-cancel-prod">Cancel
+                            Edit</button>
+                    </h3>
+                    <div class="space-y-3">
+                        <input id="man-prod-name" placeholder="Product Name"
+                            class="w-full p-3 border rounded-xl bg-slate-50 focus:bg-white focus:border-brand outline-none transition">
+                        <input id="man-prod-price" type="number" placeholder="Price (₹)"
+                            class="w-full p-3 border rounded-xl bg-slate-50 focus:bg-white focus:border-brand outline-none transition">
+                        <button id="btn-save-prod" onclick="Manage.saveProduct()"
+                            class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-slate-700 transition">Add
+                            Product</button>
+                    </div>
+
+                    <div class="mt-6">
+                        <p class="text-xs font-bold text-slate-400 uppercase mb-2">Existing Products</p>
+                        <div id="manage-prod-list" class="h-64 overflow-y-auto text-sm space-y-2 pr-1 custom-scrollbar">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- USER MANAGEMENT -->
+                <!-- FIND THE USER MANAGEMENT DIV IN #view-manage AND REPLACE IT WITH THIS -->
+<div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+    <h3 class="font-bold mb-4 flex justify-between items-center">
+        <span>Manage Customers</span>
+        <button onclick="Manage.resetUserForm()" class="text-xs text-brand font-bold hover:underline hidden" id="btn-cancel-user">Cancel Edit</button>
+    </h3>
+    
+    <!-- Input Form -->
+    <div class="space-y-3">
+        <input id="man-user-phone" type="number" placeholder="Phone Number (ID)" class="w-full p-3 border rounded-xl bg-slate-50 focus:bg-white focus:border-brand outline-none transition">
+        <input id="man-user-name" placeholder="Customer Name" class="w-full p-3 border rounded-xl bg-slate-50 focus:bg-white focus:border-brand outline-none transition">
+        <input id="man-user-address" placeholder="Address" class="w-full p-3 border rounded-xl bg-slate-50 focus:bg-white focus:border-brand outline-none transition">
+        <button id="btn-save-user" onclick="Manage.saveUser()" class="w-full bg-brand text-white py-3 rounded-xl font-bold hover:bg-indigo-800 transition">Register Customer</button>
+    </div>
+
+    <!-- New: Search & PDF Header -->
+    <div class="mt-8 mb-2 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+        <p class="text-xs font-bold text-slate-400 uppercase mb-1 sm:mb-0">Registered Customers</p>
+        <div class="flex gap-2 w-full sm:w-auto">
+            <!-- Search Box -->
+            <div class="relative flex-1 sm:w-48">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                <input type="text" id="user-search" onkeyup="Manage.renderUsers(this.value)" placeholder="Search..." class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:bg-white outline-none">
+            </div>
+            <!-- PDF Button -->
+            <button onclick="Manage.downloadUserPDF()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-sm transition" title="Download PDF">
+                <i class="fa-solid fa-file-pdf mr-1"></i> PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- List Container -->
+    <div id="manage-user-list" class="h-64 overflow-y-auto text-sm space-y-2 pr-1 custom-scrollbar"></div>
+</div>
+            </div>
+        </section>
+
+        <!-- History -->
+        <!-- REPLACE THE EXISTING <section id="view-history"> WITH THIS -->
+        <!-- FIND THE HEADER DIV INSIDE #view-history AND REPLACE IT -->
+<section id="view-history" class="hidden flex-1 overflow-y-auto p-6 fade-in">
+    
+    <!-- New Header with Search -->
+    <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 mb-4">
+        <h2 class="text-2xl font-bold text-slate-800 self-start md:self-center">Transaction History</h2>
+        
+        <div class="flex gap-2 w-full md:w-auto">
+            <!-- Search Box -->
+            <div class="relative flex-1 md:w-64">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                <input type="text" onkeyup="History.filter(this.value)" placeholder="Search Name, Phone, Address..." class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:border-brand outline-none transition shadow-sm">
+            </div>
+            
+            <!-- Refresh Button -->
+            <button onclick="History.init()" class="bg-white border border-slate-300 px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-600 shadow-sm transition" title="Refresh Data">
+                <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Table Container (No changes needed here, just ensuring structure remains) -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold tracking-wider">
+                        <th class="p-4 w-24">Date</th>
+                        <th class="p-4 w-1/4">Customer Details</th>
+                        <th class="p-4">Items Purchased</th>
+                        <th class="p-4 text-right w-32">Total</th>
+                        <th class="p-4 text-center w-20">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="history-body" class="divide-y divide-slate-100 text-sm">
+                    <!-- Data injected via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+        <!-- Share -->
+        <!-- REPLACE <section id="view-share"> WITH THIS -->
+<!-- REPLACE <section id="view-share"> WITH THIS OPTIMIZED VERSION -->
+<section id="view-share" class="hidden flex-1 overflow-y-auto p-4 fade-in bg-slate-50">
+    
+    <div class="max-w-5xl mx-auto h-full flex flex-col justify-center">
+        <!-- HEADER -->
+        <div class="text-center mb-6 md:mb-10">
+            <h2 class="text-2xl md:text-3xl font-bold text-slate-800">Customer Portal Access</h2>
+            <p class="text-xs md:text-base text-slate-500 mt-2 px-4">Share this link with customers so they can track their live bills & history.</p>
+        </div>
+
+        <!-- MAIN CARD -->
+        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row w-full">
+            
+            <!-- LEFT: QR CODE DISPLAY -->
+            <div class="w-full md:w-5/12 bg-gradient-to-br from-indigo-600 to-purple-700 p-8 md:p-10 text-white flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[300px]">
+                <!-- Background Decoration -->
+                <i class="fa-solid fa-qrcode absolute -bottom-10 -left-10 text-8xl md:text-9xl opacity-10"></i>
+                <i class="fa-solid fa-wifi absolute top-10 right-10 text-5xl md:text-6xl opacity-10"></i>
+
+                <div class="bg-white p-3 md:p-4 rounded-2xl shadow-xl transform hover:scale-105 transition duration-300 max-w-full">
+                    <!-- QR Container with responsive fix -->
+                    <div id="qrcode" class="flex items-center justify-center overflow-hidden"></div>
+                </div>
+                
+                <p class="mt-4 md:mt-6 font-bold text-base md:text-lg tracking-wide uppercase">Scan to View Bills</p>
+                <p class="text-indigo-200 text-xs md:text-sm mt-1">Compatible with iOS & Android</p>
+            </div>
+
+            <!-- RIGHT: SHARING ACTIONS -->
+            <div class="w-full md:w-7/12 p-6 md:p-10 flex flex-col justify-center bg-white">
+                
+                <!-- 1. Link Box -->
+                <div class="mb-6 md:mb-8">
+                    <label class="text-xs font-bold text-slate-400 uppercase ml-1">Portal Link</label>
+                    <div class="flex items-center mt-2 bg-slate-50 border border-slate-200 rounded-xl overflow-hidden p-1 w-full">
+                        <!-- Added min-w-0 to fix flex overflow issue -->
+                        <input id="share-link-input" readonly class="flex-1 min-w-0 bg-transparent px-3 py-2 text-slate-600 font-mono text-xs md:text-sm outline-none truncate">
+                        <button onclick="Share.copyLink()" class="shrink-0 bg-white hover:bg-slate-100 text-slate-700 px-3 md:px-4 py-2 rounded-lg border border-slate-200 font-bold text-xs md:text-sm shadow-sm transition whitespace-nowrap">
+                            <i class="fa-regular fa-copy"></i> <span class="hidden sm:inline">Copy</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Action Buttons Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                    <button onclick="Share.shareWhatsApp()" class="bg-[#25D366] hover:bg-[#20bd5a] text-white p-3 md:p-4 rounded-xl font-bold flex items-center justify-center gap-2 md:gap-3 shadow-lg hover:shadow-xl transition transform active:scale-95">
+                        <i class="fa-brands fa-whatsapp text-xl md:text-2xl"></i>
+                        <span class="text-left leading-tight">
+                            <span class="block text-[10px] opacity-90 font-normal">Share via</span>
+                            <span class="text-sm md:text-base">WhatsApp</span>
+                        </span>
+                    </button>
+
+                    <button onclick="Share.printStandee()" class="bg-slate-800 hover:bg-slate-900 text-white p-3 md:p-4 rounded-xl font-bold flex items-center justify-center gap-2 md:gap-3 shadow-lg hover:shadow-xl transition transform active:scale-95">
+                        <i class="fa-solid fa-print text-xl md:text-2xl"></i>
+                        <span class="text-left leading-tight">
+                            <span class="block text-[10px] opacity-90 font-normal">Download</span>
+                            <span class="text-sm md:text-base">Shop Standee</span>
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Help Text -->
+                <div class="mt-6 md:mt-8 p-3 md:p-4 bg-blue-50 text-blue-700 rounded-xl text-xs md:text-sm flex items-start gap-3">
+                    <i class="fa-solid fa-circle-info mt-0.5"></i>
+                    <p class="leading-relaxed"><strong>Tip:</strong> Print the Shop Standee and paste it at your billing counter.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+        <!-- EDIT BILL MODAL -->
+        <div id="edit-modal"
+            class="fixed inset-0 bg-black/60 z-[80] hidden backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-bounce-in">
+                <div class="bg-slate-50 p-4 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800">Edit Transaction</h3>
+                    <button onclick="History.closeModal()" class="text-slate-400 hover:text-slate-600"><i
+                            class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <input type="hidden" id="edit-bill-id">
+                    <input type="hidden" id="edit-bill-phone">
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Customer Name</label>
+                        <input id="edit-name" class="w-full p-3 border rounded-xl mt-1 font-bold text-slate-700">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Total Amount (₹)</label>
+                        <input type="number" id="edit-amount"
+                            class="w-full p-3 border rounded-xl mt-1 font-bold text-emerald-600">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Date</label>
+                        <input type="text" id="edit-date" class="w-full p-3 border rounded-xl mt-1 font-mono text-sm">
+                        <p class="text-[10px] text-slate-400 mt-1">*Format: MM/DD/YYYY or DD/MM/YYYY</p>
+                    </div>
+
+                    <button onclick="History.saveUpdate()"
+                        class="w-full bg-brand text-white py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-800 transition mt-2">Update
+                        Transaction</button>
+                </div>
+            </div>
+        </div>
+        <!-- PRINT STANDEE TEMPLATE (Hidden from screen) -->
+<div id="print-area" class="hidden">
+    <div class="flex flex-col items-center justify-center h-screen border-8 border-slate-800 p-10 text-center font-sans">
+        <h1 class="text-5xl font-bold mb-4 uppercase tracking-tighter">My Billing History</h1>
+        <p class="text-2xl text-slate-500 mb-10">Scan this QR code to view your bills</p>
+        
+        <div class="border-4 border-slate-800 p-4 rounded-3xl mb-10">
+             <div id="qrcode-print"></div> <!-- QR will be cloned here -->
+        </div>
+
+        <div class="flex items-center gap-4 text-slate-700">
+            <i class="fa-solid fa-shield-halved text-3xl"></i>
+            <span class="text-xl font-semibold">Secure & Private Access</span>
+        </div>
+        <div class="mt-20 text-slate-400 text-sm">Powered by AdminOS</div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        body * { visibility: hidden; }
+        #print-area, #print-area * { visibility: visible; }
+        #print-area { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
+    }
+</style>
+
+    </main>
+
+    <!-- JS Logic -->
+    <script type="module" src="admin.js"></script>
+</body>
+
+</html>
