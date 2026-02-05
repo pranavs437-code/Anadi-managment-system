@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Anadi Godham | Customer App</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Icons & Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap"
+        rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                fontFamily: {
+                    sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    serif: ['"Playfair Display"', 'serif']
+                },
+                extend: {
+                    colors: {
+                        brand: '#064e3b', // Deep Green
+                        brandDark: '#022c22',
+                        brandLight: '#ecfdf5',
+                        accent: '#dcfce7',
+                    },
+                    borderRadius: {
+                        'arch': '100px 100px 20px 20px',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'zoom-in': 'zoomIn 0.2s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        zoomIn: { '0%': { transform: 'scale(0.9)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Glass Nav */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* --- MODERN ANIMATIONS --- */
+
+        /* 1. Staggered Slide Up (Cards Entry) */
+        @keyframes slideUpFade {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .animate-slide-up {
+            opacity: 0;
+            /* Hidden initially */
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* 2. Floating Background Elements */
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate(10deg);
+            }
+        }
+
+        .floating-icon {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* 3. Button Pulse (Attention) */
+        @keyframes softPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px rgba(37, 211, 102, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+            }
+        }
+
+        .pulse-ring {
+            animation: softPulse 2s infinite;
+        }
+
+        /* Bills Button Animation (Existing) */
+        @keyframes expandContract {
+
+            0%,
+            15% {
+                width: 40px;
+                border-radius: 50%;
+                background-color: #dcfce7;
+                color: #166534;
+            }
+
+            25% {
+                width: 90px;
+                border-radius: 24px;
+                background-color: #064e3b;
+                color: #ffffff;
+            }
+
+            75% {
+                width: 90px;
+                border-radius: 24px;
+                background-color: #064e3b;
+                color: #ffffff;
+            }
+
+            85%,
+            100% {
+                width: 40px;
+                border-radius: 50%;
+                background-color: #dcfce7;
+                color: #166534;
+            }
+        }
+
+        @keyframes fadeText {
+
+            0%,
+            20% {
+                opacity: 0;
+                width: 0;
+                display: none;
+            }
+
+            30% {
+                opacity: 1;
+                width: auto;
+                display: block;
+            }
+
+            70% {
+                opacity: 1;
+                width: auto;
+                display: block;
+            }
+
+            80%,
+            100% {
+                opacity: 0;
+                width: 0;
+                display: none;
+            }
+        }
+
+        @keyframes spinOnce {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            15% {
+                transform: rotate(360deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .attention-loop {
+            animation: expandContract 5s infinite ease-in-out;
+        }
+
+        .attention-loop .anim-text {
+            animation: fadeText 5s infinite ease-in-out;
+        }
+
+        .attention-loop .anim-icon {
+            animation: spinOnce 5s infinite linear;
+        }
+
+        .bills-active {
+            width: 90px !important;
+            border-radius: 24px !important;
+            background-color: #064e3b !important;
+            color: white !important;
+        }
+
+        .bills-active .anim-text {
+            opacity: 1 !important;
+            width: auto !important;
+            display: block !important;
+        }
+
+        .bills-active .anim-icon {
+            transform: none !important;
+        }
+
+        /* Custom Scrollbar for Modal */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-slate-800 bg-white selection:bg-green-100">
+
+    <!-- 1. LOGIN SCREEN -->
+    <div id="login-screen"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-green-50 animate-fade-in">
+        <div class="w-full max-w-sm bg-white rounded-3xl shadow-xl overflow-hidden relative">
+            <div class="bg-brand h-48 flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute w-40 h-40 bg-white/10 rounded-full -top-10 -left-10 blur-2xl"></div>
+                <div class="absolute w-40 h-40 bg-green-400/20 rounded-full -bottom-10 -right-10 blur-xl"></div>
+                <img src="https://anadi.co.in/wp-content/uploads/2024/10/WhatsApp_Image_2024-10-06_at_3.59.51_AM-removebg-preview.png"
+                    alt="Anadi Farms" class="h-24 w-auto object-contain drop-shadow-md mb-2">
+                <h1 class="text-white font-serif text-2xl tracking-wide">Anadi Godham</h1>
+            </div>
+
+            <div class="p-8">
+                <h2 class="text-xl font-bold text-center text-slate-800 mb-6">Customer Login</h2>
+                <div class="relative group mb-6">
+                    <i class="fa-solid fa-mobile-screen absolute left-4 top-4 text-slate-400"></i>
+                    <!-- Replace your existing input line with this: -->
+                    <input type="tel" id="phone-input" placeholder="Enter Mobile Number" maxlength="10"
+                        inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)"
+                        class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-lg outline-none focus:border-brand focus:ring-1 focus:ring-brand transition placeholder:text-slate-400 text-slate-700">
+                </div>
+                <button onclick="checkBill()" id="btn-login"
+                    class="w-full bg-brand hover:bg-green-800 text-white py-4 rounded-xl font-bold shadow-lg shadow-green-900/20 transition transform active:scale-95">
+                    Get Started
+                </button>
+                <p id="error-msg" class="text-red-600 text-xs font-bold mt-4 text-center hidden"></p>
+                <!-- Test Hint -->
+                <p class="text-center text-[10px] text-slate-400 mt-4">Demo: Use any 10-digit number</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MAIN APP -->
+    <div id="main-app" class="hidden relative max-w-md mx-auto min-h-screen bg-white shadow-2xl overflow-x-hidden">
+
+        <!-- HEADER (FIXED POSITION) -->
+        <div
+            class="fixed top-0 left-0 right-0 mx-auto max-w-md bg-brand text-white px-6 py-3 z-[60] shadow-md flex justify-between items-center transition-all">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center p-1">
+                    <img src="https://anadi.co.in/wp-content/uploads/2024/10/WhatsApp_Image_2024-10-06_at_3.59.51_AM-removebg-preview.png"
+                        alt="Logo" class="w-full h-full object-contain">
+                </div>
+                <div>
+                    <h1 class="font-serif font-bold text-lg leading-tight">Anadi Godham</h1>
+                    <p class="text-[10px] text-green-200 uppercase tracking-widest">Pure Organic</p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="switchTab('orders')"
+                    class="bg-white/20 hover:bg-white/30 px-4 py-1.5 rounded-full flex items-center gap-2 transition active:scale-95 backdrop-blur-sm">
+                    <i class="fa-solid fa-receipt text-sm"></i>
+                    <span class="font-bold text-xs uppercase tracking-wide">Bills</span>
+                </button>
+                <button onclick="logout()"
+                    class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- === VIEW: HOME (CATALOG) === -->
+        <div id="view-home" class="animate-fade-in pb-32 pt-20">
+
+            <!-- Banner -->
+            <div class="bg-green-50 pt-8 pb-10 px-6 text-center relative overflow-hidden mb-4">
+                <i class="fa-brands fa-envira absolute top-4 left-4 text-6xl text-brand/5 rotate-45"></i>
+                <i class="fa-solid fa-leaf absolute bottom-4 right-4 text-6xl text-brand/5 -rotate-12"></i>
+                <h2 class="text-brand font-bold text-3xl mb-2 font-serif">PURE PIYO TO <br>JAANO!</h2>
+                <p class="text-slate-500 text-sm mb-6">Our farms to your Family<br><strong>Anadi Farms</strong></p>
+            </div>
+
+            <!-- SEARCH BAR (NEW FEATURE) -->
+            <div class="px-4 sticky top-[70px] z-40 -mt-6 mb-6">
+                <div class="relative shadow-lg rounded-full">
+                    <i class="fa-solid fa-search absolute left-4 top-3.5 text-brand"></i>
+                    <input type="text" id="search-bar" onkeyup="filterProducts()"
+                        placeholder="Search Ghee, Milk, Dhoop..."
+                        class="w-full pl-10 pr-4 py-3 rounded-full border border-green-100 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand bg-white text-sm font-bold">
+                </div>
+            </div>
+
+            <!-- Categories Grid -->
+            <div class="px-4 relative z-10">
+                <div class="grid grid-cols-3 gap-x-4 gap-y-6" id="product-grid">
+                    <!-- Products injected by JS -->
+                </div>
+                <div id="no-results" class="hidden text-center py-10 text-slate-400 text-sm">
+                    No products found.
+                </div>
+            </div>
+
+            <!-- OIL BANNER -->
+            <div class="px-4 mt-10 product-item" data-name="mustard oil">
+                <div onclick="openProduct(6)"
+                    class="bg-yellow-50 rounded-2xl p-5 border border-yellow-100 flex items-center justify-between cursor-pointer active:scale-95 transition">
+                    <div>
+                        <span
+                            class="text-[10px] font-bold text-yellow-600 bg-yellow-100 px-2 py-1 rounded mb-2 inline-block">Best
+                            Seller</span>
+                        <h3 class="text-xl font-serif font-bold text-yellow-900 leading-tight">Wood Pressed<br>Mustard
+                            Oil</h3>
+                        <p class="text-xs text-yellow-700 mt-1">100% Pure & Natural</p>
+                    </div>
+                    <img src="https://i.ibb.co/JRdtTVf4/Gemini-Generated-Image-jm3mp0jm3mp0jm3m.png"
+                        class="w-20 h-20 object-contain drop-shadow-lg mix-blend-multiply">
+                </div>
+            </div>
+
+            <!-- Featured Section (NATIVE PRODUCTS) -->
+            <div class="px-4 mt-8 mb-6">
+                <h3 class="text-xl font-bold text-center text-slate-800 mb-6 font-serif">Our Native Organic<br>Products
+                </h3>
+
+                <!-- Added Grid for Native Products -->
+                <div class="grid grid-cols-2 gap-4" id="native-products-grid">
+                    <!-- Native Products injected by JS -->
+                </div>
+            </div>
+
+            <!-- Contact -->
+            <div class="px-6 mb-10">
+                <div
+                    class="bg-white border border-green-100 shadow-sm p-3 rounded-xl flex items-center justify-between">
+                    <span class="text-sm font-bold text-slate-700">We're here to help! 👋</span>
+                    <span class="text-xs text-brand font-bold">Chat with us by tap on the whatsapp Icon</span>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="bg-brandDark text-white pt-10 pb-28 px-6 mt-10 rounded-t-3xl">
+                <div class="grid grid-cols-1 gap-8">
+                    <div>
+                        <h3 class="font-serif text-lg mb-4 text-green-50 border-b border-green-800 pb-2 inline-block">
+                            Support</h3>
+                        <ul class="space-y-3 text-sm text-green-100/70 font-medium">
+                            <li><a href="#" class="hover:text-white transition">Contact</a></li>
+                            <li><a href="#" class="hover:text-white transition">Privacy Policy</a></li>
+                            <li><a href="#" class="hover:text-white transition">Shipping policy</a></li>
+                        </ul>
+                    </div>
+                    <div class="text-center mt-8 pt-8 border-t border-green-900 text-[10px] text-green-100/40">
+                        &copy; 2024 Anadi Godham. All rights reserved.
+                    </div>
+                </div>
+            </footer>
+        </div>
+
+        <!-- === VIEW: ORDERS (HISTORY) === -->
+        <div id="view-orders" class="hidden animate-fade-in p-4 pb-32 pt-20">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-slate-800">My Orders</h2>
+                <span class="text-xs bg-green-100 text-brand px-2 py-1 rounded font-bold" id="txn-count">0 Orders</span>
+            </div>
+            <div
+                class="bg-gradient-to-br from-brand to-green-900 text-white p-6 rounded-2xl shadow-lg mb-6 relative overflow-hidden">
+                <i class="fa-solid fa-wallet absolute -right-4 -bottom-4 text-8xl opacity-10"></i>
+                <p class="text-green-200 text-xs font-bold uppercase tracking-widest mb-1">Lifetime Spend</p>
+                <h1 class="text-4xl font-extrabold tracking-tight">₹ <span id="grand-total">0</span></h1>
+                <p class="text-sm mt-2 opacity-80" id="display-name">Guest User</p>
+            </div>
+            <div id="bill-list" class="space-y-3"></div>
+            <div id="empty-state" class="hidden flex flex-col items-center justify-center py-10 text-center opacity-60">
+                <i class="fa-solid fa-basket-shopping text-6xl text-slate-300 mb-4"></i>
+                <p class="text-slate-500 font-bold">No orders found</p>
+            </div>
+        </div>
+
+        <!-- === PRODUCT POPUP MODAL (ENHANCED) === -->
+        <div id="product-modal"
+            class="hidden fixed inset-0 z-[100] flex items-end sm:items-center justify-center pointer-events-none">
+            <div onclick="closePopup()"
+                class="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto transition opacity-0"
+                id="modal-backdrop"></div>
+
+            <div id="modal-card"
+                class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 relative pointer-events-auto transform translate-y-full transition-transform duration-300 shadow-2xl pb-10">
+
+                <button onclick="closePopup()"
+                    class="absolute top-4 right-4 bg-slate-100 p-2 rounded-full text-slate-500 hover:bg-slate-200 z-10">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+                <div class="flex flex-col items-center -mt-16 mb-4 relative z-0">
+                    <!-- Made Image Larger and styled better -->
+                    <img id="modal-img" src=""
+                        class="w-40 h-40 rounded-2xl object-cover shadow-2xl border-4 border-white bg-white">
+                </div>
+
+                <div class="text-center mb-6">
+                    <h2 id="modal-title" class="text-2xl font-serif font-bold text-slate-800 mb-1 leading-tight">Product
+                        Name</h2>
+                    <p class="text-brand font-bold text-xl">₹<span id="modal-price">00</span></p>
+                </div>
+
+                <!-- Scrollable Content -->
+                <div class="space-y-4 max-h-[35vh] overflow-y-auto pr-2 custom-scrollbar">
+                    <div class="bg-green-50 p-4 rounded-xl border border-green-100">
+                        <h4 class="text-xs font-bold text-brand uppercase tracking-wider mb-2">Description</h4>
+                        <p id="modal-desc" class="text-sm text-slate-600 leading-relaxed">Product details go here.</p>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Key Benefits</h4>
+                        <ul id="modal-benefits" class="space-y-2 text-sm text-slate-700"></ul>
+                    </div>
+                </div>
+
+                <!-- Quantity Selection (Visual Only) -->
+                <div class="flex items-center justify-center gap-4 mt-6 mb-2">
+                    <button onclick="updateQty(-1)"
+                        class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"><i
+                            class="fa-solid fa-minus"></i></button>
+                    <span id="order-qty" class="font-bold text-lg w-6 text-center">1</span>
+                    <button onclick="updateQty(1)"
+                        class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"><i
+                            class="fa-solid fa-plus"></i></button>
+                </div>
+
+                <!-- WHATSAPP ORDER BUTTON -->
+                <button onclick="orderViaWhatsapp()"
+                    class="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 rounded-xl mt-4 shadow-lg shadow-green-900/10 active:scale-95 transition flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-xl"></i>
+                    <span>Order on WhatsApp</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- === COMBINED BOTTOM CONTROL CENTER === -->
+        <!-- === COMBINED BOTTOM CONTROL CENTER (UPDATED) === -->
+        <!-- === COMBINED BOTTOM CONTROL CENTER (DARK BORDER STYLE) === -->
+        <div class="fixed bottom-6 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
+            <div class="w-full max-w-md px-6 flex items-center gap-4">
+
+                <!-- Main Nav Pill -->
+                <!-- Changes: border-[#064e3b] (Dark Green) and border-width increased to 3px -->
+                <div
+                    class="flex-1 h-[70px] bg-[#f0fdf4]/95 backdrop-blur-xl rounded-full shadow-[0_20px_40px_-12px_rgba(6,78,59,0.5)] border-[3px] border-[#064e3b] flex items-center justify-evenly pointer-events-auto relative overflow-hidden transition-transform transform hover:scale-[1.02]">
+
+                    <!-- Home Button -->
+                    <button onclick="switchTab('home')" class="nav-btn w-20 flex flex-col items-center gap-1 group"
+                        id="btn-home">
+                        <div
+                            class="icon-container w-10 h-10 rounded-full flex items-center justify-center bg-brand text-white shadow-lg shadow-green-900/30 transition-all duration-300 transform group-hover:-translate-y-1">
+                            <i class="fa-solid fa-house text-sm"></i>
+                        </div>
+                        <span class="text-[10px] font-bold text-brand hidden label animate-fade-in">Home</span>
+                    </button>
+
+                    <!-- Divider (Dark Green to match border) -->
+                    <div class="h-6 w-[1.5px] bg-[#064e3b]/20 rounded-full"></div>
+
+                    <!-- Animated Bills Button -->
+                    <button onclick="switchTab('orders')"
+                        class="nav-btn h-10 flex items-center justify-center gap-2 overflow-hidden transition-all duration-300 attention-loop"
+                        id="btn-orders">
+                        <i class="fa-solid fa-receipt text-lg anim-icon"></i>
+                        <span class="text-[10px] font-bold whitespace-nowrap anim-text">Bills</span>
+                    </button>
+                </div>
+
+                <!-- WhatsApp Button -->
+                <!-- Changes: border-[#064e3b] (Dark Green) to match the Nav Pill -->
+                <a href="https://wa.me/919990033116" target="_blank"
+                    class="shrink-0 w-[70px] h-[70px] rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-[0_15px_30px_-5px_rgba(37,211,102,0.4)] pointer-events-auto transition active:scale-95 hover:scale-105 border-[3px] border-[#064e3b] relative z-50">
+                    <i class="fa-brands fa-whatsapp text-3xl drop-shadow-md"></i>
+                </a>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDR1rzGFqynhkan3zGChtjmZv1s0JJ73Ls",
+            authDomain: "newbillingtry.firebaseapp.com",
+            databaseURL: "https://newbillingtry-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "newbillingtry",
+            storageBucket: "newbillingtry.firebasestorage.app",
+            messagingSenderId: "399103082623",
+            appId: "1:399103082623:web:225ba06a04c04ed3957f4a",
+            measurementId: "G-4MDEEBR10F"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- GLOBAL STATE ---
+        let unsubscribe = null;
+        let allBillsCache = [];
+        let currentLimit = 20;
+        let currentProductTitle = "";
+        let currentQty = 1;
+        let isLoadingMore = false; // Fix: Prevent race conditions
+
+        // --- SAFE DATA HELPERS ---
+        const safeFloat = (val) => {
+            const num = parseFloat(val);
+            return isNaN(num) ? 0 : num;
+        };
+
+        const formatDate = (val) => {
+            if (!val) return { str: "Date N/A", time: "" };
+            const date = new Date(val);
+            if (isNaN(date.getTime())) return { str: "Invalid Date", time: "--:--" };
+
+            const str = `${date.getDate()} ${date.toLocaleString('default', { month: 'short' })}`;
+            const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return { str, time };
+        };
+
+        // --- CATALOG DATA ---
+        const products = [
+            {
+                name: "A2 Gir Gau Milk", price: 98,
+                img: "https://anadi.co.in/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-25-at-1.58.04-AM-768x1229.jpeg", color: "green",
+                desc: "Faridabad -98/ltr and Delhi, Gurgaon - 125/ltr \n A2 Gir Gau Milk (Available In Delhi NCR, Faridabad, Gurugram Only). Pure, farm-fresh A2 Gir Cow Milk.",
+                benefits: ["Fresh desi cow raw organic A2 milk", "No hormones", "Ethical milking", "Rich in Calcium"]
+            },
+            {
+                name: "Butter Milk", price: 40,
+                img: "https://anadi.co.in/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-25-at-1.58.03-AM-1-768x1229.jpeg", color: "green",
+                desc: "Pricing - 40/1ltr \n Delivery only in Faridabad , Delhi and Gurgaon regin \nFresh A2 Butter Milk/Matha/Chaach. Traditional Chhach made from A2 curd.",
+                benefits: ["No preservatives", "Great for Kadhi", "Probiotic", "Cools Body"]
+            },
+            {
+                name: "A2 Gir Gau Curd", price: 35,
+                img: "https://anadi.co.in/wp-content/uploads/2024/10/346899351_1291682588364983_7304692609471411467_n-1-768x512.jpg", color: "green",
+                desc: "Pricing - 35/250g \n Delivery only in Faridabad , Delhi and Gurgaon regin \n Thick, creamy curd set naturally in earthen pots.",
+                benefits: ["Rich in Protein", "Probiotic-Rich", "Good for Gut Health", "Calcium Source"]
+            },
+            {
+                name: "Gir Gau A2 ghee", price: 1500,
+                img: "https://anadi.co.in/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-16-at-1.28.56-AM-1-768x1229.jpeg", color: "amber",
+                desc: "Pricing - 1500/500ml  \n Bilona method Ghee made from A2 milk. Golden goodness available Pan-India.",
+                benefits: ["Boosts Immunity", "Good for Heart", "Ayurvedic Properties"]
+            },
+            {
+                name: "White Butter", price: 240,
+                img: "https://anadi.co.in/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-20-at-9.06.19-PM-768x1229.jpeg", color: "stone",
+                desc: "Pricing - 240/100g \n  Delivery only in Faridabad , Delhi and Gurgaon regin \n Freshly churned Makhan. Unsalted and pure.",
+                benefits: ["Lubricates Joints", "Rich in Vitamin A", "Delicious Taste"]
+            },
+            {
+                name: "Shudh Paneer", price: 200,
+                img: "https://anadi.co.in/wp-content/uploads/2024/10/dd-768x1228.png", color: "green",
+                desc: "Pricing - 200/250g \n Delivery only in Faridabad , Delhi and Gurgaon regin \n  Soft, spongy Paneer made from fresh milk.",
+                benefits: ["High Protein", "Builds Muscle", "Fresh & Soft"]
+            },
+            {
+                name: "Mustard Oil", price: 399,
+                img: "https://i.ibb.co/JRdtTVf4/Gemini-Generated-Image-jm3mp0jm3mp0jm3m.png", color: "yellow",
+                desc: "Pricing - 399/1ltr \n Cold pressed Mustard Oil (Kachi Ghani). 100% Pure Oil (Available Pan-India).",
+                benefits: ["Heart Healthy", "Natural Flavor", "Chemical Free"]
+            }
+        ];
+
+        const nativeProducts = [
+            {
+                name: "Chotti Hawan Tikki", price: 280, mrp: 350,
+                img: "https://anadi.co.in/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-19-at-1.32.50-PM-768x1229.jpeg",
+                desc: "Small size cow dung cakes for daily mini-hawan or purification.",
+                benefits: ["Daily Puja", "Eco Friendly", "Easy to Burn"], theme: "dark", badge: "-20%"
+            },
+            {
+                name: "Nasya", price: 630, mrp: 680,
+                img: "https://anadi.co.in/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-19-at-1.33.23-PM-768x1229.jpeg",
+                desc: " A2 Ghee nasal drops for clearing sinus and improving memory. (10ml)",
+                benefits: ["Boosts immunity", "Clears Sinus", "Improves Vision"], theme: "light", badge: "Sale!"
+            },
+            {
+                name: "Dhoop Sticks", price: 135, mrp: 150,
+                img: "https://anadi.co.in/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-19-at-1.39.54-PM.jpeg",
+                desc: "Natural bamboo-less dhoop sticks made from organic herbs and cow dung.",
+                benefits: ["Purifies Air", "Positive Energy", "Chemical Free"], theme: "dark", badge: "Best Seller"
+            },
+            {
+                name: "Sambrani Cup", price: 180, mrp: 200,
+                img: "https://anadi.co.in/wp-content/uploads/2024/10/XXXX-768x1228.png",
+                desc: "Filled with natural Loban and Guggul for spiritual cleansing.",
+                benefits: ["Removes Negativity", "Calms Mind", "Traditional Aroma"], theme: "light", badge: "New"
+            },
+            {
+                name: "Badi Hawan Tikki", price: 330, mrp: 380,
+                img: "https://anadi.co.in/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-19-at-1.33.23-PM-1-768x1229.jpeg",
+                desc: "Larger cakes mixed with herbs for extended hawan ceremonies.",
+                benefits: ["Long Burning", "Ritual Ready", "Pure Desi Cow Dung"], theme: "dark", badge: "-15%"
+            },
+            {
+                name: "Goumutra Ark", price: 40, mrp: 50,
+                img: "https://anadi.co.in/wp-content/uploads/2024/10/gau-768x1228.png",
+                desc: "Distilled indigenous cow urine ark for medicinal use. (200ml)",
+                benefits: ["Detoxifies Body", "Cures Skin Diseases", "Boosts Immunity"], theme: "light", badge: "Pure"
+            }
+        ];
+
+        // --- RENDER CATALOG ---
+        function initCatalog() {
+            // Main Grid
+            const grid = document.getElementById('product-grid');
+            if (grid) {
+                grid.innerHTML = products.map((p, index) => `
+                    <div onclick="openProduct(${index})" 
+                        class="product-item flex flex-col items-center cursor-pointer group animate-slide-up" 
+                        data-name="${p.name.toLowerCase()}"
+                        style="animation-delay: ${index * 100}ms">
+                        <div class="w-full aspect-[3/4] rounded-arch border-2 border-${p.color}-100 p-2 shadow-sm bg-white mb-2 relative overflow-hidden transition-all duration-300 group-hover:shadow-lg group-active:scale-95">
+                            <div class="w-full h-full rounded-arch overflow-hidden bg-gray-50 relative">
+                                <img src="${p.img}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x600?text=No+Image'">
+                            </div>
+                            <div class="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow-md z-10">
+                                <i class="fa-solid fa-leaf text-[10px] text-green-600"></i>
+                            </div>
+                        </div>
+                        <span class="font-bold text-slate-800 text-sm text-center leading-tight line-clamp-2">${p.name}</span>
+                        <span class="text-xs text-brand font-bold mt-1 bg-green-50 px-2 py-0.5 rounded-md">₹${p.price}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Native Grid (Fix: Added data-name explicitly for search)
+            const nativeGrid = document.getElementById('native-products-grid');
+            if (nativeGrid) {
+                nativeGrid.className = "grid grid-cols-2 gap-3 mb-12 relative z-10";
+                nativeGrid.innerHTML = nativeProducts.map((p, index) => {
+                    const isDark = p.theme === 'dark';
+                    return `
+                    <div onclick="openNativeProduct(${index})" 
+                        class="flex flex-col cursor-pointer group animate-slide-up" 
+                        data-name="${p.name.toLowerCase()}" 
+                        style="animation-delay: ${(index * 150) + 300}ms"> 
+                        
+                        <div class="${isDark ? 'bg-[#1a472a]' : 'bg-[#fff8e1]'} relative w-full aspect-[3/5] rounded-[24px] shadow-md overflow-hidden flex flex-col items-center pt-3 pb-0 transition-transform duration-300 group-hover:-translate-y-2 group-active:scale-95">
+                            <span class="absolute top-0 left-0 ${isDark ? 'bg-red-600 text-white' : 'bg-green-700 text-white'} text-[9px] font-bold px-2 py-1 rounded-br-xl z-20 tracking-wider shadow-sm">${p.badge}</span>
+                            <span class="absolute top-3 right-3 ${isDark ? 'text-white/60' : 'text-slate-400'} z-20"><i class="fa-regular fa-heart"></i></span>
+                            <h4 class="${isDark ? 'text-white' : 'text-[#422006]'} font-serif text-lg font-bold text-center leading-tight px-3 w-full z-10 mt-5 drop-shadow-sm">${p.name}</h4>
+                            <div class="flex-1 w-full relative flex items-end justify-center overflow-hidden pb-2 px-1">
+                                <div class="absolute bottom-[-20px] w-32 h-32 bg-white/20 blur-2xl rounded-full animate-pulse"></div>
+                                <img src="${p.img}" class="w-full h-[95%] object-contain object-bottom drop-shadow-xl" onerror="this.src='https://placehold.co/400x600?text=No+Image'">
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-center justify-center mt-2">
+                            <span class="text-slate-400 text-[10px] font-bold line-through decoration-red-500 decoration-1">₹${p.mrp}.00</span>
+                            <span class="text-slate-800 font-bold text-lg leading-none mt-0.5">₹${p.price}.00</span>
+                        </div>
+                    </div>
+                `}).join('');
+            }
+        }
+
+        // --- AUTH & FETCH ---
+        const checkBill = function () {
+            const phoneInput = document.getElementById('phone-input');
+            const phone = phoneInput.value.trim();
+            const btn = document.getElementById('btn-login');
+            const errorMsg = document.getElementById('error-msg');
+
+            // Fix 1: Strict Validation
+            if (!phone || phone.length !== 10 || !/^\d+$/.test(phone)) {
+                errorMsg.innerText = "Please enter a valid 10-digit mobile number.";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            errorMsg.classList.add('hidden');
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+            btn.disabled = true;
+
+            // Fix 5: Cleanup old listeners (Memory Leak)
+            if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+
+            const userRef = query(ref(db, `bills/${phone}`), limitToLast(100));
+
+            try {
+                unsubscribe = onValue(userRef, (snapshot) => {
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('main-app').classList.remove('hidden');
+                    initCatalog();
+
+                    if (snapshot.exists()) processData(snapshot.val());
+                    else renderEmptyState();
+
+                    btn.innerHTML = 'Get Started';
+                    btn.disabled = false;
+                }, (error) => {
+                    // Fix 5: Unsubscribe on error
+                    if (unsubscribe) unsubscribe();
+                    console.error("Firebase Error:", error);
+                    errorMsg.innerText = "Network unavailable. Try again.";
+                    errorMsg.classList.remove('hidden');
+                    btn.innerHTML = 'Get Started';
+                    btn.disabled = false;
+                });
+            } catch (err) {
+                console.error(err);
+                btn.innerHTML = 'Get Started';
+                btn.disabled = false;
+            }
+        };
+
+        // --- DATA LOGIC ---
+        function processData(data) {
+            allBillsCache = Object.entries(data).reverse().filter(item => item[1] !== null);
+            let grandTotal = 0;
+            let userName = "Valued Customer";
+
+            allBillsCache.forEach(([id, bill]) => {
+                grandTotal += safeFloat(bill.amount);
+                if (bill.details && bill.details.consumerName) userName = bill.details.consumerName;
+            });
+
+            document.getElementById('grand-total').innerText = grandTotal.toLocaleString();
+            document.getElementById('display-name').innerText = userName;
+            document.getElementById('txn-count').innerText = `${allBillsCache.length} Orders`;
+
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('bill-list').classList.remove('hidden');
+            renderListChunk();
+        }
+
+        function renderListChunk() {
+            const listContainer = document.getElementById('bill-list');
+            const visibleBills = allBillsCache.slice(0, currentLimit);
+
+            const html = visibleBills.map(([id, bill], index) => {
+                const amount = safeFloat(bill.amount);
+                const orderNum = (allBillsCache.length - index).toString().padStart(4, '0');
+
+                // Fix 4: Date Parsing Safety
+                const { str: dateStr, time: timeStr } = formatDate(bill.date);
+
+                let itemsHtml = (bill.details && Array.isArray(bill.details.items))
+                    ? bill.details.items.map(item => `
+                        <div class="flex justify-between py-1 text-xs text-slate-600">
+                            <span>${item.name || 'Item'} x${item.qty || 1}</span>
+                            <span class="font-bold">₹${safeFloat(item.qty) * safeFloat(item.price)}</span>
+                        </div>`).join('')
+                    : `<div class="text-xs text-slate-400 italic">${bill.item || "Details not available"}</div>`;
+
+                return `
+                    <div class="bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex flex-col gap-2 animate-fade-in mb-3">
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-green-50 text-brand w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shadow-inner leading-none text-center p-1">
+                                    ${dateStr}
+                                </div>
+                                <div>
+                                    <div class="text-xs font-bold text-slate-800">Order #${orderNum}</div>
+                                    <div class="text-[10px] text-slate-400">${timeStr}</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-brand">₹${amount}</div>
+                                <span class="text-[10px] bg-green-100 text-green-700 px-1.5 rounded">Delivered</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-2 mt-1 border border-slate-100">
+                            ${itemsHtml}
+                        </div>
+                    </div>`;
+            }).join('');
+
+            listContainer.innerHTML = html;
+
+            // Fix 7: Load More Logic
+            const existingBtn = document.getElementById('load-more-btn');
+            if (existingBtn) existingBtn.remove();
+
+            if (allBillsCache.length > currentLimit) {
+                const btn = document.createElement('button');
+                btn.id = "load-more-btn";
+                btn.className = "w-full py-3 text-xs text-brand font-bold bg-green-50 rounded-lg mt-2 hover:bg-green-100 transition";
+                btn.innerText = `Load Previous Orders (${allBillsCache.length - currentLimit} more)`;
+                btn.onclick = loadMoreItems;
+                listContainer.appendChild(btn);
+            }
+            isLoadingMore = false;
+        }
+
+        const loadMoreItems = () => {
+            if (isLoadingMore) return; // Fix 7: Prevent Race Condition
+            isLoadingMore = true;
+            const btn = document.getElementById('load-more-btn');
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            setTimeout(() => { // Small timeout for UX
+                currentLimit += 20;
+                renderListChunk();
+            }, 300);
+        };
+
+        function renderEmptyState() {
+            document.getElementById('empty-state').classList.remove('hidden');
+            document.getElementById('bill-list').classList.add('hidden');
+            document.getElementById('grand-total').innerText = "0";
+            document.getElementById('txn-count').innerText = "0 Orders";
+        }
+
+        // --- UTILS ---
+        const filterProducts = function () {
+            const input = document.getElementById('search-bar').value.toLowerCase();
+            let foundCount = 0;
+
+            // Fix 3: Robust Search Selector
+            const allItems = document.querySelectorAll('[data-name]');
+
+            allItems.forEach(item => {
+                const name = item.getAttribute('data-name');
+                if (name && name.includes(input)) {
+                    item.classList.remove('hidden');
+                    foundCount++;
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+
+            const noRes = document.getElementById('no-results');
+            if (foundCount === 0) noRes.classList.remove('hidden');
+            else noRes.classList.add('hidden');
+        }
+
+        const showModal = (title, price, desc, benefits, img) => {
+            currentProductTitle = title;
+            currentQty = 1;
+            document.getElementById('order-qty').innerText = "1";
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-price').innerText = price;
+            document.getElementById('modal-desc').innerText = desc || "";
+            document.getElementById('modal-img').src = img;
+
+            const list = document.getElementById('modal-benefits');
+            list.innerHTML = (benefits || []).map(b => `<li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand text-xs"></i> ${b}</li>`).join('');
+
+            const modal = document.getElementById('product-modal');
+            const card = document.getElementById('modal-card');
+            const backdrop = document.getElementById('modal-backdrop');
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                card.classList.remove('translate-y-full');
+            }, 10);
+        }
+
+        const closePopup = function () {
+            const card = document.getElementById('modal-card');
+            const backdrop = document.getElementById('modal-backdrop');
+            if (!card || !backdrop) return;
+
+            card.classList.add('translate-y-full');
+            backdrop.classList.add('opacity-0');
+
+            setTimeout(() => {
+                document.getElementById('product-modal').classList.add('hidden');
+            }, 300);
+        }
+
+        const switchTab = (tab) => {
+            // Fix 6: Auto-close modal on tab switch
+            closePopup();
+
+            const homeView = document.getElementById('view-home');
+            const ordersView = document.getElementById('view-orders');
+            const btnHome = document.getElementById('btn-home');
+            const btnOrders = document.getElementById('btn-orders');
+
+            if (tab === 'home') {
+                homeView.classList.remove('hidden');
+                ordersView.classList.add('hidden');
+
+                // Reset Icons
+                btnHome.querySelector('.icon-container').classList.replace('text-slate-400', 'bg-brand');
+                btnHome.querySelector('.icon-container').classList.add('text-white', 'shadow-lg');
+                btnHome.querySelector('.label').classList.add('hidden');
+                btnOrders.classList.remove('bills-active');
+                btnOrders.classList.add('attention-loop');
+            } else {
+                homeView.classList.add('hidden');
+                ordersView.classList.remove('hidden');
+
+                // Set Active
+                btnHome.querySelector('.icon-container').classList.replace('bg-brand', 'text-slate-400');
+                btnHome.querySelector('.icon-container').classList.remove('text-white', 'shadow-lg');
+                btnHome.querySelector('.label').classList.remove('hidden');
+                btnOrders.classList.remove('attention-loop');
+                btnOrders.classList.add('bills-active');
+            }
+            window.scrollTo(0, 0);
+        };
+
+        const logout = () => {
+            // Fix 8: Confirmation
+            if (!confirm("Are you sure you want to logout?")) return;
+
+            if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+            allBillsCache = [];
+            document.getElementById('main-app').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('phone-input').value = "";
+            switchTab('home');
+        };
+
+        // --- SINGLE GLOBAL ASSIGNMENT BLOCK (Fix 2: No Duplicates) ---
+        window.checkBill = checkBill;
+        window.loadMoreItems = loadMoreItems;
+        window.filterProducts = filterProducts;
+        window.openProduct = (i) => showModal(products[i].name, products[i].price, products[i].desc, products[i].benefits, products[i].img);
+        window.openNativeProduct = (i) => showModal(nativeProducts[i].name, nativeProducts[i].price, nativeProducts[i].desc, nativeProducts[i].benefits, nativeProducts[i].img);
+        window.closePopup = closePopup;
+        window.updateQty = (c) => { currentQty = Math.max(1, currentQty + c); document.getElementById('order-qty').innerText = currentQty; };
+        window.orderViaWhatsapp = () => {
+            const msg = `Hello Anadi Farms,\nI would like to order:\n*Product:* ${currentProductTitle}\n*Quantity:* ${currentQty}\n\nPlease confirm availability.`;
+            window.open(`https://wa.me/919990033116?text=${encodeURIComponent(msg)}`, '_blank');
+        };
+        window.switchTab = switchTab;
+        window.logout = logout;
+
+    </script>
+</body>
+
+</html>
