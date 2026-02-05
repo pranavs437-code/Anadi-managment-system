@@ -1024,21 +1024,20 @@ window.History = {
 };
 
 // REPLACE THE ENTIRE window.Share OBJECT WITH THIS
-
 window.Share = {
-    finalUrl: '',
+    // Yahan apni User App wali website ka link daal dein
+    userAppUrl: 'https://https://anadigodhamuserapp.vercel.app/', // <--- CHANGE THIS
 
     init() {
         const container = document.getElementById('qrcode');
-        container.innerHTML = ''; // Clear previous
+        container.innerHTML = ''; 
 
-        // Construct User URL
-        const url = window.location.href.replace('admin.html', 'user.html').split('#')[0];
-        this.finalUrl = url.includes('user.html') ? url : window.location.origin + '/user.html';
+        // Ab hum hardcoded URL use karenge
+        const finalUrl = this.userAppUrl;
 
-        // 1. Generate QR Code
+        // Generate QR Code
         new QRCode(container, {
-            text: this.finalUrl,
+            text: finalUrl,
             width: 200,
             height: 200,
             colorDark: "#000000",
@@ -1046,36 +1045,34 @@ window.Share = {
             correctLevel: QRCode.CorrectLevel.H
         });
 
-        // 2. Set Input Value
-        document.getElementById('share-link-input').value = this.finalUrl;
+        // Set Input Value
+        document.getElementById('share-link-input').value = finalUrl;
     },
 
     copyLink() {
         const input = document.getElementById('share-link-input');
         input.select();
-        input.setSelectionRange(0, 99999); // Mobile
-        navigator.clipboard.writeText(this.finalUrl).then(() => {
+        input.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(this.userAppUrl).then(() => { // Use variable
             window.Toast("Link Copied to Clipboard!");
         });
     },
 
     shareWhatsApp() {
-        const msg = encodeURIComponent(`Hello! View your bill history and download invoices here: ${this.finalUrl}`);
-        const waUrl = `https://wa.me/?text=${msg}`;
+        const msg = encodeURIComponent(Hello! View your bill history and download invoices here: ${this.userAppUrl});
+        const waUrl = https://wa.me/?text=${msg};
         window.open(waUrl, '_blank');
     },
 
     printStandee() {
-        // Clone QR Code for Print Area
         const printContainer = document.getElementById('qrcode-print');
         printContainer.innerHTML = '';
         new QRCode(printContainer, {
-            text: this.finalUrl,
+            text: this.userAppUrl, // Use variable
             width: 300,
             height: 300
         });
 
-        // Trigger Print
         setTimeout(() => {
             window.print();
         }, 500);
