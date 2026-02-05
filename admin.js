@@ -1028,7 +1028,7 @@ window.History = {
 window.Share = {
     // JAise hi aap User App ko Vercel pe host karein, wo link yahan paste karein
     // Example: 'https://anadi-users.vercel.app'
-    userAppUrl: 'https://YOUR_VERCEL_USER_APP_LINK_HERE.vercel.app', 
+    userAppUrl: 'https://userdaily-delivery-tracking-billing.vercel.app/', 
 
     init() {
         const container = document.getElementById('qrcode');
@@ -1088,3 +1088,4 @@ window.addEventListener('DOMContentLoaded', () => {
     Manage.initListeners();
     History.init();
 });
+
