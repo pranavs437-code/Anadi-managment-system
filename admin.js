@@ -270,6 +270,7 @@ window.Manage = {
             }
             this.renderUsers();
         });
+         this.monitorPopup();
     },
 
     renderUsers(query = '') {
@@ -398,6 +399,67 @@ window.Manage = {
         document.getElementById('btn-save-user').classList.remove('bg-orange-600', 'hover:bg-orange-700');
         document.getElementById('btn-cancel-user').classList.add('hidden');
     },
+    // --- POPUP LOGIC START ---
+    
+    // 1. Publish Logic
+    // --- UPDATED POPUP LOGIC FOR admin.js ---
+
+    publishPopup() {
+        const title = document.getElementById('popup-title').value.trim(); // NEW
+        const msg = document.getElementById('popup-text').value.trim();
+        const img = document.getElementById('popup-image').value.trim();
+
+        if (!title) return window.Toast("Popup Title is required!", "error"); // Title Mandatory
+
+        const payload = {
+            title: title, // NEW
+            imageUrl: img,
+            message: msg,
+            active: true,
+            timestamp: Date.now()
+        };
+
+        set(ref(db, 'marketing/popup'), payload).then(() => {
+            window.Toast("Popup Published Successfully!", "success");
+        }).catch(e => window.Toast("Error publishing", "error"));
+    },
+
+    deletePopup() {
+        if(!confirm("Stop showing this popup?")) return;
+        remove(ref(db, 'marketing/popup')).then(() => {
+            window.Toast("Popup Removed");
+            // Clear inputs
+            document.getElementById('popup-title').value = '';
+            document.getElementById('popup-text').value = '';
+            document.getElementById('popup-image').value = '';
+        });
+    },
+
+    monitorPopup() {
+        onValue(ref(db, 'marketing/popup'), (snap) => {
+            const data = snap.val();
+            const badge = document.getElementById('popup-badge');
+            const box = document.getElementById('popup-status');
+            
+            if(!badge) return;
+
+            if (data && data.active) {
+                badge.className = "px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold animate-pulse";
+                badge.innerHTML = '<i class="fa-solid fa-circle text-[8px] mr-1"></i> Live Now';
+                box.className = "bg-emerald-50 rounded-xl p-3 text-center border border-emerald-200";
+                
+                // Prefill inputs
+                if(document.getElementById('popup-title').value === '') document.getElementById('popup-title').value = data.title || '';
+                if(document.getElementById('popup-image').value === '') document.getElementById('popup-image').value = data.imageUrl || '';
+                if(document.getElementById('popup-text').value === '') document.getElementById('popup-text').value = data.message || '';
+            } else {
+                badge.className = "px-3 py-1 bg-slate-200 text-slate-500 rounded-full text-xs font-bold";
+                badge.innerHTML = 'Inactive';
+                box.className = "bg-slate-50 rounded-xl p-3 text-center border border-slate-200 border-dashed";
+            }
+        });
+    },
+    // --- POPUP LOGIC END ---
     downloadUserPDF() { /* ... Same as your code ... */ 
         const { jsPDF } = window.jspdf;
         if (!jsPDF) return window.Toast("PDF Library Loading...", "error");
@@ -410,6 +472,7 @@ window.Manage = {
         doc.autoTable({ head: [['Customer Name', 'Phone Number', 'Address']], body: tableBody, startY: 35, theme: 'grid', headStyles: { fillColor: [67, 56, 202] }, styles: { fontSize: 10, cellPadding: 3 }, alternateRowStyles: { fillColor: [243, 244, 246] } });
         doc.save('Customers_List.pdf');
     }
+    
 };
 
 // 3. DASHBOARD
