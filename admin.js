@@ -1001,7 +1001,7 @@ window.History = {
 
 // 5. SHARE (Simple module)
 window.Share = {
-    finalUrl: '',
+    finalUrl: 'https://userdaily-delivery-tracking-billing.vercel.app/',
     init() {
         const container = document.getElementById('qrcode');
         container.innerHTML = ''; 
@@ -1035,3 +1035,4 @@ window.addEventListener('DOMContentLoaded', () => {
     Manage.initListeners();
     History.init();
 });
+
