@@ -483,6 +483,7 @@ window.resetScannerUI = function() {
 window.processDispatch = function() {
     const input = document.getElementById('res-qty-input');
     const id = input.dataset.id;
+    // Fix: Force ensure number type
     const qtyToRemove = parseFloat(input.value);
     
     // Customer Details capture
@@ -493,27 +494,28 @@ window.processDispatch = function() {
     // Dataset values
     const batchFromScan = input.dataset.batch || 'N/A';
     const isVip = input.dataset.vip === 'true';
-    const price = parseFloat(input.dataset.price) || 0; // Price bhi utha li
+    const price = parseFloat(input.dataset.price) || 0; 
 
     // Validation
-    if(!id || !appState.stock[id]) return alert("Product Error");
-    const currentStock = appState.stock[id];
+    if(!id || appState.stock[id] === undefined) return alert("Product Error: ID not found in Stock");
+    const currentStock = parseFloat(appState.stock[id]); // Ensure number
 
     if(!qtyToRemove || qtyToRemove <= 0) return alert("Invalid Qty");
     if(qtyToRemove > currentStock) return alert(`Low Stock! Max: ${currentStock}`);
 
-    // 1. Stock Update (Local AppState)
-    appState.stock[id] -= qtyToRemove;
+    // 1. Stock Update (Local AppState) - Force Math Calculation
+    // Using Number() ensures we don't accidentally do string concatenation or fail
+    appState.stock[id] = Number(currentStock) - Number(qtyToRemove);
     
     const pName = getProductName(id);
 
     // ---------------------------------------------------------
-    // ✅ NEW: Dispatch Data Object (Structured for Firebase)
+    // ✅ NEW: Dispatch Data Object 
     // ---------------------------------------------------------
     const dispatchData = {
         orderId: 'ORD-' + Date.now(),
         timestamp: Date.now(),
-        date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+        date: new Date().toISOString().split('T')[0],
         time: new Date().toLocaleTimeString(),
         customer: {
             name: custName,
@@ -532,18 +534,18 @@ window.processDispatch = function() {
     };
 
     // ---------------------------------------------------------
-    // ✅ REALTIME FIREBASE SAVE (Separate 'orders' Node)
+    // 🔥 CRITICAL FIX: Save Orders to a SEPARATE Root Node
+    // Changed path from 'Anadi_inventory_data/orders' to 'Anadi_dispatch_orders'
+    // This prevents the onValue listener from overwriting your local stock update.
     // ---------------------------------------------------------
-    // Isse data 'Anadi_inventory_data/orders' folder me alag se save hoga
-    const ordersRef = ref(db, 'Anadi_inventory_data/orders');
-    const newOrderRef = push(ordersRef); // Naya unique key banayega
+    const ordersRef = ref(db, 'Anadi_dispatch_orders'); 
+    const newOrderRef = push(ordersRef); 
     set(newOrderRef, dispatchData)
-        .then(() => console.log("Order saved to Orders Node"))
+        .then(() => console.log("Order saved to Separate Orders Node"))
         .catch(err => console.error("Order Save Error", err));
 
 
-    // 2. Log Entry (Old Logic intact for UI compatibility)
-    // Logs me bhi daal rahe hain taaki aapka purana 'Logs' tab chalta rahe
+    // 2. Log Entry (UI Log Update)
     const noteObj = {
         msg: 'Scan Sale',
         batch: batchFromScan,
@@ -558,7 +560,8 @@ window.processDispatch = function() {
 
     addLog('Dispatch', pName, `-${qtyToRemove}`, JSON.stringify(noteObj));
     
-    // 3. Save Full State (Stock Updates ke liye)
+    // 3. Save Full State (Stock & Logs to Main Database)
+    // This will now successfully save the updated stock (63 instead of 65)
     saveDataToFirebase();
     
     // 4. Fast Feedback
