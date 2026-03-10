@@ -13,37 +13,39 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         body { background-color: #f8fafc; font-family: sans-serif; }
-        .boy-btn.active { ring: 2px; ring-offset: 2px; transform: scale(1.05); }
         .nav-item.active { background-color: #4f46e5; color: white; border-color: #4f46e5; }
         .nav-item.inactive { background-color: white; color: #64748b; border-color: #e2e8f0; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
         .label-text { display: block; font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem; }
         .sub-label { display: block; font-size: 0.65rem; font-weight: 700; color: #cbd5e1; text-transform: uppercase; margin-bottom: 0.1rem; }
         .input-box { width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.75rem; background: #f8fafc; font-weight: 600; outline: none; }
         .input-box:focus { background: white; border-color: #4f46e5; }
         .qty-input { width: 100%; padding: 0.5rem; text-align: center; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-weight: 700; outline: none; }
-        .table-container { min-height: 400px; display: flex; flex-direction: column; }
-        .table-content { flex-grow: 1; }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        button { touch-action: manipulation; }
     </style>
 </head>
 
-<body class="p-4 md:p-6 text-slate-800">
+<body class="p-3 md:p-6 text-slate-800 relative">
 
     <!-- TOP NAVIGATION -->
-    <div class="max-w-7xl mx-auto mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-slate-900 flex items-center gap-2">
+    <div class="max-w-7xl mx-auto mb-4 md:mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="text-center md:text-left">
+            <h1 class="text-2xl md:text-3xl font-bold text-slate-900 flex items-center justify-center md:justify-start gap-2">
                 <i class="fa-solid fa-truck-ramp-box text-indigo-600"></i> Delivery Manager
             </h1>
-            <p class="text-slate-500 text-sm font-medium">Route Planning & History Log</p>
+            <p class="text-slate-500 text-xs md:text-sm font-medium mt-1">Route Planning & History Log</p>
         </div>
 
-        <div class="flex gap-2">
-            <button onclick="App.switchView('roster')" id="nav-roster" class="nav-item active px-6 py-2.5 rounded-xl font-bold text-sm shadow-sm border transition flex items-center gap-2">
-                <i class="fa-solid fa-clipboard-list"></i> Daily Roster
+        <div class="flex gap-2 w-full md:w-auto">
+            <button onclick="App.switchView('roster')" id="nav-roster" class="nav-item active flex-1 md:flex-none justify-center px-4 py-3 md:px-6 md:py-2.5 rounded-xl font-bold text-sm shadow-sm border transition flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-list"></i> Roster
             </button>
-            <button onclick="App.switchView('history')" id="nav-history" class="nav-item inactive px-6 py-2.5 rounded-xl font-bold text-sm shadow-sm border transition flex items-center gap-2">
+            <button onclick="App.switchView('history')" id="nav-history" class="nav-item inactive flex-1 md:flex-none justify-center px-4 py-3 md:px-6 md:py-2.5 rounded-xl font-bold text-sm shadow-sm border transition flex items-center gap-2">
                 <i class="fa-solid fa-clock-rotate-left"></i> History
             </button>
         </div>
@@ -53,75 +55,71 @@
     <section id="view-roster" class="fade-in">
         <!-- HEADER BUTTONS -->
         <div class="max-w-7xl mx-auto flex justify-between items-center mb-4">
-            <button onclick="App.saveNewOrder()" id="btn-save-order" class="hidden bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-6 py-2.5 rounded-xl font-bold shadow-lg transition flex items-center gap-2 animate-bounce">
-                <i class="fa-solid fa-check"></i> Save New Order
+            <button onclick="App.saveNewOrder()" id="btn-save-order" class="hidden bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-4 py-2.5 rounded-xl font-bold shadow-lg transition flex items-center gap-2 animate-bounce text-sm">
+                <i class="fa-solid fa-check"></i> Save Order
             </button>
             <div id="spacer-div"></div>
-            <button onclick="App.openModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg transition flex items-center gap-2">
-                <i class="fa-solid fa-user-plus"></i> Add Customer
+            <button onclick="App.openModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold shadow-lg transition flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-user-plus"></i> Add Cust
             </button>
         </div>
 
         <!-- FILTERS & CONTROLS -->
-        <div class="max-w-7xl mx-auto bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6">
-            <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-4">
-                <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+        <div class="max-w-7xl mx-auto bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-200 mb-4 md:mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 items-center">
+                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200 w-full justify-center md:justify-start">
                     <span class="text-xs font-bold text-slate-400 uppercase pl-2">Date:</span>
-                    <input type="date" id="roster-date" onchange="App.render()" class="bg-white border-none text-slate-800 text-sm font-bold rounded-lg focus:ring-0 cursor-pointer">
+                    <input type="date" id="roster-date" onchange="App.render()" class="bg-transparent border-none text-slate-800 text-sm font-bold focus:ring-0 cursor-pointer w-full text-center md:text-left">
                 </div>
-                <div class="bg-slate-100 p-1 rounded-xl inline-flex">
-                    <button onclick="App.switchShift('Morning')" id="btn-Morning" class="px-6 py-2 rounded-lg font-bold text-sm transition bg-white text-indigo-600 shadow-sm"><i class="fa-regular fa-sun mr-1"></i> Morning</button>
-                    <button onclick="App.switchShift('Evening')" id="btn-Evening" class="px-6 py-2 rounded-lg font-bold text-sm transition text-slate-500 hover:text-indigo-600"><i class="fa-regular fa-moon mr-1"></i> Evening</button>
+                <div class="bg-slate-100 p-1 rounded-xl flex justify-center w-full">
+                    <button onclick="App.switchShift('Morning')" id="btn-Morning" class="w-1/2 py-2 rounded-lg font-bold text-xs md:text-sm transition bg-white text-indigo-600 shadow-sm"><i class="fa-regular fa-sun mr-1"></i> Morning</button>
+                    <button onclick="App.switchShift('Evening')" id="btn-Evening" class="w-1/2 py-2 rounded-lg font-bold text-xs md:text-sm transition text-slate-500 hover:text-indigo-600"><i class="fa-regular fa-moon mr-1"></i> Evening</button>
                 </div>
-                <div class="relative w-full md:w-64 group">
+                <div class="relative w-full group">
                     <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition"></i>
-                    <input type="text" id="search-input" onkeyup="App.render()" placeholder="Search Name, Address..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition text-sm font-bold text-slate-700 placeholder:font-normal">
+                    <input type="text" id="search-input" onkeyup="App.render()" placeholder="Search Name..." class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 outline-none transition text-sm font-bold text-slate-700">
                 </div>
             </div>
-            <div class="flex flex-wrap justify-center gap-3 border-t border-slate-100 pt-4">
-                <button onclick="App.switchBoy('All')" id="boy-All" class="boy-btn px-5 py-2 rounded-full font-bold text-xs uppercase bg-slate-800 text-white shadow-md transition opacity-70">All Boys</button>
-                <button onclick="App.switchBoy('Deepak')" id="boy-Deepak" class="boy-btn active px-5 py-2 rounded-full font-bold text-xs uppercase bg-blue-500 text-white shadow-md hover:bg-blue-600 transition ring-2 ring-offset-2 scale-105">Deepak</button>
-                <button onclick="App.switchBoy('Uddham')" id="boy-Uddham" class="boy-btn px-5 py-2 rounded-full font-bold text-xs uppercase bg-emerald-500 text-white shadow-md hover:bg-emerald-600 transition opacity-70">Uddham</button>
-                <button onclick="App.switchBoy('Harish')" id="boy-Harish" class="boy-btn px-5 py-2 rounded-full font-bold text-xs uppercase bg-orange-500 text-white shadow-md hover:bg-orange-600 transition opacity-70">Harish</button>
-                <button onclick="App.switchBoy('Kalikant')" id="boy-Kalikant" class="boy-btn px-5 py-2 rounded-full font-bold text-xs uppercase bg-purple-500 text-white shadow-md hover:bg-purple-600 transition opacity-70">Kalikant</button>
+            
+            <div class="flex overflow-x-auto hide-scrollbar gap-2 border-t border-slate-100 pt-4 mt-4 md:justify-center items-center px-1">
+                <button onclick="App.switchBoy('All')" id="boy-All" class="boy-btn whitespace-nowrap px-5 py-2 rounded-full font-bold text-[10px] md:text-xs uppercase bg-slate-800 text-white shadow-md transition opacity-70">All Boys</button>
+                <button onclick="App.switchBoy('Deepak')" id="boy-Deepak" class="boy-btn active whitespace-nowrap px-5 py-2 rounded-full font-bold text-[10px] md:text-xs uppercase bg-blue-500 text-white shadow-md transition ring-2 ring-offset-2 scale-105">Deepak</button>
+                <button onclick="App.switchBoy('Uddham')" id="boy-Uddham" class="boy-btn whitespace-nowrap px-5 py-2 rounded-full font-bold text-[10px] md:text-xs uppercase bg-emerald-500 text-white shadow-md transition opacity-70">Uddham</button>
+                <button onclick="App.switchBoy('Harish')" id="boy-Harish" class="boy-btn whitespace-nowrap px-5 py-2 rounded-full font-bold text-[10px] md:text-xs uppercase bg-orange-500 text-white shadow-md transition opacity-70">Harish</button>
+                <button onclick="App.switchBoy('Kalikant')" id="boy-Kalikant" class="boy-btn whitespace-nowrap px-5 py-2 rounded-full font-bold text-[10px] md:text-xs uppercase bg-purple-500 text-white shadow-md transition opacity-70">Kalikant</button>
             </div>
         </div>
 
         <!-- TOTALS & PDF -->
         <div class="max-w-7xl mx-auto mb-2">
-            <div class="flex flex-col md:flex-row justify-between items-end mb-2 gap-3">
-                <div class="flex items-center gap-3">
-                    <h3 class="font-bold text-slate-700"><span id="lbl-load-boy">Total</span> Load Required:</h3>
+            <div class="flex flex-col md:flex-row justify-between items-center md:items-end mb-3 gap-3">
+                <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200 w-full md:w-auto justify-between">
+                    <h3 class="font-bold text-slate-700 text-sm"><span id="lbl-load-boy">Total</span> Load:</h3>
                     <span class="bg-slate-800 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm"><span id="cust-count">0</span> Orders</span>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="App.saveToHistory()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2"><i class="fa-solid fa-floppy-disk"></i> Save Record</button>
-                    <button onclick="App.downloadPDF()" class="bg-red-100 text-red-600 hover:bg-red-200 border border-red-200 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2"><i class="fa-solid fa-file-pdf"></i> Download PDF</button>
+                <div class="flex gap-2 w-full md:w-auto">
+                    <button onclick="App.saveToHistory()" class="flex-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-floppy-disk text-lg md:text-base"></i> <span class="md:inline">Save Record</span></button>
+                    <button onclick="App.downloadPDF()" class="flex-1 bg-red-50 text-red-600 border border-red-200 px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5"><i class="fa-solid fa-file-pdf text-lg md:text-base"></i> <span class="md:inline">Get PDF</span></button>
                 </div>
             </div>
+            
             <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
-                <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 text-center"><span class="block text-[10px] font-bold text-blue-400 uppercase">Milk</span><span class="text-xl font-bold text-blue-700" id="tot-milk">0.00</span></div>
-                <div class="bg-green-50 p-3 rounded-xl border border-green-100 text-center"><span class="block text-[10px] font-bold text-green-400 uppercase">Paneer</span><span class="text-xl font-bold text-green-700" id="tot-paneer">0.00</span></div>
-                <div class="bg-yellow-50 p-3 rounded-xl border border-yellow-100 text-center"><span class="block text-[10px] font-bold text-yellow-500 uppercase">Ghee</span><span class="text-xl font-bold text-yellow-700" id="tot-ghee">0.00</span></div>
-                <div class="bg-orange-50 p-3 rounded-xl border border-orange-100 text-center"><span class="block text-[10px] font-bold text-orange-400 uppercase">Chaach</span><span class="text-xl font-bold text-orange-700" id="tot-chaach">0.00</span></div>
-                <div class="bg-slate-100 p-3 rounded-xl border border-slate-200 text-center"><span class="block text-[10px] font-bold text-slate-400 uppercase">Butter</span><span class="text-xl font-bold text-slate-700" id="tot-wb">0.00</span></div>
-                <div class="bg-purple-50 p-3 rounded-xl border border-purple-100 text-center"><span class="block text-[10px] font-bold text-purple-400 uppercase">Curd</span><span class="text-xl font-bold text-purple-700" id="tot-curd">0.00</span></div>
+                <div class="bg-white p-2 md:p-3 rounded-xl shadow-sm border border-blue-100 text-center"><span class="block text-[9px] md:text-[10px] font-bold text-blue-400 uppercase">Milk</span><span class="text-lg md:text-xl font-bold text-blue-700" id="tot-milk">0</span></div>
+                <div class="bg-white p-2 md:p-3 rounded-xl shadow-sm border border-green-100 text-center"><span class="block text-[9px] md:text-[10px] font-bold text-green-400 uppercase">Paneer</span><span class="text-lg md:text-xl font-bold text-green-700" id="tot-paneer">0</span></div>
+                <div class="bg-white p-2 md:p-3 rounded-xl shadow-sm border border-yellow-200 text-center"><span class="block text-[9px] md:text-[10px] font-bold text-yellow-500 uppercase">Ghee</span><span class="text-lg md:text-xl font-bold text-yellow-700" id="tot-ghee">0</span></div>
+                <div class="bg-white p-2 md:p-3 rounded-xl shadow-sm border border-orange-200 text-center"><span class="block text-[9px] md:text-[10px] font-bold text-orange-400 uppercase">Chaach</span><span class="text-lg md:text-xl font-bold text-orange-700" id="tot-chaach">0</span></div>
+                <div class="bg-white p-2 md:p-3 rounded-xl shadow-sm border border-slate-200 text-center"><span class="block text-[9px] md:text-[10px] font-bold text-slate-400 uppercase">Butter</span><span class="text-lg md:text-xl font-bold text-slate-700" id="tot-wb">0</span></div>
+                <div class="bg-white p-2 md:p-3 rounded-xl shadow-sm border border-purple-200 text-center"><span class="block text-[9px] md:text-[10px] font-bold text-purple-400 uppercase">Curd</span><span class="text-lg md:text-xl font-bold text-purple-700" id="tot-curd">0</span></div>
             </div>
         </div>
 
-        <!-- MAIN TABLE -->
-        <div class="max-w-7xl mx-auto mt-6 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden table-container">
-            <div id="table-wrapper" class="overflow-x-auto w-full">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-50 text-xs uppercase text-slate-500 font-bold">
-                            <th class="p-4">Customer</th><th class="p-4 text-center">Boy</th><th class="p-4 text-center">Milk</th><th class="p-4 text-center">Paneer</th><th class="p-4 text-center">Ghee</th><th class="p-4 text-center">Chaach</th><th class="p-4 text-center">Butter</th><th class="p-4 text-center">Curd</th><th class="p-4 text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body" class="divide-y divide-slate-100 text-sm text-slate-700 font-medium"></tbody>
-                </table>
+        <!-- MAIN RESPONSIVE LIST -->
+        <div class="max-w-7xl mx-auto mt-4 md:mt-6 bg-transparent md:bg-white rounded-2xl md:shadow-sm md:border md:border-slate-200 overflow-hidden table-container">
+            <div class="hidden md:grid grid-cols-12 gap-2 p-3 bg-slate-50 text-[11px] uppercase text-slate-500 font-bold border-b border-slate-200 sticky top-0 z-10">
+                <div class="col-span-3 pl-8">Customer Detail</div><div class="col-span-1 text-center">Boy</div><div class="col-span-1 text-center">Milk</div><div class="col-span-1 text-center">Paneer</div><div class="col-span-1 text-center">Ghee</div><div class="col-span-1 text-center">Chaach</div><div class="col-span-1 text-center">Butter</div><div class="col-span-1 text-center">Curd</div><div class="col-span-2 text-center">Actions</div>
             </div>
-            <div id="empty-state" class="hidden flex-col items-center justify-center flex-grow py-12 text-slate-400 w-full h-full">
+            <div id="table-body" class="flex flex-col gap-3 md:gap-0 md:divide-y md:divide-slate-100 pb-10 md:pb-0"></div>
+            <div id="empty-state" class="hidden flex-col items-center justify-center flex-grow py-16 text-slate-400 bg-white rounded-2xl md:rounded-none w-full border border-slate-200 md:border-none">
                 <i class="fa-solid fa-clipboard-list text-5xl mb-4 opacity-20"></i><p class="font-bold">No deliveries found.</p><p class="text-xs">Try adjusting your filters or search.</p>
             </div>
         </div>
@@ -129,123 +127,133 @@
 
     <!-- VIEW 2: HISTORY -->
     <section id="view-history" class="hidden fade-in max-w-7xl mx-auto">
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6">
+        <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 mb-6">
             <h2 class="text-lg font-bold text-slate-700 mb-4">Search Past Records</h2>
             <div class="flex flex-col md:flex-row items-end gap-4">
                 <div class="w-full md:w-1/3"><label class="label-text">Select Date</label><input type="date" id="hist-date" class="input-box"></div>
                 <div class="w-full md:w-1/3"><label class="label-text">Shift</label><select id="hist-shift" class="input-box"><option value="Morning">Morning</option><option value="Evening">Evening</option></select></div>
-                <button onclick="App.fetchHistory()" class="bg-slate-800 text-white w-full md:w-auto px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-slate-900 transition"><i class="fa-solid fa-search mr-2"></i> View Record</button>
+                <button onclick="App.fetchHistory()" class="bg-slate-800 text-white w-full md:w-auto px-6 py-3.5 md:py-3 rounded-xl font-bold shadow-lg hover:bg-slate-900 transition"><i class="fa-solid fa-search mr-2"></i> View Record</button>
             </div>
         </div>
         <div id="history-results" class="hidden">
             <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-xl text-slate-800" id="hist-title">Record Details</h3></div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="hist-grid"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6" id="hist-grid"></div>
         </div>
-        <div id="history-empty" class="text-center py-20 text-slate-400"><i class="fa-regular fa-calendar-xmark text-5xl mb-3 opacity-20"></i><p>Select a date to view past delivery logs.</p></div>
+        <div id="history-empty" class="text-center py-20 text-slate-400 bg-white rounded-2xl border border-slate-100 shadow-sm"><i class="fa-regular fa-calendar-xmark text-5xl mb-3 opacity-20"></i><p>Select a date to view past delivery logs.</p></div>
     </section>
 
-    <!-- MASTER MODAL (Add/Edit Default Master Values) -->
-    <div id="modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+    <!-- SCROLL TO TOP BUTTON -->
+    <button id="scrollBtn" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });" class="fixed bottom-6 right-6 bg-slate-800 text-white w-12 h-12 rounded-full shadow-2xl flex items-center justify-center text-xl hover:bg-slate-900 transition-transform duration-300 transform scale-0 z-40 focus:outline-none">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <!-- MASTER MODAL (Add/Edit) -->
+    <div id="modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-end md:items-center justify-center md:p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-lg rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden animate-[fadeIn_0.3s_ease-out]">
             <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                 <h3 class="font-bold text-lg text-slate-800"><i class="fa-solid fa-user-pen text-indigo-500 mr-2"></i>Master Defaults</h3>
-                <button onclick="App.closeModal()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <button onclick="App.closeModal()" class="text-slate-400 hover:text-red-500 bg-white p-1 rounded-lg"><i class="fa-solid fa-xmark text-xl w-6 h-6 flex items-center justify-center"></i></button>
             </div>
-            <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+            <div class="p-6 space-y-4 max-h-[75vh] md:max-h-[70vh] overflow-y-auto">
                 <input type="hidden" id="inp-id">
                 <div class="grid grid-cols-2 gap-4">
                     <div class="col-span-2"><label class="label-text">Customer Name</label><input id="inp-name" class="input-box" placeholder="Enter Name"></div>
                     <div><label class="label-text">Phone</label><input id="inp-phone" class="input-box" placeholder="10 digits"></div>
-                    <div><label class="label-text">Delivery Boy</label><select id="inp-boy" class="input-box bg-indigo-50 border-indigo-200 text-indigo-700"><option value="Deepak">Deepak</option><option value="Uddham">Uddham</option><option value="Harish">Harish</option><option value="Kalikant">Kalikant</option></select></div>
-                    <div><label class="label-text">Shift</label><select id="inp-shift" class="input-box"><option value="Morning">Morning</option><option value="Evening">Evening</option></select></div>
-                    <div><label class="label-text">Address</label><input id="inp-address" class="input-box" placeholder="House No / Area"></div>
+                    <div><label class="label-text">Boy</label><select id="inp-boy" class="input-box bg-indigo-50 border-indigo-200 text-indigo-700"><option value="Deepak">Deepak</option><option value="Uddham">Uddham</option><option value="Harish">Harish</option><option value="Kalikant">Kalikant</option></select></div>
+                    <div class="col-span-2 md:col-span-1"><label class="label-text">Shift</label><select id="inp-shift" class="input-box"><option value="Morning">Morning</option><option value="Evening">Evening</option></select></div>
+                    <div class="col-span-2 md:col-span-1"><label class="label-text">Address</label><input id="inp-address" class="input-box" placeholder="House No / Area"></div>
                 </div>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <p class="text-xs font-bold text-slate-400 uppercase mb-3">Daily DEFAULT Quantity Setup</p>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-2">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-wide text-center">Daily DEFAULT Setup</p>
                     <div class="grid grid-cols-3 gap-3">
-                        <div><label class="sub-label">Milk (L)</label><input type="number" step="0.5" id="inp-milk" class="qty-input"></div>
-                        <div><label class="sub-label">Paneer (Kg)</label><input type="number" step="0.1" id="inp-paneer" class="qty-input"></div>
-                        <div><label class="sub-label">Ghee (Kg)</label><input type="number" step="0.5" id="inp-ghee" class="qty-input"></div>
-                        <div><label class="sub-label">Chaach (L)</label><input type="number" step="0.5" id="inp-chaach" class="qty-input"></div>
-                        <div><label class="sub-label">Butter (Kg)</label><input type="number" step="0.1" id="inp-wb" class="qty-input"></div>
-                        <div><label class="sub-label">Curd (Kg)</label><input type="number" step="0.5" id="inp-curd" class="qty-input"></div>
+                        <div><label class="sub-label text-blue-500">Milk</label><input type="number" step="0.5" id="inp-milk" class="qty-input border-blue-100 focus:border-blue-400 text-blue-700"></div>
+                        <div><label class="sub-label text-green-500">Paneer</label><input type="number" step="0.1" id="inp-paneer" class="qty-input border-green-100 focus:border-green-400 text-green-700"></div>
+                        <div><label class="sub-label text-yellow-600">Ghee</label><input type="number" step="0.5" id="inp-ghee" class="qty-input border-yellow-200 focus:border-yellow-400 text-yellow-700"></div>
+                        <div><label class="sub-label text-orange-500">Chaach</label><input type="number" step="0.5" id="inp-chaach" class="qty-input border-orange-100 focus:border-orange-400 text-orange-700"></div>
+                        <div><label class="sub-label text-slate-500">Butter</label><input type="number" step="0.1" id="inp-wb" class="qty-input border-slate-200 focus:border-slate-400 text-slate-700"></div>
+                        <div><label class="sub-label text-purple-500">Curd</label><input type="number" step="0.5" id="inp-curd" class="qty-input border-purple-100 focus:border-purple-400 text-purple-700"></div>
                     </div>
                 </div>
             </div>
-            <div class="p-4 border-t border-slate-100 bg-slate-50">
-                <button onclick="App.saveCustomer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition">Save Master Details</button>
+            <div class="p-4 border-t border-slate-100 bg-white pb-8 md:pb-4">
+                <button onclick="App.saveCustomer()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition">Save Master Details</button>
             </div>
         </div>
     </div>
 
-    <!-- DAILY VARIATION MODAL (Updated for Multi-Day Range) -->
-    <div id="variation-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden">
+    <!-- DAILY VARIATION MODAL (With Frequency Pattern) -->
+    <div id="variation-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-end md:items-center justify-center md:p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden animate-[fadeIn_0.3s_ease-out]">
             <div class="bg-amber-50 px-6 py-4 border-b border-amber-100 flex justify-between items-center">
-                <div>
-                    <h3 class="font-bold text-lg text-amber-800"><i class="fa-solid fa-calendar-day mr-2"></i>Date Variation</h3>
-                    <p class="text-xs text-amber-600 font-medium mt-1" id="var-modal-subtitle"></p>
-                </div>
-                <button onclick="App.closeVariation()" class="text-amber-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <div><h3 class="font-bold text-lg text-amber-800"><i class="fa-solid fa-calendar-day mr-2"></i>Date Variation</h3><p class="text-xs text-amber-600 font-medium mt-1" id="var-modal-subtitle"></p></div>
+                <button onclick="App.closeVariation()" class="text-amber-400 hover:text-red-500 bg-white p-1 rounded-lg"><i class="fa-solid fa-xmark text-xl w-6 h-6 flex items-center justify-center"></i></button>
             </div>
-
-            <div class="p-5 space-y-3">
+            <div class="p-5 space-y-4 max-h-[75vh] md:max-h-[70vh] overflow-y-auto">
                 <input type="hidden" id="var-inp-id">
                 
-                <!-- NEW: DATE RANGE PICKERS -->
-                <div class="bg-amber-100/50 p-3 rounded-xl border border-amber-200 flex gap-3 shadow-inner">
-                    <div class="w-1/2">
-                        <label class="text-[10px] font-bold text-amber-700 uppercase">From Date</label>
-                        <input type="date" id="var-from" class="w-full mt-1 p-2 rounded-lg bg-slate-50 border border-amber-200 text-xs font-bold text-slate-500 outline-none cursor-not-allowed" readonly>
+                <div class="bg-amber-100/50 p-3 rounded-xl border border-amber-200 flex flex-col gap-3 shadow-inner">
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <div class="w-full md:w-1/2">
+                            <label class="text-[10px] font-bold text-amber-700 uppercase">From Date</label>
+                            <input type="date" id="var-from" class="w-full mt-1 p-2 rounded-lg bg-slate-50 border border-amber-200 text-xs font-bold text-slate-500 outline-none cursor-not-allowed" readonly>
+                        </div>
+                        <div class="w-full md:w-1/2">
+                            <label class="text-[10px] font-bold text-amber-700 uppercase">To Date</label>
+                            <input type="date" id="var-to" class="w-full mt-1 p-2 rounded-lg bg-white border border-amber-400 text-xs font-bold text-slate-800 outline-none focus:border-amber-600 transition cursor-pointer">
+                        </div>
                     </div>
-                    <div class="w-1/2">
-                        <label class="text-[10px] font-bold text-amber-700 uppercase">To Date (Optional)</label>
-                        <input type="date" id="var-to" class="w-full mt-1 p-2 rounded-lg bg-white border border-amber-400 text-xs font-bold text-slate-800 outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-500 transition cursor-pointer" title="Select to change for multiple days">
+                    
+                    <!-- FREQUENCY DROPDOWN -->
+                    <div class="w-full">
+                        <label class="text-[10px] font-bold text-amber-700 uppercase">Delivery Pattern</label>
+                        <select id="var-freq" class="w-full mt-1 p-2 rounded-lg bg-white border border-amber-400 text-xs font-bold text-slate-800 outline-none focus:border-amber-600 transition cursor-pointer">
+                            <option value="daily">Daily (Everyday)</option>
+                            <option value="alternate">Alternate (1 Day Gap)</option>
+                            <option value="weekly">Weekly (Every 7th Day)</option>
+                        </select>
                     </div>
                 </div>
 
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-inner">
-                    <p class="text-[11px] font-bold text-slate-500 uppercase mb-3 text-center tracking-widest">Override Quantities</p>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="sub-label text-blue-500">Milk (L)</label><input type="number" step="0.5" id="var-inp-milk" class="qty-input border-amber-200 focus:border-amber-500 focus:ring-amber-200 text-blue-700"></div>
-                        <div><label class="sub-label text-green-500">Paneer (Kg)</label><input type="number" step="0.1" id="var-inp-paneer" class="qty-input border-amber-200 focus:border-amber-500 focus:ring-amber-200 text-green-700"></div>
-                        <div><label class="sub-label text-yellow-600">Ghee (Kg)</label><input type="number" step="0.5" id="var-inp-ghee" class="qty-input border-amber-200 focus:border-amber-500 focus:ring-amber-200 text-yellow-700"></div>
-                        <div><label class="sub-label text-orange-500">Chaach (L)</label><input type="number" step="0.5" id="var-inp-chaach" class="qty-input border-amber-200 focus:border-amber-500 focus:ring-amber-200 text-orange-700"></div>
-                        <div><label class="sub-label text-slate-500">Butter (Kg)</label><input type="number" step="0.1" id="var-inp-wb" class="qty-input border-amber-200 focus:border-amber-500 focus:ring-amber-200 text-slate-700"></div>
-                        <div><label class="sub-label text-purple-500">Curd (Kg)</label><input type="number" step="0.5" id="var-inp-curd" class="qty-input border-amber-200 focus:border-amber-500 focus:ring-amber-200 text-purple-700"></div>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-2 shadow-inner">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 text-center tracking-wide">Override Quantities</p>
+                    <div class="grid grid-cols-3 md:grid-cols-2 gap-3 md:gap-4">
+                        <div><label class="sub-label text-blue-500">Milk</label><input type="number" step="0.5" id="var-inp-milk" class="qty-input border-amber-200 focus:border-amber-500 text-blue-700"></div>
+                        <div><label class="sub-label text-green-500">Paneer</label><input type="number" step="0.1" id="var-inp-paneer" class="qty-input border-amber-200 focus:border-amber-500 text-green-700"></div>
+                        <div><label class="sub-label text-yellow-600">Ghee</label><input type="number" step="0.5" id="var-inp-ghee" class="qty-input border-amber-200 focus:border-amber-500 text-yellow-700"></div>
+                        <div><label class="sub-label text-orange-500">Chaach</label><input type="number" step="0.5" id="var-inp-chaach" class="qty-input border-amber-200 focus:border-amber-500 text-orange-700"></div>
+                        <div><label class="sub-label text-slate-500">Butter</label><input type="number" step="0.1" id="var-inp-wb" class="qty-input border-amber-200 focus:border-amber-500 text-slate-700"></div>
+                        <div><label class="sub-label text-purple-500">Curd</label><input type="number" step="0.5" id="var-inp-curd" class="qty-input border-amber-200 focus:border-amber-500 text-purple-700"></div>
                     </div>
                 </div>
-                <p class="text-[10px] text-center text-slate-500 mt-2 leading-tight">
-                    <i class="fa-solid fa-circle-info mr-1 text-amber-500"></i>
-                    Changes apply from <b>From Date</b> to <b>To Date</b>. Set quantity to <b>0</b> to stop delivery for these days.
-                </p>
+                <p class="text-[9px] text-center text-slate-500 leading-tight"><i class="fa-solid fa-circle-info mr-1 text-amber-500"></i>Changes apply within dates based on the selected pattern. Gap days automatically become <b>0</b>.</p>
             </div>
             
-            <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-3">
-                <button onclick="App.clearVariation()" class="w-1/3 bg-white border border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300 font-bold py-2.5 rounded-xl shadow-sm transition text-sm flex items-center justify-center gap-1"><i class="fa-solid fa-rotate-left"></i> Reset</button>
-                <button onclick="App.saveVariation()" class="w-2/3 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl shadow-md transition text-sm flex items-center justify-center gap-2"><i class="fa-solid fa-check-double"></i> Save Setup</button>
+            <div class="p-4 border-t border-slate-100 bg-white flex gap-3 pb-8 md:pb-4">
+                <button onclick="App.clearVariation()" class="w-1/3 bg-white border border-red-200 text-red-500 hover:bg-red-50 font-bold py-3.5 rounded-xl shadow-sm transition text-sm flex items-center justify-center gap-1"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+                <button onclick="App.saveVariation()" class="w-2/3 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-md transition text-sm flex items-center justify-center gap-2"><i class="fa-solid fa-check-double"></i> Save</button>
             </div>
         </div>
     </div>
 
     <!-- HISTORY DETAIL MODAL -->
-    <div id="history-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div id="history-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-end md:items-center justify-center md:p-4 backdrop-blur-sm">
+        <div class="bg-slate-50 md:bg-white w-full max-w-4xl rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-[fadeIn_0.3s_ease-out]">
             <div class="bg-slate-800 text-white px-6 py-4 flex justify-between items-center shrink-0">
                 <div><h3 class="font-bold text-xl" id="hist-modal-title">Details</h3><p class="text-xs text-slate-400" id="hist-modal-subtitle">View delivery log</p></div>
-                <button onclick="document.getElementById('history-modal').classList.add('hidden')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-2xl"></i></button>
+                <button onclick="document.getElementById('history-modal').classList.add('hidden')" class="text-slate-400 hover:text-white bg-slate-700/50 p-1 rounded-lg transition"><i class="fa-solid fa-xmark text-xl w-6 h-6 flex items-center justify-center"></i></button>
             </div>
-            <div class="overflow-auto p-4 flex-grow">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-slate-100 text-xs uppercase text-slate-600 sticky top-0">
-                        <tr><th class="p-3 rounded-tl-lg">Customer</th><th class="p-3 text-center">Milk</th><th class="p-3 text-center">Paneer</th><th class="p-3 text-center">Ghee</th><th class="p-3 text-center">Chaach</th><th class="p-3 text-center">Butter</th><th class="p-3 text-center rounded-tr-lg">Curd</th></tr>
-                    </thead>
-                    <tbody id="hist-detail-body" class="divide-y divide-slate-100 text-sm text-slate-700"></tbody>
-                </table>
+            
+            <div class="hidden md:grid grid-cols-7 gap-2 p-3 bg-slate-100 text-[11px] uppercase text-slate-600 font-bold sticky top-0 shrink-0 border-b border-slate-200">
+                <div class="col-span-1 pl-2">Customer</div><div class="text-center">Milk</div><div class="text-center">Paneer</div><div class="text-center">Ghee</div><div class="text-center">Chaach</div><div class="text-center">Butter</div><div class="text-center">Curd</div>
+            </div>
+
+            <div class="overflow-auto p-3 md:p-0 flex-grow">
+                <div id="hist-detail-body" class="flex flex-col gap-3 md:gap-0 md:divide-y md:divide-slate-100 text-sm text-slate-700 pb-8 md:pb-0"></div>
                 <div id="hist-no-data" class="hidden text-center py-10 text-slate-400"><p>No detailed records found for this entry.</p></div>
             </div>
-            <div class="bg-slate-50 p-4 border-t border-slate-200 text-right shrink-0">
-                <span class="text-xs font-bold text-slate-500 uppercase mr-2">Total Items:</span><span id="hist-total-items" class="font-bold text-slate-800 text-lg">0</span>
+            
+            <div class="bg-white md:bg-slate-50 p-4 border-t border-slate-200 text-right shrink-0 pb-8 md:pb-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:shadow-none z-10">
+                <span class="text-xs font-bold text-slate-500 uppercase mr-2">Total Items:</span><span id="hist-total-items" class="font-bold text-slate-800 text-lg bg-slate-100 px-3 py-1 rounded-lg">0</span>
             </div>
         </div>
     </div>
@@ -255,23 +263,34 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, push, update, remove, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDjOMrIDxJKMyc67tlRAwNxDrWv31Tn3o8",
-            authDomain: "dailydelivery-bab7b.firebaseapp.com",
-            databaseURL: "https://dailydelivery-bab7b-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "dailydelivery-bab7b",
-            storageBucket: "dailydelivery-bab7b.firebasestorage.app",
-            messagingSenderId: "35797518688",
-            appId: "1:35797518688:web:1f16f7532b8398d3dc3605"
+        const firebaseConfig = { 
+            apiKey: "AIzaSyDjOMrIDxJKMyc67tlRAwNxDrWv31Tn3o8", 
+            authDomain: "dailydelivery-bab7b.firebaseapp.com", 
+            databaseURL: "https://dailydelivery-bab7b-default-rtdb.asia-southeast1.firebasedatabase.app", 
+            projectId: "dailydelivery-bab7b", 
+            storageBucket: "dailydelivery-bab7b.firebasestorage.app", 
+            messagingSenderId: "35797518688", 
+            appId: "1:35797518688:web:1f16f7532b8398d3dc3605" 
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // Scroll Functionality Logic
+        window.onscroll = function() {
+            const btn = document.getElementById('scrollBtn');
+            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+                btn.classList.remove('scale-0');
+                btn.classList.add('scale-100');
+            } else {
+                btn.classList.add('scale-0');
+                btn.classList.remove('scale-100');
+            }
+        };
+
         window.App = {
-            allData:[],
-            shift: 'Morning',
-            boy: 'Deepak',
+            allData:[], 
+            shift: 'Morning', 
+            boy: 'Deepak', 
             currentHistoryData: null,
 
             init() {
@@ -279,54 +298,71 @@
                     this.allData =[];
                     const data = snap.val();
                     if (data) {
-                        for (let id in data) {
-                            let item = data[id];
-                            this.allData.push({ id, ...item, shift: item.shift || 'Morning', deliveryBoy: item.deliveryBoy || 'Deepak' });
+                        for (let id in data) { 
+                            let item = data[id]; 
+                            this.allData.push({ 
+                                id, 
+                                ...item, 
+                                shift: item.shift || 'Morning', 
+                                deliveryBoy: item.deliveryBoy || 'Deepak' 
+                            }); 
                         }
                     }
                     this.render();
                 });
-
                 const today = new Date().toISOString().split('T')[0];
-                document.getElementById('roster-date').value = today;
+                document.getElementById('roster-date').value = today; 
                 document.getElementById('hist-date').value = today;
             },
 
             switchView(view) {
-                document.getElementById('view-roster').classList.add('hidden');
+                document.getElementById('view-roster').classList.add('hidden'); 
                 document.getElementById('view-history').classList.add('hidden');
-                document.getElementById('nav-roster').classList.replace('active', 'inactive');
+                document.getElementById('nav-roster').classList.replace('active', 'inactive'); 
                 document.getElementById('nav-history').classList.replace('active', 'inactive');
-                document.getElementById('view-' + view).classList.remove('hidden');
+                document.getElementById('view-' + view).classList.remove('hidden'); 
                 document.getElementById('nav-' + view).classList.replace('inactive', 'active');
             },
 
             switchShift(s) {
                 this.shift = s;
-                document.getElementById('btn-Morning').className = s === 'Morning' ? "px-6 py-2 rounded-lg font-bold text-sm transition bg-white text-indigo-600 shadow-sm" : "px-6 py-2 rounded-lg font-bold text-sm transition text-slate-500 hover:text-indigo-600";
-                document.getElementById('btn-Evening').className = s === 'Evening' ? "px-6 py-2 rounded-lg font-bold text-sm transition bg-white text-indigo-600 shadow-sm" : "px-6 py-2 rounded-lg font-bold text-sm transition text-slate-500 hover:text-indigo-600";
+                document.getElementById('btn-Morning').className = s === 'Morning' ? "w-1/2 py-2 rounded-lg font-bold text-xs md:text-sm transition bg-white text-indigo-600 shadow-sm" : "w-1/2 py-2 rounded-lg font-bold text-xs md:text-sm transition text-slate-500 hover:text-indigo-600";
+                document.getElementById('btn-Evening').className = s === 'Evening' ? "w-1/2 py-2 rounded-lg font-bold text-xs md:text-sm transition bg-white text-indigo-600 shadow-sm" : "w-1/2 py-2 rounded-lg font-bold text-xs md:text-sm transition text-slate-500 hover:text-indigo-600";
                 this.render();
             },
 
             switchBoy(name) {
                 this.boy = name;
-                document.querySelectorAll('.boy-btn').forEach(b => { b.classList.remove('ring-2', 'ring-offset-2', 'scale-105'); b.style.opacity = "0.7"; });
+                document.querySelectorAll('.boy-btn').forEach(b => { 
+                    b.classList.remove('ring-2', 'ring-offset-2', 'scale-105'); 
+                    b.style.opacity = "0.7"; 
+                });
                 const btn = document.getElementById('boy-' + name);
-                if (btn) { btn.style.opacity = "1"; btn.classList.add('ring-2', 'ring-offset-2', 'scale-105'); }
+                if (btn) { 
+                    btn.style.opacity = "1"; 
+                    btn.classList.add('ring-2', 'ring-offset-2', 'scale-105'); 
+                }
                 this.render();
             },
 
-            // Effective Quantity Generator
             getEffectiveQty(c, date) {
-                let eff = {
-                    milk: parseFloat(c.milk || 0), paneer: parseFloat(c.paneer || 0), ghee: parseFloat(c.ghee || 0),
-                    chaach: parseFloat(c.chaach || 0), wb: parseFloat(c.wb || 0), curd: parseFloat(c.curd || 0)
+                let eff = { 
+                    milk: parseFloat(c.milk||0), 
+                    paneer: parseFloat(c.paneer||0), 
+                    ghee: parseFloat(c.ghee||0), 
+                    chaach: parseFloat(c.chaach||0), 
+                    wb: parseFloat(c.wb||0), 
+                    curd: parseFloat(c.curd||0) 
                 };
                 let isOverride = false;
                 
                 if (c.overrides && c.overrides[date]) {
-                    const ov = c.overrides[date];['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => {
-                        if (ov[k] !== undefined && ov[k] !== '') eff[k] = parseFloat(ov[k]);
+                    const ov = c.overrides[date];
+                    const items =['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
+                    items.forEach(k => { 
+                        if (ov[k] !== undefined && ov[k] !== '') {
+                            eff[k] = parseFloat(ov[k]); 
+                        }
                     });
                     isOverride = true;
                 }
@@ -340,106 +376,150 @@
                 const selectedDate = document.getElementById('roster-date').value;
 
                 let filtered = this.allData.filter(c => c.shift === this.shift);
-                if(this.boy !== 'All') filtered = filtered.filter(c => c.deliveryBoy === this.boy);
-
-                const searchQuery = document.getElementById('search-input').value.toLowerCase();
-                if(searchQuery) {
-                    filtered = filtered.filter(c => (c.name || '').toLowerCase().includes(searchQuery) || (c.address || '').toLowerCase().includes(searchQuery) || (c.phone || '').includes(searchQuery));
+                if(this.boy !== 'All') {
+                    filtered = filtered.filter(c => c.deliveryBoy === this.boy);
                 }
 
+                const sq = document.getElementById('search-input').value.toLowerCase();
+                if(sq) {
+                    filtered = filtered.filter(c => 
+                        (c.name || '').toLowerCase().includes(sq) || 
+                        (c.address || '').toLowerCase().includes(sq) || 
+                        (c.phone || '').includes(sq)
+                    );
+                }
+                
                 filtered.sort((a, b) => (a.serial || 999999) - (b.serial || 999999));
                 document.getElementById('cust-count').innerText = filtered.length;
 
                 if(filtered.length === 0) {
-                    document.getElementById('empty-state').classList.remove('hidden');
+                    document.getElementById('empty-state').classList.remove('hidden'); 
                     document.getElementById('empty-state').classList.add('flex');
-                    document.getElementById('table-wrapper').classList.add('hidden');['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => document.getElementById('tot-'+k).innerText = '0.00');
+                    document.getElementById('table-body').classList.add('hidden');
+                    
+                    const emptyItems =['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
+                    emptyItems.forEach(k => {
+                        document.getElementById('tot-'+k).innerText = '0';
+                    }); 
                     return;
                 }
 
-                document.getElementById('empty-state').classList.add('hidden');
+                document.getElementById('empty-state').classList.add('hidden'); 
                 document.getElementById('empty-state').classList.remove('flex');
-                document.getElementById('table-wrapper').classList.remove('hidden');
+                document.getElementById('table-body').classList.remove('hidden');
 
                 let t = { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0 };
                 let html = '';
                 
                 filtered.forEach(c => {
                     const { eff, isOverride } = this.getEffectiveQty(c, selectedDate);
-                    t.milk += eff.milk; t.paneer += eff.paneer; t.ghee += eff.ghee; t.chaach += eff.chaach; t.wb += eff.wb; t.curd += eff.curd;
-
-                    let boyColor = 'bg-gray-100 text-gray-600';
-                    if(c.deliveryBoy === 'Deepak') boyColor = 'bg-blue-100 text-blue-700';
-                    if(c.deliveryBoy === 'Uddham') boyColor = 'bg-emerald-100 text-emerald-700';
-                    if(c.deliveryBoy === 'Harish') boyColor = 'bg-orange-100 text-orange-700';
-                    if(c.deliveryBoy === 'Kalikant') boyColor = 'bg-purple-100 text-purple-700';
                     
-                    const rowClass = isOverride ? "bg-amber-50/40 hover:bg-amber-50" : "bg-white hover:bg-slate-50";
-                    const modifiedBadge = isOverride ? `<span class="ml-2 text-[8px] bg-red-500 text-white px-1.5 py-0.5 rounded-full animate-pulse uppercase font-bold tracking-wider shadow-sm">Modified</span>` : '';
+                    t.milk += eff.milk; 
+                    t.paneer += eff.paneer; 
+                    t.ghee += eff.ghee; 
+                    t.chaach += eff.chaach; 
+                    t.wb += eff.wb; 
+                    t.curd += eff.curd;
 
-                    const displayVal = (effVal, origVal, colorClass) => {
-                        if(isOverride && effVal !== parseFloat(origVal || 0)) {
-                            return `<div class="flex flex-col items-center justify-center leading-tight">
-                                        <span class="line-through text-[9px] opacity-40 -mb-1">${parseFloat(origVal||0)}</span>
-                                        <span class="${colorClass}">${effVal === 0 ? '0' : effVal}</span>
-                                    </div>`;
+                    let bCol = 'bg-gray-100 text-gray-600';
+                    if(c.deliveryBoy === 'Deepak') bCol = 'bg-blue-100 text-blue-700';
+                    if(c.deliveryBoy === 'Uddham') bCol = 'bg-emerald-100 text-emerald-700';
+                    if(c.deliveryBoy === 'Harish') bCol = 'bg-orange-100 text-orange-700';
+                    if(c.deliveryBoy === 'Kalikant') bCol = 'bg-purple-100 text-purple-700';
+                    
+                    const rowClass = isOverride ? "bg-amber-50/50 md:bg-amber-50/30 md:hover:bg-amber-50 border-amber-200" : "bg-white md:hover:bg-slate-50 border-slate-200";
+                    const badge = isOverride ? `<span class="ml-2 text-[8px] bg-red-500 text-white px-1.5 py-0.5 rounded shadow-sm animate-pulse uppercase tracking-wider">Modified</span>` : '';
+
+                    const dVal = (e, o, col) => {
+                        if(isOverride && e !== parseFloat(o||0)) {
+                            return `<div class="flex flex-col items-center justify-center leading-none"><span class="line-through text-[9px] opacity-40 mb-0.5">${parseFloat(o||0)}</span><span class="${col}">${e}</span></div>`;
                         }
-                        return `<span class="${colorClass}">${effVal === 0 ? '-' : (effVal || '-')}</span>`;
+                        return `<span class="${col}">${e||'-'}</span>`;
                     };
 
                     html += `
-                        <tr data-id="${c.id}" class="${rowClass} border-b border-slate-50 transition group">
-                            <td class="p-4 flex items-center gap-3">
-                                <i class="fa-solid fa-grip-vertical text-slate-300 cursor-grab hover:text-indigo-500 handle py-2 px-1"></i>
-                                <div>
-                                    <div class="font-bold text-slate-800 flex items-center">${c.name} ${modifiedBadge}</div>
-                                    <div class="text-[10px] text-slate-400 uppercase">${c.address || ''}</div>
+                        <div data-id="${c.id}" class="${rowClass} border md:border-b md:border-0 rounded-2xl md:rounded-none p-4 md:p-3 flex flex-col md:grid md:grid-cols-12 md:items-center gap-4 md:gap-2 shadow-sm md:shadow-none group relative">
+                            
+                            <div class="flex justify-between items-start md:col-span-4 md:grid md:grid-cols-4 md:items-center md:gap-2">
+                                <div class="flex items-center gap-3 md:col-span-3 w-full">
+                                    <i class="fa-solid fa-grip-vertical text-slate-300 cursor-grab handle text-xl md:text-sm py-2 px-1 hover:text-indigo-500 active:text-indigo-600 transition"></i>
+                                    <div class="flex-1 truncate">
+                                        <div class="font-bold text-slate-800 flex items-center text-base md:text-[13px] truncate">${c.name} ${badge}</div>
+                                        <div class="text-[10px] text-slate-400 uppercase leading-tight mt-0.5 truncate">${c.address || ''}</div>
+                                    </div>
                                 </div>
-                            </td>
-                            <td class="p-4 text-center"><span class="px-2 py-1 rounded-md text-[10px] font-bold uppercase ${boyColor}">${c.deliveryBoy || 'NA'}</span></td>
-                            <td class="p-3 text-center font-bold bg-blue-50/20">${displayVal(eff.milk, c.milk, 'text-blue-600')}</td>
-                            <td class="p-3 text-center font-bold bg-green-50/20">${displayVal(eff.paneer, c.paneer, 'text-green-600')}</td>
-                            <td class="p-3 text-center font-bold bg-yellow-50/20">${displayVal(eff.ghee, c.ghee, 'text-yellow-600')}</td>
-                            <td class="p-3 text-center font-bold bg-orange-50/20">${displayVal(eff.chaach, c.chaach, 'text-orange-600')}</td>
-                            <td class="p-3 text-center font-bold bg-slate-100/50">${displayVal(eff.wb, c.wb, 'text-slate-600')}</td>
-                            <td class="p-3 text-center font-bold bg-purple-50/20">${displayVal(eff.curd, c.curd, 'text-purple-600')}</td>
-                            <td class="p-4 text-center whitespace-nowrap">
-                                <button onclick="App.openVariation('${c.id}')" class="text-amber-500 hover:bg-amber-100 bg-amber-50 p-2 rounded-lg shadow-sm mr-1" title="Set Multi-Day Variation"><i class="fa-solid fa-calendar-day"></i></button>
-                                <button onclick="App.edit('${c.id}')" class="text-indigo-500 hover:bg-indigo-50 p-2 rounded-lg" title="Edit Master Default"><i class="fa-solid fa-pen"></i></button>
-                                <button onclick="App.del('${c.id}')" class="text-red-400 hover:bg-red-50 p-2 rounded-lg" title="Delete Cust"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>`;
+                                <div class="md:col-span-1 text-right md:text-center mt-1 md:mt-0 shrink-0">
+                                    <span class="px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase ${bCol}">${c.deliveryBoy || 'NA'}</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-3 md:grid-cols-6 gap-2 md:col-span-6 md:gap-0">
+                                <div class="bg-blue-50/50 md:bg-transparent rounded-xl p-2 md:p-0 flex flex-col md:block items-center justify-center text-center border border-blue-100 md:border-none">
+                                    <span class="text-[9px] font-bold text-blue-400 uppercase md:hidden mb-1">Milk</span><div class="font-bold text-blue-600 text-lg md:text-[13px]">${dVal(eff.milk, c.milk, 'text-blue-600')}</div>
+                                </div>
+                                <div class="bg-green-50/50 md:bg-transparent rounded-xl p-2 md:p-0 flex flex-col md:block items-center justify-center text-center border border-green-100 md:border-none">
+                                    <span class="text-[9px] font-bold text-green-400 uppercase md:hidden mb-1">Paneer</span><div class="font-bold text-green-600 text-lg md:text-[13px]">${dVal(eff.paneer, c.paneer, 'text-green-600')}</div>
+                                </div>
+                                <div class="bg-yellow-50/50 md:bg-transparent rounded-xl p-2 md:p-0 flex flex-col md:block items-center justify-center text-center border border-yellow-200 md:border-none">
+                                    <span class="text-[9px] font-bold text-yellow-500 uppercase md:hidden mb-1">Ghee</span><div class="font-bold text-yellow-600 text-lg md:text-[13px]">${dVal(eff.ghee, c.ghee, 'text-yellow-600')}</div>
+                                </div>
+                                <div class="bg-orange-50/50 md:bg-transparent rounded-xl p-2 md:p-0 flex flex-col md:block items-center justify-center text-center border border-orange-100 md:border-none">
+                                    <span class="text-[9px] font-bold text-orange-400 uppercase md:hidden mb-1">Chaach</span><div class="font-bold text-orange-600 text-lg md:text-[13px]">${dVal(eff.chaach, c.chaach, 'text-orange-600')}</div>
+                                </div>
+                                <div class="bg-slate-50/80 md:bg-transparent rounded-xl p-2 md:p-0 flex flex-col md:block items-center justify-center text-center border border-slate-200 md:border-none">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase md:hidden mb-1">Butter</span><div class="font-bold text-slate-600 text-lg md:text-[13px]">${dVal(eff.wb, c.wb, 'text-slate-600')}</div>
+                                </div>
+                                <div class="bg-purple-50/50 md:bg-transparent rounded-xl p-2 md:p-0 flex flex-col md:block items-center justify-center text-center border border-purple-100 md:border-none">
+                                    <span class="text-[9px] font-bold text-purple-400 uppercase md:hidden mb-1">Curd</span><div class="font-bold text-purple-600 text-lg md:text-[13px]">${dVal(eff.curd, c.curd, 'text-purple-600')}</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between md:justify-center items-center gap-2 md:col-span-2 pt-3 md:pt-0 border-t border-slate-100 md:border-none mt-1 md:mt-0">
+                                <span class="text-[10px] text-slate-300 font-bold uppercase md:hidden">Actions</span>
+                                <div class="flex gap-2">
+                                    <button onclick="App.openVariation('${c.id}')" class="text-amber-600 bg-amber-50 border border-amber-100 hover:bg-amber-100 w-10 h-10 md:w-8 md:h-8 rounded-lg shadow-sm flex items-center justify-center transition" title="Date Variation"><i class="fa-solid fa-calendar-day"></i></button>
+                                    <button onclick="App.edit('${c.id}')" class="text-indigo-600 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 w-10 h-10 md:w-8 md:h-8 rounded-lg shadow-sm flex items-center justify-center transition" title="Edit Cust Default"><i class="fa-solid fa-pen"></i></button>
+                                    <button onclick="App.del('${c.id}')" class="text-red-500 bg-red-50 border border-red-100 hover:bg-red-100 w-10 h-10 md:w-8 md:h-8 rounded-lg shadow-sm flex items-center justify-center transition" title="Delete Cust"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>`;
                 });
 
                 tbody.innerHTML = html;
-                document.getElementById('tot-milk').innerText = t.milk.toFixed(2);
-                document.getElementById('tot-paneer').innerText = t.paneer.toFixed(2);
-                document.getElementById('tot-ghee').innerText = t.ghee.toFixed(2);
-                document.getElementById('tot-chaach').innerText = t.chaach.toFixed(2);
-                document.getElementById('tot-wb').innerText = t.wb.toFixed(2);
+                
+                document.getElementById('tot-milk').innerText = t.milk.toFixed(2); 
+                document.getElementById('tot-paneer').innerText = t.paneer.toFixed(2); 
+                document.getElementById('tot-ghee').innerText = t.ghee.toFixed(2); 
+                document.getElementById('tot-chaach').innerText = t.chaach.toFixed(2); 
+                document.getElementById('tot-wb').innerText = t.wb.toFixed(2); 
                 document.getElementById('tot-curd').innerText = t.curd.toFixed(2);
+                
                 this.initSortable();
             },
 
             initSortable() {
                 const el = document.getElementById('table-body');
                 if (this.sortableInstance) this.sortableInstance.destroy();
-                this.sortableInstance = new Sortable(el, {
-                    handle: '.handle', animation: 150, ghostClass: 'bg-indigo-50',
-                    onEnd: () => { document.getElementById('btn-save-order').classList.remove('hidden'); }
+                this.sortableInstance = new Sortable(el, { 
+                    handle: '.handle', 
+                    animation: 150, 
+                    ghostClass: 'bg-indigo-50', 
+                    onEnd: () => { 
+                        document.getElementById('btn-save-order').classList.remove('hidden'); 
+                    } 
                 });
             },
 
             saveNewOrder() {
-                const rows = document.querySelectorAll('#table-body tr');
+                const rows = document.querySelectorAll('#table-body > div');
                 const updates = {};
-                rows.forEach((row, index) => {
-                    const id = row.getAttribute('data-id');
-                    if (id) updates[`users/${id}/serial`] = index + 1;
+                rows.forEach((row, index) => { 
+                    const id = row.getAttribute('data-id'); 
+                    if (id) updates[`users/${id}/serial`] = index + 1; 
                 });
-                update(ref(db), updates).then(() => {
-                    alert("✅ Sort Order Saved!");
-                    document.getElementById('btn-save-order').classList.add('hidden');
+                update(ref(db), updates).then(() => { 
+                    alert("✅ Sort Order Saved!"); 
+                    document.getElementById('btn-save-order').classList.add('hidden'); 
                 }).catch(err => alert("Error: " + err.message));
             },
 
@@ -449,79 +529,98 @@
                 if (!confirm(`Save ${this.shift} Record for: ${date}?`)) return;
 
                 const shiftData = this.allData.filter(c => c.shift === this.shift);
-                const report = {
-                    Deepak: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 },
-                    Uddham: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 },
-                    Harish: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 },
-                    Kalikant: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 },
-                    Total: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0 }
+                const report = { 
+                    Deepak: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 }, 
+                    Uddham: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 }, 
+                    Harish: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 }, 
+                    Kalikant: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 }, 
+                    Total: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0 } 
                 };
                 const details =[];
 
                 shiftData.forEach(c => {
                     const b = c.deliveryBoy || 'Deepak';
                     const { eff } = this.getEffectiveQty(c, date);
-
-                    if (report[b]) {['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => {
-                            report[b][k] += eff[k]; report.Total[k] += eff[k];
-                        });
-                        report[b].count++;
+                    
+                    if (report[b]) {
+                        const items = ['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
+                        items.forEach(k => { 
+                            report[b][k] += eff[k]; 
+                            report.Total[k] += eff[k]; 
+                        }); 
+                        report[b].count++; 
                     }
-
-                    details.push({
-                        name: c.name, address: c.address, phone: c.phone, deliveryBoy: b,
-                        milk: eff.milk, paneer: eff.paneer, ghee: eff.ghee,
-                        chaach: eff.chaach, wb: eff.wb, curd: eff.curd
+                    
+                    details.push({ 
+                        name: c.name, 
+                        address: c.address, 
+                        phone: c.phone, 
+                        deliveryBoy: b, 
+                        milk: eff.milk, 
+                        paneer: eff.paneer, 
+                        ghee: eff.ghee, 
+                        chaach: eff.chaach, 
+                        wb: eff.wb, 
+                        curd: eff.curd 
                     });
                 });
 
                 const clean = (num) => parseFloat(num.toFixed(2));
-                for (let b in report) {
-                    if (b === 'Total' || report[b].count !== undefined) {['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => report[b][k] = clean(report[b][k])); }
+                
+                for (let b in report) { 
+                    if (b === 'Total' || report[b].count !== undefined) {
+                        const items = ['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
+                        items.forEach(k => {
+                            report[b][k] = clean(report[b][k]);
+                        }); 
+                    } 
                 }
-
-                set(ref(db, `delivery_history/${date}/${this.shift}`), {
-                    report: report, details: details, timestamp: Date.now()
-                }).then(() => alert("✅ Record & Details Saved for " + date)).catch(e => alert("Error: " + e.message));
+                
+                set(ref(db, `delivery_history/${date}/${this.shift}`), { 
+                    report: report, 
+                    details: details, 
+                    timestamp: Date.now() 
+                }).then(() => {
+                    alert("✅ Record & Details Saved for " + date);
+                }).catch(e => alert("Error: " + e.message));
             },
 
             fetchHistory() {
-                const date = document.getElementById('hist-date').value;
+                const date = document.getElementById('hist-date').value; 
                 const shift = document.getElementById('hist-shift').value;
+                
                 if(!date) return alert("Select a date");
-
+                
                 get(ref(db, `delivery_history/${date}/${shift}`)).then((snap) => {
                     const data = snap.val();
-                    if(!data) {
-                        document.getElementById('history-results').classList.add('hidden');
-                        document.getElementById('history-empty').classList.remove('hidden');
-                        this.currentHistoryData = null; return;
+                    if(!data) { 
+                        document.getElementById('history-results').classList.add('hidden'); 
+                        document.getElementById('history-empty').classList.remove('hidden'); 
+                        this.currentHistoryData = null; 
+                        return; 
                     }
-
-                    this.currentHistoryData = data;
-                    document.getElementById('history-empty').classList.add('hidden');
-                    document.getElementById('history-results').classList.remove('hidden');
+                    
+                    this.currentHistoryData = data; 
+                    document.getElementById('history-empty').classList.add('hidden'); 
+                    document.getElementById('history-results').classList.remove('hidden'); 
                     document.getElementById('hist-title').innerText = `${shift} Record: ${date}`;
                     
-                    const r = data.report;
-                    const grid = document.getElementById('hist-grid');
-                    grid.innerHTML = '';['Deepak', 'Uddham', 'Harish', 'Kalikant'].forEach(boy => {
-                        const d = r[boy];
+                    const r = data.report; 
+                    const grid = document.getElementById('hist-grid'); 
+                    grid.innerHTML = '';
+                    
+                    const boys =['Deepak', 'Uddham', 'Harish', 'Kalikant'];
+                    boys.forEach(boy => {
+                        const d = r[boy]; 
                         const color = boy === 'Deepak' ? 'blue' : (boy === 'Uddham' ? 'emerald' : 'orange');
+                        
                         grid.innerHTML += `
                         <div onclick="App.viewDetails('${boy}')" class="cursor-pointer bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition hover:shadow-lg hover:-translate-y-1 transform active:scale-95">
-                            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-                                <h3 class="font-bold text-lg text-slate-800">${boy}</h3><span class="bg-${color}-100 text-${color}-600 px-3 py-1 rounded-full text-xs font-bold uppercase">${d.count} Customers</span>
-                            </div>
+                            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100"><h3 class="font-bold text-lg text-slate-800">${boy}</h3><span class="bg-${color}-100 text-${color}-600 px-3 py-1 rounded-full text-xs font-bold uppercase">${d.count} Customers</span></div>
                             <div class="grid grid-cols-2 gap-y-3 gap-x-2 text-sm pointer-events-none">
-                                <div class="flex justify-between bg-blue-50/50 p-2 rounded-lg"><span class="text-slate-500 font-bold text-xs uppercase pt-1">Milk</span> <b class="text-blue-700 text-lg">${d.milk.toFixed(2)}</b></div>
-                                <div class="flex justify-between bg-green-50/50 p-2 rounded-lg"><span class="text-slate-500 font-bold text-xs uppercase pt-1">Paneer</span> <b class="text-green-700 text-lg">${d.paneer.toFixed(2)}</b></div>
-                                <div class="flex justify-between bg-yellow-50/50 p-2 rounded-lg"><span class="text-slate-500 font-bold text-xs uppercase pt-1">Ghee</span> <b class="text-yellow-700 text-lg">${d.ghee.toFixed(2)}</b></div>
-                                <div class="flex justify-between bg-orange-50/50 p-2 rounded-lg"><span class="text-slate-500 font-bold text-xs uppercase pt-1">Chaach</span> <b class="text-orange-700 text-lg">${d.chaach.toFixed(2)}</b></div>
-                                <div class="flex justify-between bg-slate-50/50 p-2 rounded-lg"><span class="text-slate-500 font-bold text-xs uppercase pt-1">Butter</span> <b class="text-slate-700 text-lg">${d.wb.toFixed(2)}</b></div>
-                                <div class="flex justify-between bg-purple-50/50 p-2 rounded-lg"><span class="text-slate-500 font-bold text-xs uppercase pt-1">Curd</span> <b class="text-purple-700 text-lg">${d.curd.toFixed(2)}</b></div>
+                                <div class="flex justify-between bg-blue-50/50 p-2 rounded-lg"><span class="text-slate-500 font-bold text-xs uppercase pt-1">Milk</span> <b class="text-blue-700 text-lg">${d.milk.toFixed(2)}</b></div><div class="flex justify-between bg-green-50/50 p-2 rounded-lg"><span class="text-slate-500 font-bold text-xs uppercase pt-1">Paneer</span> <b class="text-green-700 text-lg">${d.paneer.toFixed(2)}</b></div><div class="flex justify-between bg-yellow-50/50 p-2 rounded-lg"><span class="text-slate-500 font-bold text-xs uppercase pt-1">Ghee</span> <b class="text-yellow-700 text-lg">${d.ghee.toFixed(2)}</b></div><div class="flex justify-between bg-orange-50/50 p-2 rounded-lg"><span class="text-slate-500 font-bold text-xs uppercase pt-1">Chaach</span> <b class="text-orange-700 text-lg">${d.chaach.toFixed(2)}</b></div><div class="flex justify-between bg-slate-50/50 p-2 rounded-lg"><span class="text-slate-500 font-bold text-xs uppercase pt-1">Butter</span> <b class="text-slate-700 text-lg">${d.wb.toFixed(2)}</b></div><div class="flex justify-between bg-purple-50/50 p-2 rounded-lg"><span class="text-slate-500 font-bold text-xs uppercase pt-1">Curd</span> <b class="text-purple-700 text-lg">${d.curd.toFixed(2)}</b></div>
                             </div>
-                            <div class="mt-3 text-center text-xs font-bold text-indigo-500 uppercase tracking-wide">Tap to view details <i class="fa-solid fa-arrow-right ml-1"></i></div>
+                            <div class="mt-4 text-center text-xs font-bold text-indigo-500 uppercase tracking-wide bg-indigo-50 py-2 rounded-lg">View Customer List <i class="fa-solid fa-arrow-right ml-1"></i></div>
                         </div>`;
                     });
                 });
@@ -529,192 +628,317 @@
 
             viewDetails(boyName) {
                 if(!this.currentHistoryData) return;
-                const modal = document.getElementById('history-modal');
-                const tbody = document.getElementById('hist-detail-body');
+                
+                const modal = document.getElementById('history-modal'); 
+                const tbody = document.getElementById('hist-detail-body'); 
                 const noData = document.getElementById('hist-no-data');
                 
-                document.getElementById('hist-modal-title').innerText = `${boyName}'s Delivery List`;
+                document.getElementById('hist-modal-title').innerText = `${boyName}'s List`; 
                 document.getElementById('hist-modal-subtitle').innerText = `${document.getElementById('hist-date').value} | ${document.getElementById('hist-shift').value}`;
 
                 const allDetails = this.currentHistoryData.details;
-                if(!allDetails || !Array.isArray(allDetails)) {
-                    tbody.innerHTML = ''; noData.classList.remove('hidden'); document.getElementById('hist-total-items').innerText = '0'; modal.classList.remove('hidden'); return;
+                
+                if(!allDetails || !Array.isArray(allDetails)) { 
+                    tbody.innerHTML = ''; 
+                    noData.classList.remove('hidden'); 
+                    document.getElementById('hist-total-items').innerText = '0'; 
+                    modal.classList.remove('hidden'); 
+                    return; 
                 }
-
+                
                 const boyDetails = allDetails.filter(d => d.deliveryBoy === boyName);
-                if(boyDetails.length === 0) {
-                    tbody.innerHTML = ''; noData.classList.remove('hidden'); document.getElementById('hist-total-items').innerText = '0';
+                
+                if(boyDetails.length === 0) { 
+                    tbody.innerHTML = ''; 
+                    noData.classList.remove('hidden'); 
+                    document.getElementById('hist-total-items').innerText = '0'; 
                 } else {
-                    noData.classList.add('hidden');
+                    noData.classList.add('hidden'); 
                     let html = '';
+                    
                     boyDetails.forEach(c => {
-                        const val = (v, color) => v > 0 ? `<span class="font-bold text-${color}-600">${v}</span>` : `<span class="text-slate-200">-</span>`;
+                        const val = (v, color) => v > 0 ? `<span class="font-bold text-${color}-600">${v}</span>` : `<span class="text-slate-300">-</span>`;
+                        
                         html += `
-                        <tr class="hover:bg-slate-50 border-b border-slate-50 transition">
-                            <td class="p-3"><div class="font-bold text-slate-800">${c.name}</div><div class="text-[10px] text-slate-400 uppercase">${c.address || 'No Address'}</div></td>
-                            <td class="p-3 text-center bg-blue-50/30">${val(c.milk, 'blue')}</td><td class="p-3 text-center bg-green-50/30">${val(c.paneer, 'green')}</td><td class="p-3 text-center bg-yellow-50/30">${val(c.ghee, 'yellow')}</td><td class="p-3 text-center bg-orange-50/30">${val(c.chaach, 'orange')}</td><td class="p-3 text-center bg-slate-100/50">${val(c.wb, 'slate')}</td><td class="p-3 text-center bg-purple-50/30">${val(c.curd, 'purple')}</td>
-                        </tr>`;
+                        <div class="bg-white hover:bg-slate-50 p-4 md:p-3 flex flex-col md:grid md:grid-cols-7 gap-3 md:items-center border border-slate-200 md:border-0 md:border-b md:border-slate-100 rounded-2xl md:rounded-none">
+                            <div class="md:col-span-1 border-b border-slate-100 pb-2 md:pb-0 md:border-none"><div class="font-bold text-slate-800 text-base md:text-[13px]">${c.name}</div><div class="text-[10px] text-slate-400 uppercase leading-tight">${c.address || 'No Address'}</div></div>
+                            <div class="grid grid-cols-3 md:contents gap-2 text-center text-[13px]">
+                                <div class="bg-blue-50/50 md:bg-transparent rounded-lg py-1 md:py-0"><span class="block md:hidden text-[9px] text-blue-400 font-bold uppercase">Milk</span>${val(c.milk, 'blue')}</div>
+                                <div class="bg-green-50/50 md:bg-transparent rounded-lg py-1 md:py-0"><span class="block md:hidden text-[9px] text-green-400 font-bold uppercase">Paneer</span>${val(c.paneer, 'green')}</div>
+                                <div class="bg-yellow-50/50 md:bg-transparent rounded-lg py-1 md:py-0"><span class="block md:hidden text-[9px] text-yellow-500 font-bold uppercase">Ghee</span>${val(c.ghee, 'yellow')}</div>
+                                <div class="bg-orange-50/50 md:bg-transparent rounded-lg py-1 md:py-0"><span class="block md:hidden text-[9px] text-orange-400 font-bold uppercase">Chaach</span>${val(c.chaach, 'orange')}</div>
+                                <div class="bg-slate-50 md:bg-transparent rounded-lg py-1 md:py-0"><span class="block md:hidden text-[9px] text-slate-400 font-bold uppercase">Butter</span>${val(c.wb, 'slate')}</div>
+                                <div class="bg-purple-50/50 md:bg-transparent rounded-lg py-1 md:py-0"><span class="block md:hidden text-[9px] text-purple-400 font-bold uppercase">Curd</span>${val(c.curd, 'purple')}</div>
+                            </div>
+                        </div>`;
                     });
-                    tbody.innerHTML = html; document.getElementById('hist-total-items').innerText = boyDetails.length;
+                    
+                    tbody.innerHTML = html; 
+                    document.getElementById('hist-total-items').innerText = boyDetails.length;
                 }
                 modal.classList.remove('hidden');
             },
 
             downloadPDF() {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('l', 'mm', 'a4');
+                const { jsPDF } = window.jspdf; 
+                const doc = new jsPDF('l', 'mm', 'a4'); 
                 const date = document.getElementById('roster-date').value;
-
-                let filtered = this.allData.filter(c => c.shift === this.shift);
-                if (this.boy !== 'All') filtered = filtered.filter(c => c.deliveryBoy === this.boy);
-
-                const searchQuery = document.getElementById('search-input').value.toLowerCase();
-                if (searchQuery) { filtered = filtered.filter(c => (c.name || '').toLowerCase().includes(searchQuery) || (c.address || '').toLowerCase().includes(searchQuery)); }
-
+                
+                let filtered = this.allData.filter(c => c.shift === this.shift); 
+                if (this.boy !== 'All') {
+                    filtered = filtered.filter(c => c.deliveryBoy === this.boy);
+                }
+                
+                const searchQuery = document.getElementById('search-input').value.toLowerCase(); 
+                if (searchQuery) { 
+                    filtered = filtered.filter(c => (c.name || '').toLowerCase().includes(searchQuery) || (c.address || '').toLowerCase().includes(searchQuery)); 
+                }
+                
                 filtered.sort((a, b) => (a.serial || 999999) - (b.serial || 999999));
+                
                 if (filtered.length === 0) return alert("List is empty, nothing to print.");
-
-                let headColor =[60, 60, 60];
-                if (this.boy === 'Deepak') headColor = [59, 130, 246];
-                if (this.boy === 'Uddham') headColor =[16, 185, 129];
-                if (this.boy === 'Harish') headColor =[249, 115, 22];
+                
+                let headColor =[60, 60, 60]; 
+                if (this.boy === 'Deepak') headColor =[59, 130, 246]; 
+                if (this.boy === 'Uddham') headColor = [16, 185, 129]; 
+                if (this.boy === 'Harish') headColor = [249, 115, 22]; 
                 if (this.boy === 'Kalikant') headColor =[168, 85, 247];
                 
-                doc.setFontSize(22); doc.setTextColor(...headColor); doc.text(`${this.boy === 'All' ? 'Master' : this.boy}'s Delivery List (${this.shift})`, 14, 15);
-                doc.setFontSize(10); doc.setTextColor(100); doc.text(`Date: ${date} | Total Orders: ${filtered.length}`, 14, 22);
-
+                doc.setFontSize(22); 
+                doc.setTextColor(...headColor); 
+                doc.text(`${this.boy === 'All' ? 'Master' : this.boy}'s Delivery List (${this.shift})`, 14, 15); 
+                
+                doc.setFontSize(10); 
+                doc.setTextColor(100); 
+                doc.text(`Date: ${date} | Total Orders: ${filtered.length}`, 14, 22);
+                
                 let t = { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0 };
-                const tableBody = filtered.map(c => {
-                    const { eff } = this.getEffectiveQty(c, date);
-                    t.milk += eff.milk; t.paneer += eff.paneer; t.ghee += eff.ghee; t.chaach += eff.chaach; t.wb += eff.wb; t.curd += eff.curd;
-                    return[ c.name, c.address, eff.milk || '', eff.paneer || '', eff.ghee || '', eff.chaach || '', eff.wb || '', eff.curd || '' ];
+                
+                const tableBody = filtered.map(c => { 
+                    const { eff } = this.getEffectiveQty(c, date); 
+                    t.milk += eff.milk; 
+                    t.paneer += eff.paneer; 
+                    t.ghee += eff.ghee; 
+                    t.chaach += eff.chaach; 
+                    t.wb += eff.wb; 
+                    t.curd += eff.curd; 
+                    return[ 
+                        c.name, 
+                        c.address, 
+                        eff.milk || '', 
+                        eff.paneer || '', 
+                        eff.ghee || '', 
+                        eff.chaach || '', 
+                        eff.wb || '', 
+                        eff.curd || '' 
+                    ]; 
                 });
-
-                const totalRow =['TOTAL QTY', '', t.milk.toFixed(2), t.paneer.toFixed(2), t.ghee.toFixed(2), t.chaach.toFixed(2), t.wb.toFixed(2), t.curd.toFixed(2) ];
-
-                doc.autoTable({
-                    head: [['Customer', 'Address', 'Milk', 'Paneer', 'Ghee', 'Chaach', 'Butter', 'Curd']],
-                    body: [...tableBody, totalRow], startY: 30, theme: 'grid', headStyles: { fillColor: headColor }, columnStyles: { 0: { fontStyle: 'bold' } },
-                    didParseCell: function (data) { if (data.row.index === tableBody.length) { data.cell.styles.fontStyle = 'bold'; data.cell.styles.fillColor =[245, 245, 245]; } }
-                });
+                
+                const totalRow =[
+                    'TOTAL QTY', 
+                    '', 
+                    t.milk.toFixed(2), 
+                    t.paneer.toFixed(2), 
+                    t.ghee.toFixed(2), 
+                    t.chaach.toFixed(2), 
+                    t.wb.toFixed(2), 
+                    t.curd.toFixed(2) 
+                ];
+                
+                doc.autoTable({ 
+                    head: [['Customer', 'Address', 'Milk', 'Paneer', 'Ghee', 'Chaach', 'Butter', 'Curd']], 
+                    body: [...tableBody, totalRow], 
+                    startY: 30, 
+                    theme: 'grid', 
+                    headStyles: { fillColor: headColor }, 
+                    columnStyles: { 0: { fontStyle: 'bold' } }, 
+                    didParseCell: function (data) { 
+                        if (data.row.index === tableBody.length) { 
+                            data.cell.styles.fontStyle = 'bold'; 
+                            data.cell.styles.fillColor =[245, 245, 245]; 
+                        } 
+                    } 
+                }); 
                 doc.save(`${this.boy}_${this.shift}_${date}.pdf`);
             },
 
-            // --- MASTER CRUD ---
-            openModal() {
-                document.getElementById('modal').classList.remove('hidden');
-                document.getElementById('inp-id').value = ''; document.getElementById('inp-name').value = ''; document.getElementById('inp-phone').value = ''; document.getElementById('inp-address').value = ''; document.getElementById('inp-boy').value = 'Deepak'; document.getElementById('inp-shift').value = this.shift;['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => { document.getElementById('inp-' + k).value = ''; });
+            openModal() { 
+                document.getElementById('modal').classList.remove('hidden'); 
+                document.getElementById('inp-id').value = ''; 
+                document.getElementById('inp-name').value = ''; 
+                document.getElementById('inp-phone').value = ''; 
+                document.getElementById('inp-address').value = ''; 
+                document.getElementById('inp-boy').value = 'Deepak'; 
+                document.getElementById('inp-shift').value = this.shift;
+                
+                const items =['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
+                items.forEach(k => { 
+                    document.getElementById('inp-' + k).value = ''; 
+                }); 
             },
-            closeModal() { document.getElementById('modal').classList.add('hidden'); },
+            
+            closeModal() { 
+                document.getElementById('modal').classList.add('hidden'); 
+            },
+            
             saveCustomer() {
                 const id = document.getElementById('inp-id').value;
-                const d = {
-                    name: document.getElementById('inp-name').value, phone: document.getElementById('inp-phone').value, address: document.getElementById('inp-address').value, deliveryBoy: document.getElementById('inp-boy').value, shift: document.getElementById('inp-shift').value,
-                    milk: parseFloat(document.getElementById('inp-milk').value) || 0, paneer: parseFloat(document.getElementById('inp-paneer').value) || 0, ghee: parseFloat(document.getElementById('inp-ghee').value) || 0, chaach: parseFloat(document.getElementById('inp-chaach').value) || 0, wb: parseFloat(document.getElementById('inp-wb').value) || 0, curd: parseFloat(document.getElementById('inp-curd').value) || 0
+                const d = { 
+                    name: document.getElementById('inp-name').value, 
+                    phone: document.getElementById('inp-phone').value, 
+                    address: document.getElementById('inp-address').value, 
+                    deliveryBoy: document.getElementById('inp-boy').value, 
+                    shift: document.getElementById('inp-shift').value, 
+                    milk: parseFloat(document.getElementById('inp-milk').value) || 0, 
+                    paneer: parseFloat(document.getElementById('inp-paneer').value) || 0, 
+                    ghee: parseFloat(document.getElementById('inp-ghee').value) || 0, 
+                    chaach: parseFloat(document.getElementById('inp-chaach').value) || 0, 
+                    wb: parseFloat(document.getElementById('inp-wb').value) || 0, 
+                    curd: parseFloat(document.getElementById('inp-curd').value) || 0 
                 };
+                
                 if (!d.name) return alert("Name is required");
-                if (id) update(ref(db, `users/${id}`), d).then(() => this.closeModal()); else push(ref(db, 'users'), d).then(() => this.closeModal());
-            },
-            edit(id) {
-                const c = this.allData.find(x => x.id === id);
-                if (!c) return;
-                document.getElementById('inp-id').value = c.id; document.getElementById('inp-name').value = c.name; document.getElementById('inp-phone').value = c.phone; document.getElementById('inp-address').value = c.address; document.getElementById('inp-boy').value = c.deliveryBoy || 'Deepak'; document.getElementById('inp-shift').value = c.shift || 'Morning';['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => { document.getElementById('inp-' + k).value = c[k] || ''; });
-                document.getElementById('modal').classList.remove('hidden');
-            },
-            del(id) { if (confirm("Delete customer completely?")) remove(ref(db, `users/${id}`)); },
-
-            // --- DATE RANGE VARIATION LOGIC ---
-            
-            // Helper function to safely iterate local dates irrespective of timezone changes
-            getDatesList(startStr, endStr) {
-                const dates =[];
-                let curr = new Date(startStr);
-                curr.setUTCHours(12, 0, 0, 0); // Sets time to noon to avoid shifting due to timezone
-                const end = new Date(endStr);
-                end.setUTCHours(12, 0, 0, 0);
-
-                while (curr <= end) {
-                    dates.push(curr.toISOString().split('T')[0]);
-                    curr.setDate(curr.getDate() + 1);
+                
+                if (id) {
+                    update(ref(db, `users/${id}`), d).then(() => this.closeModal()); 
+                } else {
+                    push(ref(db, 'users'), d).then(() => this.closeModal());
                 }
+            },
+            
+            edit(id) { 
+                const c = this.allData.find(x => x.id === id); 
+                if (!c) return; 
+                
+                document.getElementById('inp-id').value = c.id; 
+                document.getElementById('inp-name').value = c.name; 
+                document.getElementById('inp-phone').value = c.phone; 
+                document.getElementById('inp-address').value = c.address; 
+                document.getElementById('inp-boy').value = c.deliveryBoy || 'Deepak'; 
+                document.getElementById('inp-shift').value = c.shift || 'Morning';
+                
+                const items = ['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
+                items.forEach(k => { 
+                    document.getElementById('inp-' + k).value = c[k] || ''; 
+                }); 
+                
+                document.getElementById('modal').classList.remove('hidden'); 
+            },
+            
+            del(id) { 
+                if (confirm("Are you sure you want to completely DELETE this customer?")) {
+                    remove(ref(db, `users/${id}`)); 
+                }
+            },
+
+            getDatesList(startStr, endStr) {
+                const dates =[]; 
+                let curr = new Date(startStr); 
+                curr.setUTCHours(12, 0, 0, 0); 
+                
+                const end = new Date(endStr); 
+                end.setUTCHours(12, 0, 0, 0);
+                
+                while (curr <= end) { 
+                    dates.push(curr.toISOString().split('T')[0]); 
+                    curr.setDate(curr.getDate() + 1); 
+                } 
                 return dates;
             },
-
+            
             openVariation(id) {
-                const c = this.allData.find(x => x.id === id);
-                if (!c) return;
-                const date = document.getElementById('roster-date').value;
+                const c = this.allData.find(x => x.id === id); 
+                if (!c) return; 
+                
+                const date = document.getElementById('roster-date').value; 
                 if (!date) return alert("Please select a date from the calendar first.");
                 
-                document.getElementById('var-inp-id').value = id;
-                document.getElementById('var-modal-subtitle').innerText = `${c.name}`;
-                
-                // Pre-fill Date Range
-                document.getElementById('var-from').value = date;
+                document.getElementById('var-inp-id').value = id; 
+                document.getElementById('var-modal-subtitle').innerText = `${c.name}`; 
+                document.getElementById('var-from').value = date; 
                 document.getElementById('var-to').value = date;
+                document.getElementById('var-freq').value = 'daily';
+
+                const ov = (c.overrides && c.overrides[date]) ? c.overrides[date] : {};
                 
-                const ov = (c.overrides && c.overrides[date]) ? c.overrides[date] : {};['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => {
-                    const inp = document.getElementById('var-inp-' + k);
-                    inp.value = ov[k] !== undefined ? ov[k] : (c[k] || 0);
+                const items =['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
+                items.forEach(k => { 
+                    const inp = document.getElementById('var-inp-' + k); 
+                    inp.value = ov[k] !== undefined ? ov[k] : (c[k] || 0); 
                 });
                 
                 document.getElementById('variation-modal').classList.remove('hidden');
             },
-            closeVariation() {
-                document.getElementById('variation-modal').classList.add('hidden');
+            
+            closeVariation() { 
+                document.getElementById('variation-modal').classList.add('hidden'); 
             },
+            
             saveVariation() {
-                const id = document.getElementById('var-inp-id').value;
-                const fromStr = document.getElementById('var-from').value;
+                const id = document.getElementById('var-inp-id').value; 
+                const fromStr = document.getElementById('var-from').value; 
                 const toStr = document.getElementById('var-to').value;
-                
+                const freq = document.getElementById('var-freq').value;
+
                 if(!toStr || new Date(toStr) < new Date(fromStr)) {
                     return alert("'To Date' cannot be before 'From Date'");
                 }
+                
+                const qtyUpdates = {};
+                const zeroUpdates = {};
 
-                // Collect Quantities
-                const qtyUpdates = {};['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => {
-                    const val = document.getElementById('var-inp-' + k).value;
-                    if (val !== '') qtyUpdates[k] = parseFloat(val);
+                const items =['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
+                items.forEach(k => { 
+                    const val = document.getElementById('var-inp-' + k).value; 
+                    if (val !== '') {
+                        qtyUpdates[k] = parseFloat(val); 
+                        zeroUpdates[k] = 0;
+                    }
                 });
+
+                const dates = this.getDatesList(fromStr, toStr); 
+                const updates = {}; 
                 
-                // Get all dates in range and prepare payload
-                const dates = this.getDatesList(fromStr, toStr);
-                const updates = {};
-                dates.forEach(d => {
-                    updates[`users/${id}/overrides/${d}`] = qtyUpdates;
+                dates.forEach((d, index) => { 
+                    if(freq === 'alternate') {
+                        updates[`users/${id}/overrides/${d}`] = (index % 2 === 0) ? qtyUpdates : zeroUpdates;
+                    } 
+                    else if(freq === 'weekly') {
+                        updates[`users/${id}/overrides/${d}`] = (index % 7 === 0) ? qtyUpdates : zeroUpdates;
+                    } 
+                    else {
+                        updates[`users/${id}/overrides/${d}`] = qtyUpdates;
+                    }
                 });
-                
-                // Update Firebase in one shot
-                update(ref(db), updates).then(() => {
-                    this.closeVariation();
+
+                update(ref(db), updates).then(() => { 
+                    this.closeVariation(); 
                 }).catch(e => alert("Error saving variation: " + e.message));
             },
+            
             clearVariation() {
-                const id = document.getElementById('var-inp-id').value;
-                const fromStr = document.getElementById('var-from').value;
+                const id = document.getElementById('var-inp-id').value; 
+                const fromStr = document.getElementById('var-from').value; 
                 const toStr = document.getElementById('var-to').value;
                 
                 if(!toStr || new Date(toStr) < new Date(fromStr)) {
                     return alert("'To Date' cannot be before 'From Date'");
                 }
-
-                // Drop overrrides for all dates in the selected range
-                const dates = this.getDatesList(fromStr, toStr);
-                const updates = {};
-                dates.forEach(d => {
-                    updates[`users/${id}/overrides/${d}`] = null; // null deletes the key in Firebase
+                
+                const dates = this.getDatesList(fromStr, toStr); 
+                const updates = {}; 
+                
+                dates.forEach(d => { 
+                    updates[`users/${id}/overrides/${d}`] = null; 
                 });
-
-                update(ref(db), updates).then(() => {
-                    this.closeVariation();
+                
+                update(ref(db), updates).then(() => { 
+                    this.closeVariation(); 
                 }).catch(e => alert("Error clearing variation: " + e.message));
             }
         };
 
         App.init();
-        
     </script>
 </body>
-
 </html>
