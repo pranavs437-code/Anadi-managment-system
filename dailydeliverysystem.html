@@ -181,7 +181,7 @@
         </div>
     </div>
 
-    <!-- DAILY VARIATION MODAL (With Frequency Pattern) -->
+    <!-- DAILY VARIATION MODAL -->
     <div id="variation-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-end md:items-center justify-center md:p-4 backdrop-blur-sm">
         <div class="bg-white w-full max-w-sm rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden animate-[fadeIn_0.3s_ease-out]">
             <div class="bg-amber-50 px-6 py-4 border-b border-amber-100 flex justify-between items-center">
@@ -203,7 +203,6 @@
                         </div>
                     </div>
                     
-                    <!-- FREQUENCY DROPDOWN -->
                     <div class="w-full">
                         <label class="text-[10px] font-bold text-amber-700 uppercase">Delivery Pattern</label>
                         <select id="var-freq" class="w-full mt-1 p-2 rounded-lg bg-white border border-amber-400 text-xs font-bold text-slate-800 outline-none focus:border-amber-600 transition cursor-pointer">
@@ -225,12 +224,20 @@
                         <div><label class="sub-label text-purple-500">Curd</label><input type="number" step="0.5" id="var-inp-curd" class="qty-input border-amber-200 focus:border-amber-500 text-purple-700"></div>
                     </div>
                 </div>
-                <p class="text-[9px] text-center text-slate-500 leading-tight"><i class="fa-solid fa-circle-info mr-1 text-amber-500"></i>Changes apply within dates based on the selected pattern. Gap days automatically become <b>0</b>.</p>
+                <p class="text-[9px] text-center text-slate-500 leading-tight"><i class="fa-solid fa-circle-info mr-1 text-amber-500"></i>Changes apply within dates. Gap days automatically become <b>0</b>.</p>
             </div>
             
-            <div class="p-4 border-t border-slate-100 bg-white flex gap-3 pb-8 md:pb-4">
-                <button onclick="App.clearVariation()" class="w-1/3 bg-white border border-red-200 text-red-500 hover:bg-red-50 font-bold py-3.5 rounded-xl shadow-sm transition text-sm flex items-center justify-center gap-1"><i class="fa-solid fa-rotate-left"></i> Reset</button>
-                <button onclick="App.saveVariation()" class="w-2/3 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-md transition text-sm flex items-center justify-center gap-2"><i class="fa-solid fa-check-double"></i> Save</button>
+            <!-- NEW 3 BUTTONS LAYOUT WITH CLEAR ALL -->
+            <div class="p-3 md:p-4 border-t border-slate-100 bg-white flex gap-2 pb-8 md:pb-4">
+                <button onclick="App.clearAllOverrides()" class="w-1/4 bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600 border border-slate-200 hover:border-red-200 font-bold py-2.5 rounded-xl shadow-sm transition text-[10px] flex flex-col items-center justify-center leading-tight">
+                    <i class="fa-solid fa-trash-can text-sm mb-0.5"></i> Clear All
+                </button>
+                <button onclick="App.clearVariation()" class="w-1/4 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold py-2.5 rounded-xl shadow-sm transition text-[10px] flex flex-col items-center justify-center leading-tight">
+                    <i class="fa-solid fa-rotate-left text-sm mb-0.5"></i> Reset Range
+                </button>
+                <button onclick="App.saveVariation()" class="w-2/4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl shadow-md transition text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-check-double"></i> Save Pattern
+                </button>
             </div>
         </div>
     </div>
@@ -275,7 +282,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Scroll Functionality Logic
         window.onscroll = function() {
             const btn = document.getElementById('scrollBtn');
             if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
@@ -396,11 +402,8 @@
                     document.getElementById('empty-state').classList.remove('hidden'); 
                     document.getElementById('empty-state').classList.add('flex');
                     document.getElementById('table-body').classList.add('hidden');
-                    
                     const emptyItems =['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
-                    emptyItems.forEach(k => {
-                        document.getElementById('tot-'+k).innerText = '0';
-                    }); 
+                    emptyItems.forEach(k => { document.getElementById('tot-'+k).innerText = '0'; }); 
                     return;
                 }
 
@@ -414,12 +417,8 @@
                 filtered.forEach(c => {
                     const { eff, isOverride } = this.getEffectiveQty(c, selectedDate);
                     
-                    t.milk += eff.milk; 
-                    t.paneer += eff.paneer; 
-                    t.ghee += eff.ghee; 
-                    t.chaach += eff.chaach; 
-                    t.wb += eff.wb; 
-                    t.curd += eff.curd;
+                    t.milk += eff.milk; t.paneer += eff.paneer; t.ghee += eff.ghee; 
+                    t.chaach += eff.chaach; t.wb += eff.wb; t.curd += eff.curd;
 
                     let bCol = 'bg-gray-100 text-gray-600';
                     if(c.deliveryBoy === 'Deepak') bCol = 'bg-blue-100 text-blue-700';
@@ -439,7 +438,6 @@
 
                     html += `
                         <div data-id="${c.id}" class="${rowClass} border md:border-b md:border-0 rounded-2xl md:rounded-none p-4 md:p-3 flex flex-col md:grid md:grid-cols-12 md:items-center gap-4 md:gap-2 shadow-sm md:shadow-none group relative">
-                            
                             <div class="flex justify-between items-start md:col-span-4 md:grid md:grid-cols-4 md:items-center md:gap-2">
                                 <div class="flex items-center gap-3 md:col-span-3 w-full">
                                     <i class="fa-solid fa-grip-vertical text-slate-300 cursor-grab handle text-xl md:text-sm py-2 px-1 hover:text-indigo-500 active:text-indigo-600 transition"></i>
@@ -486,14 +484,12 @@
                 });
 
                 tbody.innerHTML = html;
-                
                 document.getElementById('tot-milk').innerText = t.milk.toFixed(2); 
                 document.getElementById('tot-paneer').innerText = t.paneer.toFixed(2); 
                 document.getElementById('tot-ghee').innerText = t.ghee.toFixed(2); 
                 document.getElementById('tot-chaach').innerText = t.chaach.toFixed(2); 
                 document.getElementById('tot-wb').innerText = t.wb.toFixed(2); 
                 document.getElementById('tot-curd').innerText = t.curd.toFixed(2);
-                
                 this.initSortable();
             },
 
@@ -501,26 +497,16 @@
                 const el = document.getElementById('table-body');
                 if (this.sortableInstance) this.sortableInstance.destroy();
                 this.sortableInstance = new Sortable(el, { 
-                    handle: '.handle', 
-                    animation: 150, 
-                    ghostClass: 'bg-indigo-50', 
-                    onEnd: () => { 
-                        document.getElementById('btn-save-order').classList.remove('hidden'); 
-                    } 
+                    handle: '.handle', animation: 150, ghostClass: 'bg-indigo-50', 
+                    onEnd: () => { document.getElementById('btn-save-order').classList.remove('hidden'); } 
                 });
             },
 
             saveNewOrder() {
                 const rows = document.querySelectorAll('#table-body > div');
                 const updates = {};
-                rows.forEach((row, index) => { 
-                    const id = row.getAttribute('data-id'); 
-                    if (id) updates[`users/${id}/serial`] = index + 1; 
-                });
-                update(ref(db), updates).then(() => { 
-                    alert("✅ Sort Order Saved!"); 
-                    document.getElementById('btn-save-order').classList.add('hidden'); 
-                }).catch(err => alert("Error: " + err.message));
+                rows.forEach((row, index) => { const id = row.getAttribute('data-id'); if (id) updates[`users/${id}/serial`] = index + 1; });
+                update(ref(db), updates).then(() => { alert("✅ Sort Order Saved!"); document.getElementById('btn-save-order').classList.add('hidden'); }).catch(err => alert("Error: " + err.message));
             },
 
             saveToHistory() {
@@ -529,91 +515,30 @@
                 if (!confirm(`Save ${this.shift} Record for: ${date}?`)) return;
 
                 const shiftData = this.allData.filter(c => c.shift === this.shift);
-                const report = { 
-                    Deepak: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 }, 
-                    Uddham: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 }, 
-                    Harish: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 }, 
-                    Kalikant: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 }, 
-                    Total: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0 } 
-                };
+                const report = { Deepak: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 }, Uddham: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 }, Harish: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 }, Kalikant: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0, count: 0 }, Total: { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0 } };
                 const details =[];
 
                 shiftData.forEach(c => {
                     const b = c.deliveryBoy || 'Deepak';
                     const { eff } = this.getEffectiveQty(c, date);
-                    
-                    if (report[b]) {
-                        const items = ['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
-                        items.forEach(k => { 
-                            report[b][k] += eff[k]; 
-                            report.Total[k] += eff[k]; 
-                        }); 
-                        report[b].count++; 
-                    }
-                    
-                    details.push({ 
-                        name: c.name, 
-                        address: c.address, 
-                        phone: c.phone, 
-                        deliveryBoy: b, 
-                        milk: eff.milk, 
-                        paneer: eff.paneer, 
-                        ghee: eff.ghee, 
-                        chaach: eff.chaach, 
-                        wb: eff.wb, 
-                        curd: eff.curd 
-                    });
+                    if (report[b]) {['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => { report[b][k] += eff[k]; report.Total[k] += eff[k]; }); report[b].count++; }
+                    details.push({ name: c.name, address: c.address, phone: c.phone, deliveryBoy: b, milk: eff.milk, paneer: eff.paneer, ghee: eff.ghee, chaach: eff.chaach, wb: eff.wb, curd: eff.curd });
                 });
 
                 const clean = (num) => parseFloat(num.toFixed(2));
-                
-                for (let b in report) { 
-                    if (b === 'Total' || report[b].count !== undefined) {
-                        const items = ['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
-                        items.forEach(k => {
-                            report[b][k] = clean(report[b][k]);
-                        }); 
-                    } 
-                }
-                
-                set(ref(db, `delivery_history/${date}/${this.shift}`), { 
-                    report: report, 
-                    details: details, 
-                    timestamp: Date.now() 
-                }).then(() => {
-                    alert("✅ Record & Details Saved for " + date);
-                }).catch(e => alert("Error: " + e.message));
+                for (let b in report) { if (b === 'Total' || report[b].count !== undefined) {['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => report[b][k] = clean(report[b][k])); } }
+                set(ref(db, `delivery_history/${date}/${this.shift}`), { report: report, details: details, timestamp: Date.now() }).then(() => alert("✅ Record & Details Saved for " + date)).catch(e => alert("Error: " + e.message));
             },
 
             fetchHistory() {
-                const date = document.getElementById('hist-date').value; 
-                const shift = document.getElementById('hist-shift').value;
-                
+                const date = document.getElementById('hist-date').value; const shift = document.getElementById('hist-shift').value;
                 if(!date) return alert("Select a date");
-                
                 get(ref(db, `delivery_history/${date}/${shift}`)).then((snap) => {
                     const data = snap.val();
-                    if(!data) { 
-                        document.getElementById('history-results').classList.add('hidden'); 
-                        document.getElementById('history-empty').classList.remove('hidden'); 
-                        this.currentHistoryData = null; 
-                        return; 
-                    }
-                    
-                    this.currentHistoryData = data; 
-                    document.getElementById('history-empty').classList.add('hidden'); 
-                    document.getElementById('history-results').classList.remove('hidden'); 
-                    document.getElementById('hist-title').innerText = `${shift} Record: ${date}`;
-                    
-                    const r = data.report; 
-                    const grid = document.getElementById('hist-grid'); 
-                    grid.innerHTML = '';
-                    
-                    const boys =['Deepak', 'Uddham', 'Harish', 'Kalikant'];
-                    boys.forEach(boy => {
-                        const d = r[boy]; 
-                        const color = boy === 'Deepak' ? 'blue' : (boy === 'Uddham' ? 'emerald' : 'orange');
-                        
+                    if(!data) { document.getElementById('history-results').classList.add('hidden'); document.getElementById('history-empty').classList.remove('hidden'); this.currentHistoryData = null; return; }
+                    this.currentHistoryData = data; document.getElementById('history-empty').classList.add('hidden'); document.getElementById('history-results').classList.remove('hidden'); document.getElementById('hist-title').innerText = `${shift} Record: ${date}`;
+                    const r = data.report; const grid = document.getElementById('hist-grid'); grid.innerHTML = '';['Deepak', 'Uddham', 'Harish', 'Kalikant'].forEach(boy => {
+                        const d = r[boy]; const color = boy === 'Deepak' ? 'blue' : (boy === 'Uddham' ? 'emerald' : 'orange');
                         grid.innerHTML += `
                         <div onclick="App.viewDetails('${boy}')" class="cursor-pointer bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition hover:shadow-lg hover:-translate-y-1 transform active:scale-95">
                             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100"><h3 class="font-bold text-lg text-slate-800">${boy}</h3><span class="bg-${color}-100 text-${color}-600 px-3 py-1 rounded-full text-xs font-bold uppercase">${d.count} Customers</span></div>
@@ -628,37 +553,16 @@
 
             viewDetails(boyName) {
                 if(!this.currentHistoryData) return;
-                
-                const modal = document.getElementById('history-modal'); 
-                const tbody = document.getElementById('hist-detail-body'); 
-                const noData = document.getElementById('hist-no-data');
-                
-                document.getElementById('hist-modal-title').innerText = `${boyName}'s List`; 
-                document.getElementById('hist-modal-subtitle').innerText = `${document.getElementById('hist-date').value} | ${document.getElementById('hist-shift').value}`;
+                const modal = document.getElementById('history-modal'); const tbody = document.getElementById('hist-detail-body'); const noData = document.getElementById('hist-no-data');
+                document.getElementById('hist-modal-title').innerText = `${boyName}'s List`; document.getElementById('hist-modal-subtitle').innerText = `${document.getElementById('hist-date').value} | ${document.getElementById('hist-shift').value}`;
 
                 const allDetails = this.currentHistoryData.details;
-                
-                if(!allDetails || !Array.isArray(allDetails)) { 
-                    tbody.innerHTML = ''; 
-                    noData.classList.remove('hidden'); 
-                    document.getElementById('hist-total-items').innerText = '0'; 
-                    modal.classList.remove('hidden'); 
-                    return; 
-                }
-                
+                if(!allDetails || !Array.isArray(allDetails)) { tbody.innerHTML = ''; noData.classList.remove('hidden'); document.getElementById('hist-total-items').innerText = '0'; modal.classList.remove('hidden'); return; }
                 const boyDetails = allDetails.filter(d => d.deliveryBoy === boyName);
-                
-                if(boyDetails.length === 0) { 
-                    tbody.innerHTML = ''; 
-                    noData.classList.remove('hidden'); 
-                    document.getElementById('hist-total-items').innerText = '0'; 
-                } else {
-                    noData.classList.add('hidden'); 
-                    let html = '';
-                    
+                if(boyDetails.length === 0) { tbody.innerHTML = ''; noData.classList.remove('hidden'); document.getElementById('hist-total-items').innerText = '0'; } else {
+                    noData.classList.add('hidden'); let html = '';
                     boyDetails.forEach(c => {
                         const val = (v, color) => v > 0 ? `<span class="font-bold text-${color}-600">${v}</span>` : `<span class="text-slate-300">-</span>`;
-                        
                         html += `
                         <div class="bg-white hover:bg-slate-50 p-4 md:p-3 flex flex-col md:grid md:grid-cols-7 gap-3 md:items-center border border-slate-200 md:border-0 md:border-b md:border-slate-100 rounded-2xl md:rounded-none">
                             <div class="md:col-span-1 border-b border-slate-100 pb-2 md:pb-0 md:border-none"><div class="font-bold text-slate-800 text-base md:text-[13px]">${c.name}</div><div class="text-[10px] text-slate-400 uppercase leading-tight">${c.address || 'No Address'}</div></div>
@@ -672,184 +576,43 @@
                             </div>
                         </div>`;
                     });
-                    
-                    tbody.innerHTML = html; 
-                    document.getElementById('hist-total-items').innerText = boyDetails.length;
+                    tbody.innerHTML = html; document.getElementById('hist-total-items').innerText = boyDetails.length;
                 }
                 modal.classList.remove('hidden');
             },
 
             downloadPDF() {
-                const { jsPDF } = window.jspdf; 
-                const doc = new jsPDF('l', 'mm', 'a4'); 
-                const date = document.getElementById('roster-date').value;
-                
-                let filtered = this.allData.filter(c => c.shift === this.shift); 
-                if (this.boy !== 'All') {
-                    filtered = filtered.filter(c => c.deliveryBoy === this.boy);
-                }
-                
-                const searchQuery = document.getElementById('search-input').value.toLowerCase(); 
-                if (searchQuery) { 
-                    filtered = filtered.filter(c => (c.name || '').toLowerCase().includes(searchQuery) || (c.address || '').toLowerCase().includes(searchQuery)); 
-                }
-                
+                const { jsPDF } = window.jspdf; const doc = new jsPDF('l', 'mm', 'a4'); const date = document.getElementById('roster-date').value;
+                let filtered = this.allData.filter(c => c.shift === this.shift); if (this.boy !== 'All') filtered = filtered.filter(c => c.deliveryBoy === this.boy);
+                const searchQuery = document.getElementById('search-input').value.toLowerCase(); if (searchQuery) { filtered = filtered.filter(c => (c.name || '').toLowerCase().includes(searchQuery) || (c.address || '').toLowerCase().includes(searchQuery)); }
                 filtered.sort((a, b) => (a.serial || 999999) - (b.serial || 999999));
-                
                 if (filtered.length === 0) return alert("List is empty, nothing to print.");
-                
-                let headColor =[60, 60, 60]; 
-                if (this.boy === 'Deepak') headColor =[59, 130, 246]; 
-                if (this.boy === 'Uddham') headColor = [16, 185, 129]; 
-                if (this.boy === 'Harish') headColor = [249, 115, 22]; 
-                if (this.boy === 'Kalikant') headColor =[168, 85, 247];
-                
-                doc.setFontSize(22); 
-                doc.setTextColor(...headColor); 
-                doc.text(`${this.boy === 'All' ? 'Master' : this.boy}'s Delivery List (${this.shift})`, 14, 15); 
-                
-                doc.setFontSize(10); 
-                doc.setTextColor(100); 
-                doc.text(`Date: ${date} | Total Orders: ${filtered.length}`, 14, 22);
-                
+                let headColor =[60, 60, 60]; if (this.boy === 'Deepak') headColor =[59, 130, 246]; if (this.boy === 'Uddham') headColor =[16, 185, 129]; if (this.boy === 'Harish') headColor =[249, 115, 22]; if (this.boy === 'Kalikant') headColor =[168, 85, 247];
+                doc.setFontSize(22); doc.setTextColor(...headColor); doc.text(`${this.boy === 'All' ? 'Master' : this.boy}'s Delivery List (${this.shift})`, 14, 15); doc.setFontSize(10); doc.setTextColor(100); doc.text(`Date: ${date} | Total Orders: ${filtered.length}`, 14, 22);
                 let t = { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0 };
-                
-                const tableBody = filtered.map(c => { 
-                    const { eff } = this.getEffectiveQty(c, date); 
-                    t.milk += eff.milk; 
-                    t.paneer += eff.paneer; 
-                    t.ghee += eff.ghee; 
-                    t.chaach += eff.chaach; 
-                    t.wb += eff.wb; 
-                    t.curd += eff.curd; 
-                    return[ 
-                        c.name, 
-                        c.address, 
-                        eff.milk || '', 
-                        eff.paneer || '', 
-                        eff.ghee || '', 
-                        eff.chaach || '', 
-                        eff.wb || '', 
-                        eff.curd || '' 
-                    ]; 
-                });
-                
-                const totalRow =[
-                    'TOTAL QTY', 
-                    '', 
-                    t.milk.toFixed(2), 
-                    t.paneer.toFixed(2), 
-                    t.ghee.toFixed(2), 
-                    t.chaach.toFixed(2), 
-                    t.wb.toFixed(2), 
-                    t.curd.toFixed(2) 
-                ];
-                
-                doc.autoTable({ 
-                    head: [['Customer', 'Address', 'Milk', 'Paneer', 'Ghee', 'Chaach', 'Butter', 'Curd']], 
-                    body: [...tableBody, totalRow], 
-                    startY: 30, 
-                    theme: 'grid', 
-                    headStyles: { fillColor: headColor }, 
-                    columnStyles: { 0: { fontStyle: 'bold' } }, 
-                    didParseCell: function (data) { 
-                        if (data.row.index === tableBody.length) { 
-                            data.cell.styles.fontStyle = 'bold'; 
-                            data.cell.styles.fillColor =[245, 245, 245]; 
-                        } 
-                    } 
-                }); 
-                doc.save(`${this.boy}_${this.shift}_${date}.pdf`);
+                const tableBody = filtered.map(c => { const { eff } = this.getEffectiveQty(c, date); t.milk += eff.milk; t.paneer += eff.paneer; t.ghee += eff.ghee; t.chaach += eff.chaach; t.wb += eff.wb; t.curd += eff.curd; return[ c.name, c.address, eff.milk || '', eff.paneer || '', eff.ghee || '', eff.chaach || '', eff.wb || '', eff.curd || '' ]; });
+                const totalRow =['TOTAL QTY', '', t.milk.toFixed(2), t.paneer.toFixed(2), t.ghee.toFixed(2), t.chaach.toFixed(2), t.wb.toFixed(2), t.curd.toFixed(2) ];
+                doc.autoTable({ head: [['Customer', 'Address', 'Milk', 'Paneer', 'Ghee', 'Chaach', 'Butter', 'Curd']], body:[...tableBody, totalRow], startY: 30, theme: 'grid', headStyles: { fillColor: headColor }, columnStyles: { 0: { fontStyle: 'bold' } }, didParseCell: function (data) { if (data.row.index === tableBody.length) { data.cell.styles.fontStyle = 'bold'; data.cell.styles.fillColor =[245, 245, 245]; } } }); doc.save(`${this.boy}_${this.shift}_${date}.pdf`);
             },
 
-            openModal() { 
-                document.getElementById('modal').classList.remove('hidden'); 
-                document.getElementById('inp-id').value = ''; 
-                document.getElementById('inp-name').value = ''; 
-                document.getElementById('inp-phone').value = ''; 
-                document.getElementById('inp-address').value = ''; 
-                document.getElementById('inp-boy').value = 'Deepak'; 
-                document.getElementById('inp-shift').value = this.shift;
-                
-                const items =['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
-                items.forEach(k => { 
-                    document.getElementById('inp-' + k).value = ''; 
-                }); 
-            },
-            
-            closeModal() { 
-                document.getElementById('modal').classList.add('hidden'); 
-            },
-            
+            openModal() { document.getElementById('modal').classList.remove('hidden'); document.getElementById('inp-id').value = ''; document.getElementById('inp-name').value = ''; document.getElementById('inp-phone').value = ''; document.getElementById('inp-address').value = ''; document.getElementById('inp-boy').value = 'Deepak'; document.getElementById('inp-shift').value = this.shift;['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => { document.getElementById('inp-' + k).value = ''; }); },
+            closeModal() { document.getElementById('modal').classList.add('hidden'); },
             saveCustomer() {
                 const id = document.getElementById('inp-id').value;
-                const d = { 
-                    name: document.getElementById('inp-name').value, 
-                    phone: document.getElementById('inp-phone').value, 
-                    address: document.getElementById('inp-address').value, 
-                    deliveryBoy: document.getElementById('inp-boy').value, 
-                    shift: document.getElementById('inp-shift').value, 
-                    milk: parseFloat(document.getElementById('inp-milk').value) || 0, 
-                    paneer: parseFloat(document.getElementById('inp-paneer').value) || 0, 
-                    ghee: parseFloat(document.getElementById('inp-ghee').value) || 0, 
-                    chaach: parseFloat(document.getElementById('inp-chaach').value) || 0, 
-                    wb: parseFloat(document.getElementById('inp-wb').value) || 0, 
-                    curd: parseFloat(document.getElementById('inp-curd').value) || 0 
-                };
-                
+                const d = { name: document.getElementById('inp-name').value, phone: document.getElementById('inp-phone').value, address: document.getElementById('inp-address').value, deliveryBoy: document.getElementById('inp-boy').value, shift: document.getElementById('inp-shift').value, milk: parseFloat(document.getElementById('inp-milk').value) || 0, paneer: parseFloat(document.getElementById('inp-paneer').value) || 0, ghee: parseFloat(document.getElementById('inp-ghee').value) || 0, chaach: parseFloat(document.getElementById('inp-chaach').value) || 0, wb: parseFloat(document.getElementById('inp-wb').value) || 0, curd: parseFloat(document.getElementById('inp-curd').value) || 0 };
                 if (!d.name) return alert("Name is required");
-                
-                if (id) {
-                    update(ref(db, `users/${id}`), d).then(() => this.closeModal()); 
-                } else {
-                    push(ref(db, 'users'), d).then(() => this.closeModal());
-                }
+                if (id) update(ref(db, `users/${id}`), d).then(() => this.closeModal()); else push(ref(db, 'users'), d).then(() => this.closeModal());
             },
-            
-            edit(id) { 
-                const c = this.allData.find(x => x.id === id); 
-                if (!c) return; 
-                
-                document.getElementById('inp-id').value = c.id; 
-                document.getElementById('inp-name').value = c.name; 
-                document.getElementById('inp-phone').value = c.phone; 
-                document.getElementById('inp-address').value = c.address; 
-                document.getElementById('inp-boy').value = c.deliveryBoy || 'Deepak'; 
-                document.getElementById('inp-shift').value = c.shift || 'Morning';
-                
-                const items = ['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
-                items.forEach(k => { 
-                    document.getElementById('inp-' + k).value = c[k] || ''; 
-                }); 
-                
-                document.getElementById('modal').classList.remove('hidden'); 
-            },
-            
-            del(id) { 
-                if (confirm("Are you sure you want to completely DELETE this customer?")) {
-                    remove(ref(db, `users/${id}`)); 
-                }
-            },
+            edit(id) { const c = this.allData.find(x => x.id === id); if (!c) return; document.getElementById('inp-id').value = c.id; document.getElementById('inp-name').value = c.name; document.getElementById('inp-phone').value = c.phone; document.getElementById('inp-address').value = c.address; document.getElementById('inp-boy').value = c.deliveryBoy || 'Deepak'; document.getElementById('inp-shift').value = c.shift || 'Morning';['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => { document.getElementById('inp-' + k).value = c[k] || ''; }); document.getElementById('modal').classList.remove('hidden'); },
+            del(id) { if (confirm("Are you sure you want to completely DELETE this customer?")) remove(ref(db, `users/${id}`)); },
 
             getDatesList(startStr, endStr) {
-                const dates =[]; 
-                let curr = new Date(startStr); 
-                curr.setUTCHours(12, 0, 0, 0); 
-                
-                const end = new Date(endStr); 
-                end.setUTCHours(12, 0, 0, 0);
-                
-                while (curr <= end) { 
-                    dates.push(curr.toISOString().split('T')[0]); 
-                    curr.setDate(curr.getDate() + 1); 
-                } 
-                return dates;
+                const dates =[]; let curr = new Date(startStr); curr.setUTCHours(12, 0, 0, 0); const end = new Date(endStr); end.setUTCHours(12, 0, 0, 0);
+                while (curr <= end) { dates.push(curr.toISOString().split('T')[0]); curr.setDate(curr.getDate() + 1); } return dates;
             },
             
             openVariation(id) {
-                const c = this.allData.find(x => x.id === id); 
-                if (!c) return; 
-                
+                const c = this.allData.find(x => x.id === id); if (!c) return; 
                 const date = document.getElementById('roster-date').value; 
                 if (!date) return alert("Please select a date from the calendar first.");
                 
@@ -860,7 +623,6 @@
                 document.getElementById('var-freq').value = 'daily';
 
                 const ov = (c.overrides && c.overrides[date]) ? c.overrides[date] : {};
-                
                 const items =['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
                 items.forEach(k => { 
                     const inp = document.getElementById('var-inp-' + k); 
@@ -935,6 +697,16 @@
                 update(ref(db), updates).then(() => { 
                     this.closeVariation(); 
                 }).catch(e => alert("Error clearing variation: " + e.message));
+            },
+
+            // --- NEW: CLEAR ALL PAST/FUTURE OVERRIDES ---
+            clearAllOverrides() {
+                const id = document.getElementById('var-inp-id').value; 
+                if(confirm("Are you sure you want to DELETE ALL custom dates for this customer?\n\nThis will instantly revert them back to their Master Default Schedule.")) {
+                    remove(ref(db, `users/${id}/overrides`)).then(() => {
+                        this.closeVariation();
+                    }).catch(e => alert("Error: " + e.message));
+                }
             }
         };
 
