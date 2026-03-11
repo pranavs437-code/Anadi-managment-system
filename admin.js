@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, push, set, onValue, remove, update, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
+import { getDatabase, ref, push, set, onValue, remove, update, off, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 const firebaseConfig = {
     apiKey: "AIzaSyDR1rzGFqynhkan3zGChtjmZv1s0JJ73Ls",
     authDomain: "newbillingtry.firebaseapp.com",
@@ -189,17 +188,22 @@ window.Billing = {
         if (State.cart.length === 0) return window.Toast("Cart is Empty", "error");
 
         const total = parseFloat(document.getElementById('summ-total').innerText);
-        // ✅ FIX BUG 3: Date Validation
+        
+        // 1. Get Date from Input (Format: YYYY-MM-DD)
         const dateInput = document.getElementById('pos-date').value;
         if(!dateInput) return window.Toast("Please select a date", "error");
+
+        // 2. CONVERT FORMAT: YYYY-MM-DD -> MM-DD-YYYY
+        const [year, month, day] = dateInput.split('-'); 
+        const formattedDate = `${month}-${day}-${year}`; // Changed to MM-DD-YYYY
 
         const data = {
             consumerName: State.currentUser.name,
             consumerPhone: State.currentUser.phone,
             items: State.cart,
             totalAmount: total,
-            date: new Date(dateInput).toLocaleDateString(),
-            timestamp: Date.now()
+            date: formattedDate, // Use the new format here
+            timestamp: Date.now() // Timestamp timestamp hi rahega sorting ke liye
         };
 
         push(ref(db, `bills/${State.currentUser.phone}`), {
@@ -211,7 +215,6 @@ window.Billing = {
             window.Toast("Bill Generated Successfully!");
             State.cart = [];
             this.renderCart();
-            // Dashboard updates automatically via listener
         }).catch(err => {
             console.error(err);
             window.Toast("Network Error: Could not save bill", "error");
@@ -221,7 +224,8 @@ window.Billing = {
 
 // 2. MANAGEMENT
 window.Manage = {
-    editProdId: null,
+     editProdId: null,
+    editUserPhone: null,
 
     initListeners() {
         // Products
@@ -357,44 +361,106 @@ window.Manage = {
 
     saveUser() {
         const name = document.getElementById('man-user-name').value.trim();
-        const phone = document.getElementById('man-user-phone').value.trim();
+        const newPhone = document.getElementById('man-user-phone').value.trim();
         const address = document.getElementById('man-user-address').value.trim();
 
-        // ✅ FIX BUG 2: Phone Validation Regex
+        // ✅ Phone Validation Regex
         const phoneRegex = /^[0-9]{10}$/;
         if (!name) return window.Toast("Name is required", "error");
-        if (!phoneRegex.test(phone)) return window.Toast("Phone must be 10 digits", "error");
+        if (!phoneRegex.test(newPhone)) return window.Toast("Phone must be 10 digits", "error");
 
-        update(ref(db, `users/${phone}`), { name, phone, address }).then(() => {
-            window.Toast(document.getElementById('btn-save-user').innerText === "Update Customer" ? "Customer Updated" : "Customer Registered");
-            this.resetUserForm();
-        });
+        const payload = { name, phone: newPhone, address };
+
+        // ✅ LOGIC: If we are editing AND the phone number has changed
+        if (this.editUserPhone && this.editUserPhone !== newPhone) {
+            
+            // Prevent overwriting if the new phone number already belongs to someone else
+            if (State.users[newPhone]) {
+                return window.Toast("This new phone number is already registered!", "error");
+            }
+
+            if (!confirm(`Change phone number from ${this.editUserPhone} to ${newPhone}?\nThis will also transfer all their billing history.`)) {
+                return; // User cancelled
+            }
+
+            const oldPhone = this.editUserPhone;
+            
+            // Fetch old billing history to migrate it
+            get(ref(db, `bills/${oldPhone}`)).then((snap) => {
+                const updates = {};
+                
+                // 1. Transfer Profile
+                updates[`users/${newPhone}`] = payload;
+                updates[`users/${oldPhone}`] = null; // Delete old profile
+                
+                // 2. Transfer Bills (If they have any)
+                if (snap.exists()) {
+                    const billsData = snap.val();
+                    
+                    // Update phone number inside each bill's internal details
+                    for(let billId in billsData) {
+                        if(billsData[billId].details) {
+                            billsData[billId].details.consumerPhone = newPhone;
+                        }
+                    }
+                    
+                    updates[`bills/${newPhone}`] = billsData; // Save to new phone
+                    updates[`bills/${oldPhone}`] = null;      // Delete from old phone
+                }
+                
+                // Execute atomic multi-path update
+                update(ref(db), updates).then(() => {
+                    window.Toast("Phone Number & History Transferred Successfully!");
+                    this.resetUserForm();
+                }).catch(err => {
+                    console.error(err);
+                    window.Toast("Error transferring records", "error");
+                });
+            });
+
+        } else {
+            // ✅ NORMAL Add or Update (If phone number didn't change)
+            update(ref(db, `users/${newPhone}`), payload).then(() => {
+                window.Toast(this.editUserPhone ? "Customer Updated" : "Customer Registered");
+                this.resetUserForm();
+            });
+        }
     },
+    
     delUser(ph, name) { 
-        // ✅ FIX BUG 7: Stronger Confirmation
         if (confirm(`Delete customer "${name}" (${ph})?`)) { 
             remove(ref(db, `users/${ph}`)); 
             if (document.getElementById('man-user-phone').value === ph) this.resetUserForm(); 
         } 
     },
-    // ... editUser & resetUserForm remain same ...
+
     editUser(phone) {
         const u = State.users[phone];
+        this.editUserPhone = phone; // Remember original phone
+        
         document.getElementById('man-user-name').value = u.name;
         document.getElementById('man-user-phone').value = u.phone;
         document.getElementById('man-user-address').value = u.address || "";
-        document.getElementById('man-user-phone').readOnly = true;
-        document.getElementById('man-user-phone').classList.add('bg-slate-200', 'text-slate-500');
+        
+        // ✅ REMOVED 'readOnly' so you can now edit the phone number!
+        document.getElementById('man-user-phone').readOnly = false;
+        document.getElementById('man-user-phone').classList.remove('bg-slate-200', 'text-slate-500');
+        
         document.getElementById('btn-save-user').innerText = "Update Customer";
         document.getElementById('btn-save-user').classList.add('bg-orange-600', 'hover:bg-orange-700');
         document.getElementById('btn-cancel-user').classList.remove('hidden');
     },
+
     resetUserForm() {
+        this.editUserPhone = null; // Clear memory
+        
         document.getElementById('man-user-name').value = '';
         document.getElementById('man-user-phone').value = '';
         document.getElementById('man-user-address').value = '';
+        
         document.getElementById('man-user-phone').readOnly = false;
         document.getElementById('man-user-phone').classList.remove('bg-slate-200', 'text-slate-500');
+        
         document.getElementById('btn-save-user').innerText = "Register Customer";
         document.getElementById('btn-save-user').classList.remove('bg-orange-600', 'hover:bg-orange-700');
         document.getElementById('btn-cancel-user').classList.add('hidden');
@@ -730,104 +796,106 @@ window.Dashboard = {
     // REPLACE YOUR OLD downloadLedgerPDF FUNCTION WITH THIS:
 
     downloadLedgerPDF() {
-        const { jsPDF } = window.jspdf;
-        if (!jsPDF) return window.Toast("PDF Library Error", "error");
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) return window.Toast("PDF Library Error", "error");
+    
+    // Data Check
+    if (!this.customerTotals || this.customerTotals.length === 0) {
+        return window.Toast("No data to download", "error");
+    }
+
+    const doc = new jsPDF();
+
+    // --- Header ---
+    doc.setFontSize(18);
+    doc.setTextColor(67, 56, 202); // Brand Indigo
+    doc.text("Detailed Customer Ledger", 14, 22);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 28);
+    doc.text(`Total Customers: ${this.customerTotals.length}`, 14, 33);
+
+    // --- Prepare Table Data ---
+    const tableBody = this.customerTotals.map(c => {
         
-        // Data Check
-        if (!this.customerTotals || this.customerTotals.length === 0) {
-            return window.Toast("No data to download", "error");
+        // --- CHANGE 1: Address fetch karna State.users se ---
+        const userObj = State.users[c.phone] || {};
+        const address = userObj.address || "No Address Provided";
+
+        // 1. Get all bills for this customer
+        const custBills = this.allBills.filter(b => b.phone === c.phone);
+
+        // 2. Aggregate Items (Combine duplicates)
+        const itemSummary = {};
+        custBills.forEach(bill => {
+            if (bill.details && bill.details.items) {
+                bill.details.items.forEach(item => {
+                    const pName = item.name || "Unknown";
+                    if (!itemSummary[pName]) {
+                        itemSummary[pName] = { qty: 0, total: 0, price: item.price };
+                    }
+                    const qty = parseFloat(item.qty || 0);
+                    itemSummary[pName].qty += qty;
+                    itemSummary[pName].total += (item.price * qty);
+                });
+            }
+        });
+
+        // 3. Format List String
+        let itemDetailsString = "";
+        const itemKeys = Object.keys(itemSummary);
+        if(itemKeys.length > 0) {
+            itemDetailsString = itemKeys.map(k => {
+                const d = itemSummary[k];
+                const qtyDisp = Number.isInteger(d.qty) ? d.qty : d.qty.toFixed(2);
+                return `• ${k} (${qtyDisp} x ${d.price}) = ${d.total.toLocaleString()}`;
+            }).join("\n");
+        } else {
+            itemDetailsString = "No Item Details";
         }
 
-        const doc = new jsPDF();
+        // --- CHANGE 2: Row Array mein Address column add karna ---
+        return [
+            `${c.name}\n${c.phone}`,       // Col 1: Name & Phone
+            address,                       // Col 2: Address (New)
+            itemDetailsString,              // Col 3: Items
+            `Rs. ${c.total.toLocaleString()}` // Col 4: Total
+        ];
+    });
 
-        // --- Header ---
-        doc.setFontSize(18);
-        doc.setTextColor(67, 56, 202); // Brand Indigo
-        doc.text("Detailed Customer Ledger", 14, 22);
-        
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 28);
-        doc.text(`Total Customers: ${this.customerTotals.length}`, 14, 33);
+    // --- Generate Table ---
+    doc.autoTable({
+        // --- CHANGE 3: Header mein 'Address' column add kiya ---
+        head: [['Customer', 'Address', 'Purchased Items History', 'Grand Total']],
+        body: tableBody,
+        startY: 40,
+        theme: 'grid',
+        headStyles: { 
+            fillColor: [67, 56, 202], 
+            halign: 'center',
+            valign: 'middle'
+        },
+        styles: { 
+            fontSize: 8, // Thoda chota kiya taaki address fit ho sake
+            cellPadding: 2, 
+            valign: 'top',
+            overflow: 'linebreak' 
+        },
+        // --- CHANGE 4: Column widths ko adjust kiya ---
+        columnStyles: {
+            0: { cellWidth: 30 }, // Customer Info
+            1: { cellWidth: 35 }, // Address
+            2: { cellWidth: 'auto' }, // Items (Baki bacha space)
+            3: { cellWidth: 25, halign: 'right', fontStyle: 'bold' } // Total
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] }
+    });
 
-        // --- Prepare Table Data ---
-        const tableBody = this.customerTotals.map(c => {
-            
-            // 1. Get all bills for this customer
-            const custBills = this.allBills.filter(b => b.phone === c.phone);
-
-            // 2. Aggregate Items (Combine duplicates)
-            const itemSummary = {};
-            custBills.forEach(bill => {
-                if (bill.details && bill.details.items) {
-                    bill.details.items.forEach(item => {
-                        const pName = item.name || "Unknown";
-                        // Init object if new
-                        if (!itemSummary[pName]) {
-                            itemSummary[pName] = { qty: 0, total: 0, price: item.price };
-                        }
-                        
-                        // Add values
-                        const qty = parseFloat(item.qty || 0);
-                        itemSummary[pName].qty += qty;
-                        itemSummary[pName].total += (item.price * qty);
-                    });
-                }
-            });
-
-            // 3. Format List String for PDF Cell
-            // Example: "• Milk (2 x 50) = 100"
-            let itemDetailsString = "";
-            const itemKeys = Object.keys(itemSummary);
-            
-            if(itemKeys.length > 0) {
-                itemDetailsString = itemKeys.map(k => {
-                    const d = itemSummary[k];
-                    // Clean up decimals for quantity
-                    const qtyDisp = Number.isInteger(d.qty) ? d.qty : d.qty.toFixed(2);
-                    return `• ${k} (${qtyDisp} x ${d.price}) = ${d.total.toLocaleString()}`;
-                }).join("\n");
-            } else {
-                itemDetailsString = "No Item Details";
-            }
-
-            // 4. Return Row Array
-            return [
-                `${c.name}\n${c.phone}`,       // Col 1: Customer Info
-                itemDetailsString,              // Col 2: Item List (Name, Qty, Price)
-                `Rs. ${c.total.toLocaleString()}` // Col 3: Grand Total
-            ];
-        });
-
-        // --- Generate Table ---
-        doc.autoTable({
-            head: [['Customer', 'Purchased Items History (Qty x Price)', 'Grand Total']],
-            body: tableBody,
-            startY: 40,
-            theme: 'grid',
-            headStyles: { 
-                fillColor: [67, 56, 202], 
-                halign: 'center',
-                valign: 'middle'
-            },
-            styles: { 
-                fontSize: 9, 
-                cellPadding: 3, 
-                valign: 'top',      // Align text to top so lists look good
-                overflow: 'linebreak' 
-            },
-            columnStyles: {
-                0: { cellWidth: 40 }, // Customer column width
-                1: { cellWidth: 'auto' }, // Items column takes remaining space
-                2: { cellWidth: 35, halign: 'right', fontStyle: 'bold' } // Total column
-            },
-            alternateRowStyles: { fillColor: [248, 250, 252] }
-        });
-
-        // --- Save ---
-        doc.save('Detailed_Ledger_Report.pdf');
-        window.Toast("Detailed Ledger Downloaded!");
-    },
+    // --- Save ---
+    doc.save('Detailed_Ledger_Report.pdf');
+    window.Toast("Detailed Ledger Downloaded!");
+},
 
     sendWhatsApp(phone, name, totalGrand) {
         const customerBills = this.allBills.filter(b => b.phone === phone);
@@ -852,8 +920,7 @@ window.Dashboard = {
             itemDetailsStr += `🔹 ${prodName} (${qtyDisp} x ₹${data.price}) = ₹${data.totalAmt.toLocaleString()}\n`;
         }
 
-        let appLink = window.location.href.replace('admin.html', 'user.html').split('#')[0];
-        if (!appLink.includes('user.html')) appLink = window.location.origin + '/user.html';
+         const appLink = "https://userdaily-delivery-tracking-billing.vercel.app/";
 
         const text = `*BILL SUMMARY* 🧾\nCustomer: ${name}\nPhone: ${phone}\n\n*Items Purchased:*\n${itemDetailsStr}\n----------------\n*GRAND TOTAL: ₹${totalGrand.toLocaleString()}*\n----------------\n\n👇 *Track your bills here:*\n${appLink}\n\nThank you!`;
 
@@ -861,8 +928,11 @@ window.Dashboard = {
     }
 };
 // 4. HISTORY (Includes Bugs 3 & 6 Fixes)
+// 4. HISTORY (Updated with Load More Logic)
 window.History = {
-    allTransactions: [], 
+    allTransactions: [], // Stores all fetched data
+    currentData: [],     // Stores data currently being filtered/viewed
+    limit: 50,           // How many to show initially
 
     init() {
         const list = document.getElementById('history-body');
@@ -881,15 +951,27 @@ window.History = {
                     this.allTransactions.push({ ...data[ph][id], id, phone: ph });
                 }
             }
-            // Sort Descending
+            // Sort Descending (Newest First)
             this.allTransactions.sort((a, b) => (b.details?.timestamp || 0) - (a.details?.timestamp || 0));
+            
+            // Reset limit on fresh load
+            this.limit = 50;
+            
+            // Initial render with full data passed (render function will slice it)
             this.render(this.allTransactions);
         });
     },
 
     filter(query) {
         const term = (query || '').toLowerCase().trim();
-        if (!term) { this.render(this.allTransactions); return; }
+        
+        // Reset limit when searching so user sees top results immediately
+        this.limit = 50; 
+
+        if (!term) { 
+            this.render(this.allTransactions); 
+            return; 
+        }
 
         const filtered = this.allTransactions.filter(b => {
             const name = (b.details?.consumerName || '').toLowerCase();
@@ -898,19 +980,37 @@ window.History = {
             const address = (userObj && userObj.address) ? userObj.address.toLowerCase() : '';
             return name.includes(term) || phone.includes(term) || address.includes(term);
         });
+        
         this.render(filtered);
     },
 
-    render(transactions) {
+    loadMore() {
+        // Increase limit by 50
+        this.limit += 50;
+        // Re-render the current dataset (whether filtered or full)
+        this.render(this.currentData, false); // false = don't reset view, just append
+    },
+
+    render(transactions, resetScroll = true) {
+        // Update current reference for Load More to work
+        this.currentData = transactions;
+
         const list = document.getElementById('history-body');
-        list.innerHTML = '';
+        const btnContainer = document.getElementById('history-load-more-container');
+        const countShow = document.getElementById('hist-showing-count');
+        const countTotal = document.getElementById('hist-total-count');
+
         if (transactions.length === 0) {
             list.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400 italic">No Transactions Found</td></tr>';
+            if(btnContainer) btnContainer.classList.add('hidden');
             return;
         }
 
+        // --- THE MAGIC: Slice data based on limit ---
+        const visibleTransactions = transactions.slice(0, this.limit);
+        
         let html = '';
-        transactions.forEach(b => {
+        visibleTransactions.forEach(b => {
             const name = b.details?.consumerName || 'Unknown';
             const phone = b.phone;
             const userObj = State.users[phone];
@@ -960,9 +1060,23 @@ window.History = {
                     </td>
                 </tr>`;
         });
+        
         list.innerHTML = html;
+
+        // --- BUTTON LOGIC ---
+        if(btnContainer) {
+            // Agar total data zyada hai current limit se, tabhi button dikhao
+            if (transactions.length > this.limit) {
+                btnContainer.classList.remove('hidden');
+                if(countShow) countShow.innerText = visibleTransactions.length;
+                if(countTotal) countTotal.innerText = transactions.length;
+            } else {
+                btnContainer.classList.add('hidden');
+            }
+        }
     },
-    // ... edit, saveUpdate, closeModal, del (standard logic) ...
+    
+    // ... edit, saveUpdate, closeModal, del (Baki functions same rahenge) ...
     edit(phone, id) {
         const bill = this.allTransactions.find(b => b.id === id && b.phone === phone);
         if (bill) {
@@ -1000,29 +1114,47 @@ window.History = {
 };
 
 // 5. SHARE (Simple module)
+// 5. SHARE (Updated with Fixed Link)
 window.Share = {
+    // Yahan humne aapka fixed link hardcode kar diya hai
     finalUrl: 'https://userdaily-delivery-tracking-billing.vercel.app/',
+
     init() {
         const container = document.getElementById('qrcode');
+        if(!container) return;
         container.innerHTML = ''; 
-        const url = window.location.href.replace('admin.html', 'user.html').split('#')[0];
-        this.finalUrl = url.includes('user.html') ? url : window.location.origin + '/user.html';
-        new QRCode(container, { text: this.finalUrl, width: 200, height: 200, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
+        
+        // QR Code ab hamesha finalUrl ka banega
+        new QRCode(container, { 
+            text: this.finalUrl, 
+            width: 200, 
+            height: 200, 
+            colorDark: "#000000", 
+            colorLight: "#ffffff", 
+            correctLevel: QRCode.CorrectLevel.H 
+        });
+
+        // Input box me bhi wahi link dikhega
         document.getElementById('share-link-input').value = this.finalUrl;
     },
+
     copyLink() {
         const input = document.getElementById('share-link-input');
         input.select();
         input.setSelectionRange(0, 99999);
         navigator.clipboard.writeText(this.finalUrl).then(() => window.Toast("Link Copied!"));
     },
+
     shareWhatsApp() {
+        // Share tab wala WhatsApp button
         const msg = encodeURIComponent(`Hello! View your bill history here: ${this.finalUrl}`);
         window.open(`https://wa.me/?text=${msg}`, '_blank');
     },
+
     printStandee() {
         const printContainer = document.getElementById('qrcode-print');
         printContainer.innerHTML = '';
+        // Standee QR bhi fixed link use karega
         new QRCode(printContainer, { text: this.finalUrl, width: 300, height: 300 });
         setTimeout(() => window.print(), 500);
     }
@@ -1035,4 +1167,3 @@ window.addEventListener('DOMContentLoaded', () => {
     Manage.initListeners();
     History.init();
 });
-
