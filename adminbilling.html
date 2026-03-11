@@ -602,6 +602,13 @@
                         </tbody>
                     </table>
                 </div>
+                 <div id="history-load-more-container" class="p-4 text-center border-t border-slate-100 hidden">
+                    <button onclick="History.loadMore()" 
+                        class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 px-6 rounded-full text-xs transition shadow-sm">
+                        <i class="fa-solid fa-arrow-down mr-2"></i> Load More Transactions
+                    </button>
+                    <p class="text-[10px] text-slate-400 mt-2">Showing <span id="hist-showing-count">0</span> of <span id="hist-total-count">0</span></p>
+                </div>
             </div>
         </section>
         <!-- Share -->
