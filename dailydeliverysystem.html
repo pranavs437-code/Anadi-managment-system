@@ -162,6 +162,11 @@
                     <div><label class="label-text">Boy</label><select id="inp-boy" class="input-box bg-indigo-50 border-indigo-200 text-indigo-700"><option value="Deepak">Deepak</option><option value="Uddham">Uddham</option><option value="Harish">Harish</option><option value="Kalikant">Kalikant</option></select></div>
                     <div class="col-span-2 md:col-span-1"><label class="label-text">Shift</label><select id="inp-shift" class="input-box"><option value="Morning">Morning</option><option value="Evening">Evening</option></select></div>
                     <div class="col-span-2 md:col-span-1"><label class="label-text">Address</label><input id="inp-address" class="input-box" placeholder="House No / Area"></div>
+                    
+                    <div class="col-span-2">
+                        <label class="label-text">Description / Note (Optional)</label>
+                        <input id="inp-note" class="input-box border-indigo-100 focus:border-indigo-500" placeholder="e.g. Ring bell twice, Behind the gate...">
+                    </div>
                 </div>
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mt-2">
                     <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-wide text-center">Daily DEFAULT Setup</p>
@@ -181,7 +186,7 @@
         </div>
     </div>
 
-    <!-- DAILY VARIATION MODAL -->
+    <!-- DAILY VARIATION MODAL (With Note Feature) -->
     <div id="variation-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-end md:items-center justify-center md:p-4 backdrop-blur-sm">
         <div class="bg-white w-full max-w-sm rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden animate-[fadeIn_0.3s_ease-out]">
             <div class="bg-amber-50 px-6 py-4 border-b border-amber-100 flex justify-between items-center">
@@ -223,11 +228,16 @@
                         <div><label class="sub-label text-slate-500">Butter</label><input type="number" step="0.1" id="var-inp-wb" class="qty-input border-amber-200 focus:border-amber-500 text-slate-700"></div>
                         <div><label class="sub-label text-purple-500">Curd</label><input type="number" step="0.5" id="var-inp-curd" class="qty-input border-amber-200 focus:border-amber-500 text-purple-700"></div>
                     </div>
+                    
+                    <!-- NEW: Temporary Note Field -->
+                    <div class="mt-4 pt-3 border-t border-slate-200">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Temporary Note (For these dates)</label>
+                        <input type="text" id="var-inp-note" class="w-full mt-1 p-2 rounded-lg bg-white border border-amber-200 text-xs font-bold text-slate-700 outline-none focus:border-amber-500 transition" placeholder="e.g. Party order, 2 baje aana...">
+                    </div>
                 </div>
-                <p class="text-[9px] text-center text-slate-500 leading-tight"><i class="fa-solid fa-circle-info mr-1 text-amber-500"></i>Changes apply within dates. Gap days automatically become <b>0</b>.</p>
+                <p class="text-[9px] text-center text-slate-500 leading-tight mt-3"><i class="fa-solid fa-circle-info mr-1 text-amber-500"></i>Changes and notes apply within dates. Gap days automatically become <b>0</b>.</p>
             </div>
             
-            <!-- NEW 3 BUTTONS LAYOUT WITH CLEAR ALL -->
             <div class="p-3 md:p-4 border-t border-slate-100 bg-white flex gap-2 pb-8 md:pb-4">
                 <button onclick="App.clearAllOverrides()" class="w-1/4 bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600 border border-slate-200 hover:border-red-200 font-bold py-2.5 rounded-xl shadow-sm transition text-[10px] flex flex-col items-center justify-center leading-tight">
                     <i class="fa-solid fa-trash-can text-sm mb-0.5"></i> Clear All
@@ -310,7 +320,8 @@
                                 id, 
                                 ...item, 
                                 shift: item.shift || 'Morning', 
-                                deliveryBoy: item.deliveryBoy || 'Deepak' 
+                                deliveryBoy: item.deliveryBoy || 'Deepak',
+                                note: item.note || ''
                             }); 
                         }
                     }
@@ -351,6 +362,7 @@
                 this.render();
             },
 
+            // EDITED: Now checks for override note
             getEffectiveQty(c, date) {
                 let eff = { 
                     milk: parseFloat(c.milk||0), 
@@ -358,7 +370,8 @@
                     ghee: parseFloat(c.ghee||0), 
                     chaach: parseFloat(c.chaach||0), 
                     wb: parseFloat(c.wb||0), 
-                    curd: parseFloat(c.curd||0) 
+                    curd: parseFloat(c.curd||0),
+                    note: c.note || '' // By default, use master note
                 };
                 let isOverride = false;
                 
@@ -370,6 +383,12 @@
                             eff[k] = parseFloat(ov[k]); 
                         }
                     });
+                    
+                    // If variation has a specific note, overwrite it
+                    if (ov.note !== undefined) {
+                        eff.note = ov.note;
+                    }
+                    
                     isOverride = true;
                 }
                 return { eff, isOverride };
@@ -436,14 +455,18 @@
                         return `<span class="${col}">${e||'-'}</span>`;
                     };
 
+                    // Uses eff.note so it shows overriding note if exists
+                    const noteHtml = eff.note ? `<div class="text-[9px] text-indigo-500 font-medium mt-1 truncate w-full"><i class="fa-solid fa-note-sticky text-indigo-400 mr-1"></i>${eff.note}</div>` : '';
+
                     html += `
                         <div data-id="${c.id}" class="${rowClass} border md:border-b md:border-0 rounded-2xl md:rounded-none p-4 md:p-3 flex flex-col md:grid md:grid-cols-12 md:items-center gap-4 md:gap-2 shadow-sm md:shadow-none group relative">
                             <div class="flex justify-between items-start md:col-span-4 md:grid md:grid-cols-4 md:items-center md:gap-2">
                                 <div class="flex items-center gap-3 md:col-span-3 w-full">
                                     <i class="fa-solid fa-grip-vertical text-slate-300 cursor-grab handle text-xl md:text-sm py-2 px-1 hover:text-indigo-500 active:text-indigo-600 transition"></i>
-                                    <div class="flex-1 truncate">
+                                    <div class="flex-1 overflow-hidden">
                                         <div class="font-bold text-slate-800 flex items-center text-base md:text-[13px] truncate">${c.name} ${badge}</div>
                                         <div class="text-[10px] text-slate-400 uppercase leading-tight mt-0.5 truncate">${c.address || ''}</div>
+                                        ${noteHtml}
                                     </div>
                                 </div>
                                 <div class="md:col-span-1 text-right md:text-center mt-1 md:mt-0 shrink-0">
@@ -522,7 +545,11 @@
                     const b = c.deliveryBoy || 'Deepak';
                     const { eff } = this.getEffectiveQty(c, date);
                     if (report[b]) {['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => { report[b][k] += eff[k]; report.Total[k] += eff[k]; }); report[b].count++; }
-                    details.push({ name: c.name, address: c.address, phone: c.phone, deliveryBoy: b, milk: eff.milk, paneer: eff.paneer, ghee: eff.ghee, chaach: eff.chaach, wb: eff.wb, curd: eff.curd });
+                    
+                    details.push({ 
+                        name: c.name, address: c.address, note: eff.note || '', phone: c.phone, deliveryBoy: b, 
+                        milk: eff.milk, paneer: eff.paneer, ghee: eff.ghee, chaach: eff.chaach, wb: eff.wb, curd: eff.curd 
+                    });
                 });
 
                 const clean = (num) => parseFloat(num.toFixed(2));
@@ -563,9 +590,15 @@
                     noData.classList.add('hidden'); let html = '';
                     boyDetails.forEach(c => {
                         const val = (v, color) => v > 0 ? `<span class="font-bold text-${color}-600">${v}</span>` : `<span class="text-slate-300">-</span>`;
+                        const noteHtml = c.note ? `<div class="text-[9px] text-indigo-500 font-medium leading-tight mt-0.5"><i class="fa-solid fa-note-sticky text-indigo-400"></i> ${c.note}</div>` : '';
+                        
                         html += `
                         <div class="bg-white hover:bg-slate-50 p-4 md:p-3 flex flex-col md:grid md:grid-cols-7 gap-3 md:items-center border border-slate-200 md:border-0 md:border-b md:border-slate-100 rounded-2xl md:rounded-none">
-                            <div class="md:col-span-1 border-b border-slate-100 pb-2 md:pb-0 md:border-none"><div class="font-bold text-slate-800 text-base md:text-[13px]">${c.name}</div><div class="text-[10px] text-slate-400 uppercase leading-tight">${c.address || 'No Address'}</div></div>
+                            <div class="md:col-span-1 border-b border-slate-100 pb-2 md:pb-0 md:border-none">
+                                <div class="font-bold text-slate-800 text-base md:text-[13px]">${c.name}</div>
+                                <div class="text-[10px] text-slate-400 uppercase leading-tight">${c.address || 'No Address'}</div>
+                                ${noteHtml}
+                            </div>
                             <div class="grid grid-cols-3 md:contents gap-2 text-center text-[13px]">
                                 <div class="bg-blue-50/50 md:bg-transparent rounded-lg py-1 md:py-0"><span class="block md:hidden text-[9px] text-blue-400 font-bold uppercase">Milk</span>${val(c.milk, 'blue')}</div>
                                 <div class="bg-green-50/50 md:bg-transparent rounded-lg py-1 md:py-0"><span class="block md:hidden text-[9px] text-green-400 font-bold uppercase">Paneer</span>${val(c.paneer, 'green')}</div>
@@ -590,20 +623,100 @@
                 let headColor =[60, 60, 60]; if (this.boy === 'Deepak') headColor =[59, 130, 246]; if (this.boy === 'Uddham') headColor =[16, 185, 129]; if (this.boy === 'Harish') headColor =[249, 115, 22]; if (this.boy === 'Kalikant') headColor =[168, 85, 247];
                 doc.setFontSize(22); doc.setTextColor(...headColor); doc.text(`${this.boy === 'All' ? 'Master' : this.boy}'s Delivery List (${this.shift})`, 14, 15); doc.setFontSize(10); doc.setTextColor(100); doc.text(`Date: ${date} | Total Orders: ${filtered.length}`, 14, 22);
                 let t = { milk: 0, paneer: 0, ghee: 0, chaach: 0, wb: 0, curd: 0 };
-                const tableBody = filtered.map(c => { const { eff } = this.getEffectiveQty(c, date); t.milk += eff.milk; t.paneer += eff.paneer; t.ghee += eff.ghee; t.chaach += eff.chaach; t.wb += eff.wb; t.curd += eff.curd; return[ c.name, c.address, eff.milk || '', eff.paneer || '', eff.ghee || '', eff.chaach || '', eff.wb || '', eff.curd || '' ]; });
-                const totalRow =['TOTAL QTY', '', t.milk.toFixed(2), t.paneer.toFixed(2), t.ghee.toFixed(2), t.chaach.toFixed(2), t.wb.toFixed(2), t.curd.toFixed(2) ];
-                doc.autoTable({ head: [['Customer', 'Address', 'Milk', 'Paneer', 'Ghee', 'Chaach', 'Butter', 'Curd']], body:[...tableBody, totalRow], startY: 30, theme: 'grid', headStyles: { fillColor: headColor }, columnStyles: { 0: { fontStyle: 'bold' } }, didParseCell: function (data) { if (data.row.index === tableBody.length) { data.cell.styles.fontStyle = 'bold'; data.cell.styles.fillColor =[245, 245, 245]; } } }); doc.save(`${this.boy}_${this.shift}_${date}.pdf`);
+                
+                const tableBody = filtered.map(c => { 
+                    const { eff } = this.getEffectiveQty(c, date); 
+                    t.milk += eff.milk; t.paneer += eff.paneer; t.ghee += eff.ghee; t.chaach += eff.chaach; t.wb += eff.wb; t.curd += eff.curd; 
+                    return[ 
+                        c.name, 
+                        c.address, 
+                        eff.note || '',
+                        eff.milk || '', 
+                        eff.paneer || '', 
+                        eff.ghee || '', 
+                        eff.chaach || '', 
+                        eff.wb || '', 
+                        eff.curd || '' 
+                    ]; 
+                });
+                
+                const totalRow =[
+                    'TOTAL QTY', '', '', 
+                    t.milk.toFixed(2), t.paneer.toFixed(2), t.ghee.toFixed(2), t.chaach.toFixed(2), t.wb.toFixed(2), t.curd.toFixed(2) 
+                ];
+                
+                doc.autoTable({ 
+                    head: [['Customer', 'Address', 'Note', 'Milk', 'Paneer', 'Ghee', 'Chaach', 'Butter', 'Curd']], 
+                    body:[...tableBody, totalRow], 
+                    startY: 30, 
+                    theme: 'grid', 
+                    headStyles: { fillColor: headColor }, 
+                    columnStyles: { 
+                        0: { fontStyle: 'bold' },
+                        2: { cellWidth: 35, fontStyle: 'italic', textColor:[100, 100, 100] }
+                    }, 
+                    didParseCell: function (data) { 
+                        if (data.row.index === tableBody.length) { 
+                            data.cell.styles.fontStyle = 'bold'; 
+                            data.cell.styles.fillColor =[245, 245, 245]; 
+                        } 
+                    } 
+                }); 
+                doc.save(`${this.boy}_${this.shift}_${date}.pdf`);
             },
 
-            openModal() { document.getElementById('modal').classList.remove('hidden'); document.getElementById('inp-id').value = ''; document.getElementById('inp-name').value = ''; document.getElementById('inp-phone').value = ''; document.getElementById('inp-address').value = ''; document.getElementById('inp-boy').value = 'Deepak'; document.getElementById('inp-shift').value = this.shift;['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => { document.getElementById('inp-' + k).value = ''; }); },
+            openModal() { 
+                document.getElementById('modal').classList.remove('hidden'); 
+                document.getElementById('inp-id').value = ''; 
+                document.getElementById('inp-name').value = ''; 
+                document.getElementById('inp-phone').value = ''; 
+                document.getElementById('inp-address').value = ''; 
+                document.getElementById('inp-note').value = ''; 
+                document.getElementById('inp-boy').value = 'Deepak'; 
+                document.getElementById('inp-shift').value = this.shift;
+                
+                const items =['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
+                items.forEach(k => { document.getElementById('inp-' + k).value = ''; }); 
+            },
+            
             closeModal() { document.getElementById('modal').classList.add('hidden'); },
+            
             saveCustomer() {
                 const id = document.getElementById('inp-id').value;
-                const d = { name: document.getElementById('inp-name').value, phone: document.getElementById('inp-phone').value, address: document.getElementById('inp-address').value, deliveryBoy: document.getElementById('inp-boy').value, shift: document.getElementById('inp-shift').value, milk: parseFloat(document.getElementById('inp-milk').value) || 0, paneer: parseFloat(document.getElementById('inp-paneer').value) || 0, ghee: parseFloat(document.getElementById('inp-ghee').value) || 0, chaach: parseFloat(document.getElementById('inp-chaach').value) || 0, wb: parseFloat(document.getElementById('inp-wb').value) || 0, curd: parseFloat(document.getElementById('inp-curd').value) || 0 };
+                const d = { 
+                    name: document.getElementById('inp-name').value, 
+                    phone: document.getElementById('inp-phone').value, 
+                    address: document.getElementById('inp-address').value, 
+                    note: document.getElementById('inp-note').value, 
+                    deliveryBoy: document.getElementById('inp-boy').value, 
+                    shift: document.getElementById('inp-shift').value, 
+                    milk: parseFloat(document.getElementById('inp-milk').value) || 0, 
+                    paneer: parseFloat(document.getElementById('inp-paneer').value) || 0, 
+                    ghee: parseFloat(document.getElementById('inp-ghee').value) || 0, 
+                    chaach: parseFloat(document.getElementById('inp-chaach').value) || 0, 
+                    wb: parseFloat(document.getElementById('inp-wb').value) || 0, 
+                    curd: parseFloat(document.getElementById('inp-curd').value) || 0 
+                };
                 if (!d.name) return alert("Name is required");
                 if (id) update(ref(db, `users/${id}`), d).then(() => this.closeModal()); else push(ref(db, 'users'), d).then(() => this.closeModal());
             },
-            edit(id) { const c = this.allData.find(x => x.id === id); if (!c) return; document.getElementById('inp-id').value = c.id; document.getElementById('inp-name').value = c.name; document.getElementById('inp-phone').value = c.phone; document.getElementById('inp-address').value = c.address; document.getElementById('inp-boy').value = c.deliveryBoy || 'Deepak'; document.getElementById('inp-shift').value = c.shift || 'Morning';['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'].forEach(k => { document.getElementById('inp-' + k).value = c[k] || ''; }); document.getElementById('modal').classList.remove('hidden'); },
+            
+            edit(id) { 
+                const c = this.allData.find(x => x.id === id); 
+                if (!c) return; 
+                document.getElementById('inp-id').value = c.id; 
+                document.getElementById('inp-name').value = c.name; 
+                document.getElementById('inp-phone').value = c.phone; 
+                document.getElementById('inp-address').value = c.address; 
+                document.getElementById('inp-note').value = c.note || ''; 
+                document.getElementById('inp-boy').value = c.deliveryBoy || 'Deepak'; 
+                document.getElementById('inp-shift').value = c.shift || 'Morning';
+                
+                const items =['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
+                items.forEach(k => { document.getElementById('inp-' + k).value = c[k] || ''; }); 
+                document.getElementById('modal').classList.remove('hidden'); 
+            },
+            
             del(id) { if (confirm("Are you sure you want to completely DELETE this customer?")) remove(ref(db, `users/${id}`)); },
 
             getDatesList(startStr, endStr) {
@@ -623,11 +736,15 @@
                 document.getElementById('var-freq').value = 'daily';
 
                 const ov = (c.overrides && c.overrides[date]) ? c.overrides[date] : {};
+                
                 const items =['milk', 'paneer', 'ghee', 'chaach', 'wb', 'curd'];
                 items.forEach(k => { 
                     const inp = document.getElementById('var-inp-' + k); 
                     inp.value = ov[k] !== undefined ? ov[k] : (c[k] || 0); 
                 });
+                
+                // Add note to override modal
+                document.getElementById('var-inp-note').value = ov.note !== undefined ? ov.note : (c.note || '');
                 
                 document.getElementById('variation-modal').classList.remove('hidden');
             },
@@ -641,6 +758,7 @@
                 const fromStr = document.getElementById('var-from').value; 
                 const toStr = document.getElementById('var-to').value;
                 const freq = document.getElementById('var-freq').value;
+                const varNote = document.getElementById('var-inp-note').value;
 
                 if(!toStr || new Date(toStr) < new Date(fromStr)) {
                     return alert("'To Date' cannot be before 'From Date'");
@@ -657,6 +775,15 @@
                         zeroUpdates[k] = 0;
                     }
                 });
+
+                // Attach Temporary note if specified
+                if(varNote !== '') {
+                    qtyUpdates.note = varNote;
+                    zeroUpdates.note = varNote;
+                } else {
+                    qtyUpdates.note = '';
+                    zeroUpdates.note = '';
+                }
 
                 const dates = this.getDatesList(fromStr, toStr); 
                 const updates = {}; 
@@ -699,10 +826,9 @@
                 }).catch(e => alert("Error clearing variation: " + e.message));
             },
 
-            // --- NEW: CLEAR ALL PAST/FUTURE OVERRIDES ---
             clearAllOverrides() {
                 const id = document.getElementById('var-inp-id').value; 
-                if(confirm("Are you sure you want to DELETE ALL custom dates for this customer?\n\nThis will instantly revert them back to their Master Default Schedule.")) {
+                if(confirm("Are you sure you want to DELETE ALL custom dates and notes for this customer?\n\nThis will instantly revert them back to their Master Default Schedule.")) {
                     remove(ref(db, `users/${id}/overrides`)).then(() => {
                         this.closeVariation();
                     }).catch(e => alert("Error: " + e.message));
