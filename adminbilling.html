@@ -17,7 +17,11 @@
 
     <!-- QR Lib -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Flatpickr CSS & JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -139,13 +143,19 @@
                                     <span id="cust-name"></span>
                                 </div>
                             </div>
-                            <div>
-                                <label class="text-xs font-bold text-slate-400 uppercase ml-1">Date</label>
-                                <div class="relative mt-1">
-                                    <input type="date" id="pos-date"
-                                        class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand outline-none font-semibold transition">
-                                </div>
-                            </div>
+                             <div>
+            <div>
+    <label class="text-xs font-bold text-slate-400 uppercase ml-1">Select Billing Dates</label>
+    <div class="relative mt-1">
+        <i class="fa-solid fa-calendar-days absolute left-3 top-3.5 text-slate-400 z-10"></i>
+        <input type="text" id="pos-date" placeholder="Click to select multiple dates..."
+            class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-brand outline-none font-semibold transition cursor-pointer">
+    </div>
+    <p class="text-[10px] text-slate-400 mt-1 ml-1">You can select multiple dates in the calendar.</p>
+</div>
+            <!-- Yahan chuni hui dates dikhengi -->
+            <div id="selected-dates-container" class="flex flex-wrap gap-2 mt-2"></div>
+        </div>
                         </div>
                     </div>
 
@@ -300,45 +310,25 @@
             </div>
 
             <!-- ROW 3: Date Range Filter -->
-            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 class="font-bold text-slate-700 mb-4 border-b pb-2">Custom Date Filter</h3>
-
-                <div class="flex flex-col md:flex-row items-end gap-4">
-                    <div class="w-full md:w-auto">
-                        <label class="text-xs font-bold text-slate-400 block mb-1">From Date</label>
-                        <input type="date" id="filter-start"
-                            class="border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 outline-none focus:border-brand w-full md:w-40 text-sm">
-                    </div>
-                    <div class="w-full md:w-auto">
-                        <label class="text-xs font-bold text-slate-400 block mb-1">To Date</label>
-                        <input type="date" id="filter-end"
-                            class="border border-slate-200 rounded-lg px-3 py-2 bg-slate-50 outline-none focus:border-brand w-full md:w-40 text-sm">
-                    </div>
-                    <button onclick="Dashboard.applyFilter()"
-                        class="bg-slate-800 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-slate-900 transition shadow-lg w-full md:w-auto">
-                        Calculate
-                    </button>
-
-                    <!-- Result Display -->
-                    <div class="flex-1 text-right mt-4 md:mt-0">
-                        <p class="text-xs text-slate-400 font-bold uppercase">Range Earnings</p>
-                        <h3 class="text-2xl font-bold text-slate-800">₹ <span id="filter-result">0.00</span></h3>
-                    </div>
-                </div>
+            <!-- ROW 3: Date Range Filter -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-20">
+                
             </div>
             <!-- PASTE THIS INSIDE #view-dashboard, AT THE VERY BOTTOM -->
 
             <!-- 1. FLOATING ACTION BAR (Visible on Dashboard) -->
-            <div class="fixed bottom-6 left-4 right-4 md:left-72 md:right-8 z-40">
+            <div class="fixed bottom-6 left-4 right-4 md:left-72 md:right-8 z-40 flex gap-3">
+                
+                <!-- Quick Customer List Button -->
                 <button onclick="Dashboard.openQuickAction()"
-                    class="w-full bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-slate-700 transform active:scale-95 transition">
+                    class="flex-1 bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-slate-700 transform active:scale-95 transition">
                     <div class="flex items-center gap-3">
                         <div
                             class="bg-emerald-500 w-10 h-10 rounded-full flex items-center justify-center text-white animate-pulse">
                             <i class="fa-brands fa-whatsapp text-xl"></i>
                         </div>
                         <div class="text-left">
-                            <p class="font-bold text-sm">Quick Customer List</p>
+                            <p class="font-bold text-sm">Customer List</p>
                             <p class="text-[10px] text-slate-400">View Totals & Send Bills</p>
                         </div>
                     </div>
@@ -362,10 +352,17 @@
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <!-- NEW PDF BUTTON -->
+
+                            <!-- PDF BUTTON -->
                             <button onclick="Dashboard.downloadLedgerPDF()"
-                                class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition">
-                                <i class="fa-solid fa-file-pdf"></i> <span class="hidden sm:inline">Download PDF</span>
+                                class="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition">
+                                <i class="fa-solid fa-file-pdf"></i> <span class="hidden sm:inline">PDF</span>
+                            </button>
+
+                            <!-- EXCEL BUTTON -->
+                            <button onclick="Dashboard.downloadLedgerExcel()"
+                                class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition">
+                                <i class="fa-solid fa-file-excel"></i> <span class="hidden sm:inline">Excel</span>
                             </button>
 
                             <!-- CLOSE BUTTON -->
@@ -377,13 +374,18 @@
                     </div>
 
                     <!-- Search Bar -->
-                    <div class="p-4 bg-white border-b border-slate-100 shrink-0">
-                        <div class="relative">
+                    <!-- Search Bar & Month Filter -->
+                    <div class="p-4 bg-white border-b border-slate-100 shrink-0 flex flex-col sm:flex-row gap-2">
+                        <div class="relative flex-1">
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
-                            <input type="text" onkeyup="Dashboard.renderQuickList(this.value)"
+                            <input type="text" id="quick-search-input" onkeyup="Dashboard.filterQuickList()"
                                 placeholder="Search Name or Phone..."
                                 class="w-full pl-10 pr-4 py-2.5 bg-slate-100 border-none rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500">
                         </div>
+                        <!-- NEW MONTH FILTER -->
+                        <input type="month" id="quick-month-filter" onchange="Dashboard.calculateCustomerTotals()"
+                            class="bg-slate-100 border-none rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-brand cursor-pointer shadow-sm w-full sm:w-auto"
+                            title="Select Month for Billing">
                     </div>
 
                     <!-- List Area -->
@@ -392,6 +394,119 @@
                     </div>
                 </div>
             </div>
+
+            <!-- CUSTOMER STATS MODAL -->
+            <div id="stats-modal"
+                class="fixed inset-0 bg-black/70 z-[70] hidden backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4">
+                <div
+                    class="bg-white w-full md:max-w-lg rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+
+                    <!-- Stats Modal Header -->
+                    <div class="bg-gradient-to-r from-violet-600 to-indigo-600 p-5 shrink-0">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-violet-200 text-xs font-bold uppercase tracking-wider">Purchase
+                                    Statistics</p>
+                                <h3 id="stats-modal-title" class="font-bold text-white text-lg mt-0.5">Customer Name
+                                </h3>
+                                <p id="stats-modal-period" class="text-violet-200 text-xs mt-1">Period</p>
+                            </div>
+                            <button onclick="document.getElementById('stats-modal').classList.add('hidden')"
+                                class="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
+                        <!-- Summary Pills -->
+                        <div class="flex gap-3 mt-4">
+                            <div class="bg-white/15 rounded-xl px-4 py-2 text-center flex-1">
+                                <p class="text-violet-200 text-[10px] font-bold uppercase">Total Orders</p>
+                                <p id="stats-modal-orders" class="text-white font-bold text-xl">0</p>
+                            </div>
+                            <div class="bg-white/15 rounded-xl px-4 py-2 text-center flex-1">
+                                <p class="text-violet-200 text-[10px] font-bold uppercase">Total Amount</p>
+                                <p id="stats-modal-total" class="text-emerald-300 font-bold text-xl">₹0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table Header -->
+                    <div class="bg-slate-50 border-b border-slate-200 shrink-0">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                    <th class="py-2.5 px-3 w-8">#</th>
+                                    <th class="py-2.5 px-3">Item Name</th>
+                                    <th class="py-2.5 px-3 text-center w-16">Qty</th>
+                                    <th class="py-2.5 px-3 text-right w-24">Unit Price</th>
+                                    <th class="py-2.5 px-3 text-right w-28">Amount</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+
+                    <!-- Table Body (Scrollable) -->
+                    <div class="flex-1 overflow-y-auto">
+                        <table class="w-full text-left">
+                            <tbody id="stats-table-body">
+                                <!-- Injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Grand Total Footer -->
+                    <div
+                        class="shrink-0 border-t-2 border-violet-200 bg-violet-50 px-4 py-4 flex justify-between items-center">
+                        <span class="font-bold text-slate-700 text-sm uppercase tracking-wide">Grand Total</span>
+                        <span id="stats-grand-total" class="font-bold text-violet-700 text-xl">₹0.00</span>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- MONTHLY STATS MODAL -->
+            <div id="monthly-stats-modal"
+                class="fixed inset-0 bg-black/80 z-[70] hidden backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4">
+                <div
+                    class="bg-white w-full md:max-w-2xl rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+
+                    <!-- Header -->
+                    <div class="bg-gradient-to-r from-violet-700 to-indigo-700 p-5 shrink-0">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-violet-200 text-xs font-bold uppercase tracking-wider">Business Overview
+                                </p>
+                                <h3 class="font-bold text-white text-xl mt-0.5">Monthly Statistics</h3>
+                                <p class="text-violet-200 text-xs mt-1">All-time sales breakdown by month</p>
+                            </div>
+                            <button onclick="document.getElementById('monthly-stats-modal').classList.add('hidden')"
+                                class="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
+                        <!-- Top Summary Pills -->
+                        <div class="flex gap-3 mt-4">
+                            <div class="bg-white/15 rounded-xl px-4 py-2 text-center flex-1">
+                                <p class="text-violet-200 text-[10px] font-bold uppercase">Total Months</p>
+                                <p id="ms-total-months" class="text-white font-bold text-xl">0</p>
+                            </div>
+                            <div class="bg-white/15 rounded-xl px-4 py-2 text-center flex-1">
+                                <p class="text-violet-200 text-[10px] font-bold uppercase">Total Orders</p>
+                                <p id="ms-total-orders" class="text-white font-bold text-xl">0</p>
+                            </div>
+                            <div class="bg-white/15 rounded-xl px-4 py-2 text-center flex-1">
+                                <p class="text-violet-200 text-[10px] font-bold uppercase">Grand Total</p>
+                                <p id="ms-grand-total" class="text-emerald-300 font-bold text-xl">&#8377;0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scrollable Content -->
+                    <div id="monthly-stats-body" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+                        <!-- Month cards injected via JS -->
+                    </div>
+                </div>
+            </div>
+
         </section>
         <!-- Manage -->
         <!-- REPLACE THE EXISTING <section id="view-manage"> WITH THIS -->
@@ -401,74 +516,89 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- MARKETING / POPUP MANAGER CARD (Paste this inside the grid) -->
                 <!-- MARKETING / POPUP MANAGER CARD (UPDATED) -->
-<div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm md:col-span-2 relative overflow-hidden group">
-    <!-- Decorative Background -->
-    <div class="absolute top-0 right-0 w-40 h-40 bg-orange-100 rounded-bl-full -mr-10 -mt-10 z-0 transition-transform group-hover:scale-110"></div>
-    <div class="absolute bottom-0 left-0 w-20 h-20 bg-orange-50 rounded-tr-full -ml-10 -mb-10 z-0"></div>
+                <div
+                    class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm md:col-span-2 relative overflow-hidden group">
+                    <!-- Decorative Background -->
+                    <div
+                        class="absolute top-0 right-0 w-40 h-40 bg-orange-100 rounded-bl-full -mr-10 -mt-10 z-0 transition-transform group-hover:scale-110">
+                    </div>
+                    <div class="absolute bottom-0 left-0 w-20 h-20 bg-orange-50 rounded-tr-full -ml-10 -mb-10 z-0">
+                    </div>
 
-    <div class="relative z-10">
-        <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2 text-lg">
-            <span class="bg-orange-100 text-orange-600 w-8 h-8 flex items-center justify-center rounded-lg">
-                <i class="fa-solid fa-bullhorn"></i>
-            </span>
-            App Popup Announcement
-        </h3>
-        <p class="text-xs text-slate-500 mb-5 ml-10">Yeh popup User App khulte hi dikhai dega. Best for Offers & Festivals.</p>
+                    <div class="relative z-10">
+                        <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2 text-lg">
+                            <span
+                                class="bg-orange-100 text-orange-600 w-8 h-8 flex items-center justify-center rounded-lg">
+                                <i class="fa-solid fa-bullhorn"></i>
+                            </span>
+                            App Popup Announcement
+                        </h3>
+                        <p class="text-xs text-slate-500 mb-5 ml-10">Yeh popup User App khulte hi dikhai dega. Best for
+                            Offers & Festivals.</p>
 
-        <div class="flex flex-col lg:flex-row gap-6 items-start">
-            <!-- Input Area -->
-            <div class="flex-1 w-full space-y-4">
-                <div>
-                    <label class="text-xs font-bold text-slate-700 uppercase mb-1 block">Popup Title <span class="text-red-500">*</span></label>
-                    <input id="popup-title" placeholder="Ex: Diwali Mega Sale! 🪔" 
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition font-bold text-slate-800">
-                </div>
+                        <div class="flex flex-col lg:flex-row gap-6 items-start">
+                            <!-- Input Area -->
+                            <div class="flex-1 w-full space-y-4">
+                                <div>
+                                    <label class="text-xs font-bold text-slate-700 uppercase mb-1 block">Popup Title
+                                        <span class="text-red-500">*</span></label>
+                                    <input id="popup-title" placeholder="Ex: Diwali Mega Sale! 🪔"
+                                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none transition font-bold text-slate-800">
+                                </div>
 
-                <div>
-                    <label class="text-xs font-bold text-slate-400 uppercase mb-1 block">Message / Details</label>
-                    <textarea id="popup-text" rows="2" placeholder="Ex: Sabhi Ghee products par 10% ki chhoot. Order now!" 
-                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-orange-500 outline-none transition text-sm"></textarea>
-                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-slate-400 uppercase mb-1 block">Message /
+                                        Details</label>
+                                    <textarea id="popup-text" rows="2"
+                                        placeholder="Ex: Sabhi Ghee products par 10% ki chhoot. Order now!"
+                                        class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-orange-500 outline-none transition text-sm"></textarea>
+                                </div>
 
-                <!-- UPDATE IN admin.html (Inside Popup Card) -->
-<div>
-    <label class="text-xs font-bold text-slate-700 uppercase mb-1 block">Media URL (Image or Video)</label>
-    <div class="flex gap-2">
-        <span class="bg-slate-100 border border-slate-200 px-3 py-3 rounded-xl text-slate-500">
-            <i class="fa-solid fa-photo-film"></i>
-        </span>
-        <!-- ID wahi rakha hai taaki JS change na karna pade -->
-        <input id="popup-image" placeholder="Paste .jpg, .png OR .mp4 link..." 
-            class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-orange-500 outline-none transition text-sm font-medium text-slate-600">
-    </div>
-    <p class="text-[10px] text-slate-400 mt-1 ml-1">
-        <i class="fa-solid fa-circle-info mr-1"></i> Supports .jpg, .png for images & <b>.mp4</b> for videos.
-    </p>
-</div>
-            </div>
+                                <!-- UPDATE IN admin.html (Inside Popup Card) -->
+                                <div>
+                                    <label class="text-xs font-bold text-slate-700 uppercase mb-1 block">Media URL
+                                        (Image or Video)</label>
+                                    <div class="flex gap-2">
+                                        <span
+                                            class="bg-slate-100 border border-slate-200 px-3 py-3 rounded-xl text-slate-500">
+                                            <i class="fa-solid fa-photo-film"></i>
+                                        </span>
+                                        <!-- ID wahi rakha hai taaki JS change na karna pade -->
+                                        <input id="popup-image" placeholder="Paste .jpg, .png OR .mp4 link..."
+                                            class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-orange-500 outline-none transition text-sm font-medium text-slate-600">
+                                    </div>
+                                    <p class="text-[10px] text-slate-400 mt-1 ml-1">
+                                        <i class="fa-solid fa-circle-info mr-1"></i> Supports .jpg, .png for images &
+                                        <b>.mp4</b> for videos.
+                                    </p>
+                                </div>
+                            </div>
 
-            <!-- Actions -->
-            <div class="w-full lg:w-1/3 flex flex-col gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <div class="text-center mb-2">
-                    <p class="text-xs font-bold text-slate-400 uppercase mb-2">Current Status</p>
-                    <div id="popup-status" class="bg-white rounded-xl p-3 border border-slate-200 shadow-sm">
-                        <span id="popup-badge" class="px-3 py-1 bg-slate-200 text-slate-500 rounded-full text-xs font-bold">Checking...</span>
+                            <!-- Actions -->
+                            <div
+                                class="w-full lg:w-1/3 flex flex-col gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                <div class="text-center mb-2">
+                                    <p class="text-xs font-bold text-slate-400 uppercase mb-2">Current Status</p>
+                                    <div id="popup-status"
+                                        class="bg-white rounded-xl p-3 border border-slate-200 shadow-sm">
+                                        <span id="popup-badge"
+                                            class="px-3 py-1 bg-slate-200 text-slate-500 rounded-full text-xs font-bold">Checking...</span>
+                                    </div>
+                                </div>
+
+                                <button onclick="Manage.publishPopup()"
+                                    class="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-orange-500/30 transition transform active:scale-95 flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-rocket"></i> Publish Live
+                                </button>
+
+                                <button onclick="Manage.deletePopup()"
+                                    class="w-full bg-white border border-red-100 text-red-500 hover:bg-red-50 py-3 rounded-xl font-bold transition active:scale-95 flex items-center justify-center gap-2">
+                                    <i class="fa-regular fa-trash-can"></i> Remove
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <button onclick="Manage.publishPopup()" 
-                    class="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-orange-500/30 transition transform active:scale-95 flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-rocket"></i> Publish Live
-                </button>
-
-                <button onclick="Manage.deletePopup()" 
-                    class="w-full bg-white border border-red-100 text-red-500 hover:bg-red-50 py-3 rounded-xl font-bold transition active:scale-95 flex items-center justify-center gap-2">
-                    <i class="fa-regular fa-trash-can"></i> Remove
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
                 <!-- PRODUCT MANAGEMENT -->
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
@@ -557,8 +687,6 @@
         </section>
 
         <!-- History -->
-        <!-- REPLACE THE EXISTING <section id="view-history"> WITH THIS -->
-        <!-- FIND THE HEADER DIV INSIDE #view-history AND REPLACE IT -->
         <section id="view-history" class="hidden flex-1 overflow-y-auto p-6 fade-in">
 
             <!-- New Header with Search -->
@@ -566,6 +694,10 @@
                 <h2 class="text-2xl font-bold text-slate-800 self-start md:self-center">Transaction History</h2>
 
                 <div class="flex gap-2 w-full md:w-auto">
+    <button id="bulk-delete-btn" onclick="History.deleteSelected()" 
+        class="hidden bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md hover:bg-red-700 transition flex items-center gap-2">
+        <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="selected-count">0</span>)
+    </button>
                     <!-- Search Box -->
                     <div class="relative flex-1 md:w-64">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
@@ -588,10 +720,12 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr
-                                class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold tracking-wider">
-                                <th class="p-4 w-24">Date</th>
-                                <th class="p-4 w-1/4">Customer Details</th>
+    <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-bold tracking-wider">
+        <th class="p-4 w-10">
+            <input type="checkbox" id="history-select-all" onclick="History.toggleAll(this)" class="w-4 h-4 rounded border-slate-300">
+        </th>
+        <th class="p-4 w-24">Date</th>
+        <th class="p-4 w-1/4">Customer Details</th>
                                 <th class="p-4">Items Purchased</th>
                                 <th class="p-4 text-right w-32">Total</th>
                                 <th class="p-4 text-center w-20">Action</th>
@@ -602,12 +736,13 @@
                         </tbody>
                     </table>
                 </div>
-                 <div id="history-load-more-container" class="p-4 text-center border-t border-slate-100 hidden">
-                    <button onclick="History.loadMore()" 
+                <div id="history-load-more-container" class="p-4 text-center border-t border-slate-100 hidden">
+                    <button onclick="History.loadMore()"
                         class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 px-6 rounded-full text-xs transition shadow-sm">
                         <i class="fa-solid fa-arrow-down mr-2"></i> Load More Transactions
                     </button>
-                    <p class="text-[10px] text-slate-400 mt-2">Showing <span id="hist-showing-count">0</span> of <span id="hist-total-count">0</span></p>
+                    <p class="text-[10px] text-slate-400 mt-2">Showing <span id="hist-showing-count">0</span> of <span
+                            id="hist-total-count">0</span></p>
                 </div>
             </div>
         </section>
