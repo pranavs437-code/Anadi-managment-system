@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, push, set, onValue, remove, update, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
+import { getDatabase, ref, push, set, onValue, remove, update, off, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 const firebaseConfig = {
     apiKey: "AIzaSyDR1rzGFqynhkan3zGChtjmZv1s0JJ73Ls",
     authDomain: "newbillingtry.firebaseapp.com",
@@ -112,7 +111,19 @@ window.Billing = {
         const selectedOpt = select.options[select.selectedIndex];
 
         if (selectedOpt.value) {
-            priceInput.value = selectedOpt.dataset.price;
+            let price = selectedOpt.dataset.price;
+            
+            // NAYA LOGIC: Agar customer selected hai aur uski profile me fixed milk rate hai
+            if (State.currentUser) {
+                const custInfo = State.users[State.currentUser.phone];
+                // Condition: Product ke naam mein "milk" shabd hona chahiye (e.g. "Cow Milk", "Buffalo Milk")
+                if (custInfo && custInfo.milkPrice && selectedOpt.text.toLowerCase().includes('milk')) {
+                    price = custInfo.milkPrice;
+                    window.Toast(`Custom Milk Rate Applied: ₹${price}`);
+                }
+            }
+            
+            priceInput.value = price;
         } else {
             priceInput.value = '';
         }
@@ -162,8 +173,13 @@ window.Billing = {
             State.currentUser = { name, phone };
             document.getElementById('cust-name').innerText = name;
             document.getElementById('cust-display').classList.remove('hidden');
+            
+            // NAYA: Customer select hone par agar product pehle se selected hai, toh price update karega
+            this.updatePrice();
         }
     },
+
+    
     clearCart() {
         if (State.cart.length === 0) return;
         if (confirm("Are you sure you want to empty the cart?")) {
@@ -272,6 +288,7 @@ const p = push(ref(db, `bills/${State.currentUser.phone}`), {
 // 2. MANAGEMENT
 window.Manage = {
     editProdId: null,
+    editUserPhone: null,
 
     initListeners() {
         // Products
@@ -405,46 +422,87 @@ window.Manage = {
         document.getElementById('btn-cancel-prod').classList.add('hidden');
     },
 
-    saveUser() {
+    async saveUser() {
         const name = document.getElementById('man-user-name').value.trim();
         const phone = document.getElementById('man-user-phone').value.trim();
         const address = document.getElementById('man-user-address').value.trim();
+        // NAYA: Milk Price input se value lein
+        const milkInput = document.getElementById('man-user-milk').value;
+        const milkPrice = milkInput ? parseFloat(milkInput) : null; 
 
-        // ✅ FIX BUG 2: Phone Validation Regex
         const phoneRegex = /^[0-9]{10}$/;
         if (!name) return window.Toast("Name is required", "error");
         if (!phoneRegex.test(phone)) return window.Toast("Phone must be 10 digits", "error");
 
-        update(ref(db, `users/${phone}`), { name, phone, address }).then(() => {
+        const oldPhone = this.editUserPhone;
+
+        // SCENARIO 1: Phone number CHANGE kiya gaya hai
+        if (oldPhone && oldPhone !== phone) {
+            if (State.users[phone]) return window.Toast("This new phone number is already registered!", "error");
+            if (!confirm(`Are you sure? Change phone from ${oldPhone} to ${phone}? All billing history will be safely moved.`)) return;
+
+            try {
+                const oldBillsSnap = await get(ref(db, `bills/${oldPhone}`));
+                const oldBills = oldBillsSnap.val();
+                const updates = {};
+                
+                // NAYA: milkPrice bhi database mein save karein
+                updates[`users/${phone}`] = { name, phone, address, milkPrice };
+                updates[`users/${oldPhone}`] = null;
+
+                if (oldBills) {
+                    for (let billId in oldBills) {
+                        if (oldBills[billId].details) oldBills[billId].details.consumerPhone = phone;
+                    }
+                    updates[`bills/${phone}`] = oldBills;
+                    updates[`bills/${oldPhone}`] = null;
+                }
+
+                await update(ref(db), updates);
+                window.Toast("Customer & Bills Migrated Successfully!");
+                this.resetUserForm();
+                return;
+            } catch (error) {
+                return window.Toast("Error updating phone number", "error");
+            }
+        }
+
+        // SCENARIO 2: Normal Edit YA Naya Customer
+        update(ref(db, `users/${phone}`), { name, phone, address, milkPrice }).then(() => {
             window.Toast(document.getElementById('btn-save-user').innerText === "Update Customer" ? "Customer Updated" : "Customer Registered");
             this.resetUserForm();
         });
     },
-    delUser(ph, name) {
-        // ✅ FIX BUG 7: Stronger Confirmation
-        if (confirm(`Delete customer "${name}" (${ph})?`)) {
-            remove(ref(db, `users/${ph}`));
-            if (document.getElementById('man-user-phone').value === ph) this.resetUserForm();
-        }
-    },
-    // ... editUser & resetUserForm remain same ...
+
     editUser(phone) {
         const u = State.users[phone];
+        this.editUserPhone = phone;
+
         document.getElementById('man-user-name').value = u.name;
         document.getElementById('man-user-phone').value = u.phone;
         document.getElementById('man-user-address').value = u.address || "";
-        document.getElementById('man-user-phone').readOnly = true;
-        document.getElementById('man-user-phone').classList.add('bg-slate-200', 'text-slate-500');
+        // NAYA: Edit karte waqt purana milk rate dikhaye
+        document.getElementById('man-user-milk').value = u.milkPrice || ""; 
+        
+        document.getElementById('man-user-phone').readOnly = false;
+        document.getElementById('man-user-phone').classList.remove('bg-slate-200', 'text-slate-500');
+        
         document.getElementById('btn-save-user').innerText = "Update Customer";
         document.getElementById('btn-save-user').classList.add('bg-orange-600', 'hover:bg-orange-700');
         document.getElementById('btn-cancel-user').classList.remove('hidden');
     },
+
     resetUserForm() {
+        this.editUserPhone = null;
         document.getElementById('man-user-name').value = '';
         document.getElementById('man-user-phone').value = '';
         document.getElementById('man-user-address').value = '';
+        // NAYA: Form reset hone par field khali kare
+        document.getElementById('man-user-milk').value = ''; 
+        
         document.getElementById('man-user-phone').readOnly = false;
         document.getElementById('man-user-phone').classList.remove('bg-slate-200', 'text-slate-500');
+        
         document.getElementById('btn-save-user').innerText = "Register Customer";
         document.getElementById('btn-save-user').classList.remove('bg-orange-600', 'hover:bg-orange-700');
         document.getElementById('btn-cancel-user').classList.add('hidden');
