@@ -174,8 +174,73 @@ window.Billing = {
             document.getElementById('cust-name').innerText = name;
             document.getElementById('cust-display').classList.remove('hidden');
             
-            // NAYA: Customer select hone par agar product pehle se selected hai, toh price update karega
+            // Customer select hone par rate update hoga
             this.updatePrice();
+            
+            // --- NEW: History Preview Load Karein ---
+            this.loadRecentHistory(phone);
+        }
+    },
+
+    // --- NEW FUNCTION: Sidebar me last 5 bill dikhane ke liye ---
+    async loadRecentHistory(phone) {
+        const container = document.getElementById('pos-recent-history');
+        if (!container) return; // Agar mobile pe container hidden hai, toh skip karein
+
+        // Loading state
+        container.innerHTML = `<div class="text-center text-slate-400 py-6 text-xs"><i class="fa-solid fa-circle-notch fa-spin text-lg mb-2 block"></i> Loading history...</div>`;
+
+        try {
+            // Firebase se us customer ke bills nikaalein
+            const snap = await get(ref(db, `bills/${phone}`));
+            const data = snap.val();
+
+            if (!data) {
+                container.innerHTML = `<div class="text-center text-slate-400 py-6 text-xs italic">No previous history found.</div>`;
+                return;
+            }
+
+            // Object ko Array me badlein aur Time ke hisaab se Sort karein (Latest pehle)
+            let bills = [];
+            for (let id in data) {
+                const b = data[id];
+                const ts = b.details?.timestamp || b.timestamp || 0;
+                bills.push({ ...b, ts });
+            }
+            bills.sort((a, b) => b.ts - a.ts);
+
+            // Sirf aakhiri 5 bills nikaalein
+            const recentBills = bills.slice(0, 5);
+
+            let html = '';
+            recentBills.forEach(b => {
+                // Date format set karein (DD-MM-YYYY)
+                let dStr = b.date;
+                if (b.ts > 0) {
+                    const dObj = new Date(b.ts);
+                    dStr = `${String(dObj.getDate()).padStart(2, '0')}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${dObj.getFullYear()}`;
+                }
+
+                // Us bill me kya-kya item the unka naam nikalein
+                let itemText = 'Unknown Item';
+                if (b.details?.items && b.details.items.length > 0) {
+                    itemText = b.details.items.map(i => `${i.name} (x${i.qty})`).join(', ');
+                }
+
+                // Design
+                html += `
+                    <div class="border-b border-slate-700/50 last:border-0 pb-2">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-slate-300"><i class="fa-regular fa-calendar text-[10px] mr-1"></i> ${dStr}</span>
+                            <span class="text-xs font-bold text-emerald-400">₹${parseFloat(b.amount).toLocaleString()}</span>
+                        </div>
+                        <div class="text-[10px] text-slate-400 truncate w-full" title="${itemText}">${itemText}</div>
+                    </div>`;
+            });
+
+            container.innerHTML = html;
+        } catch (err) {
+            container.innerHTML = `<div class="text-center text-red-400 py-6 text-xs"><i class="fa-solid fa-triangle-exclamation"></i> Error loading history</div>`;
         }
     },
 
@@ -594,6 +659,10 @@ window.Dashboard = {
     init() {
         document.getElementById('dash-products').innerText = Object.keys(State.products || {}).length;
         const now = new Date();
+        const prodMonthInput = document.getElementById('dash-prod-month');
+        if (prodMonthInput && !prodMonthInput.value) {
+            prodMonthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        }
         const dateEl = document.getElementById('dash-today-date');
         const monthEl = document.getElementById('dash-month-name');
         if (dateEl) dateEl.innerText = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' });
@@ -633,37 +702,172 @@ window.Dashboard = {
     renderProductStats() {
         const grid = document.getElementById('dash-prod-stats');
         if (!grid) return;
-        const productCounts = {};
-        for (let id in State.products) productCounts[State.products[id].name] = 0;
+
+        const monthInput = document.getElementById('dash-prod-month');
+        const monthFilter = monthInput ? monthInput.value : null; 
+        let fYear = null, fMonth = null;
+        
+        if (monthFilter) {
+            [fYear, fMonth] = monthFilter.split('-'); 
+        }
+
+        // NAYA: Ab hum quantity ke sath 'revenue' bhi store karenge
+        const productStats = {};
+        for (let id in State.products) {
+            productStats[State.products[id].name] = { qty: 0, revenue: 0 };
+        }
+
+        let totalItemsSoldThisMonth = 0;
+        let totalRevenueThisMonth = 0;
 
         this.allBills.forEach(bill => {
+            if (fMonth && fYear) {
+                const my = Dashboard._getBillMonthYear(bill);
+                if (!my || my.month !== fMonth || my.year !== fYear) return; 
+            }
+
             if (bill.details && bill.details.items) {
                 bill.details.items.forEach(item => {
                     const name = item.name || "Unknown";
                     const qty = parseFloat(item.qty || 0);
-                    productCounts[name] = (productCounts[name] !== undefined) ? productCounts[name] + qty : qty;
+                    const price = parseFloat(item.price || 0);
+                    const rev = qty * price;
+
+                    if (!productStats[name]) productStats[name] = { qty: 0, revenue: 0 };
+                    
+                    productStats[name].qty += qty;
+                    productStats[name].revenue += rev; // Revenue jodna
+                    
+                    totalItemsSoldThisMonth += qty;
+                    totalRevenueThisMonth += rev;
                 });
             }
         });
 
-        if (Object.keys(productCounts).length === 0) {
-            grid.innerHTML = `<div class="col-span-full text-slate-400 text-sm italic p-4 border rounded-lg bg-slate-50">No sales data available yet.</div>`;
+        // PDF Function ke liye data globally save kar diya
+        this.currentProductStats = {
+            monthFilter: monthFilter,
+            stats: productStats,
+            totalQty: totalItemsSoldThisMonth,
+            totalRevenue: totalRevenueThisMonth
+        };
+
+        if (totalItemsSoldThisMonth === 0) {
+            grid.innerHTML = `
+                <div class="col-span-full flex flex-col items-center justify-center p-8 border border-dashed border-slate-300 rounded-2xl bg-slate-50 text-slate-400">
+                    <i class="fa-solid fa-box-open text-4xl mb-3 opacity-30"></i>
+                    <p class="text-sm font-medium">No products sold in this month.</p>
+                </div>`;
             return;
         }
 
-        grid.innerHTML = Object.keys(productCounts).map(pName => {
-            const qty = productCounts[pName];
-            const displayQty = Number.isInteger(qty) ? qty : qty.toFixed(2);
+        grid.innerHTML = Object.keys(productStats).map(pName => {
+            const data = productStats[pName];
+            const displayQty = Number.isInteger(data.qty) ? data.qty : data.qty.toFixed(2);
+            const displayRev = data.revenue.toLocaleString('en-IN'); // NAYA
+            
+            const opacityClass = data.qty > 0 ? "opacity-100" : "opacity-50 grayscale hover:grayscale-0 transition duration-300";
+            const iconBg = data.qty > 0 ? "bg-indigo-50 text-brand" : "bg-slate-100 text-slate-400";
+            const textQtyColor = data.qty > 0 ? "text-slate-800" : "text-slate-400";
+
             return `
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center hover:shadow-md hover:border-brand/30 transition group">
-                    <div class="bg-indigo-50 text-brand w-10 h-10 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition">
-                        <i class="fa-solid fa-box-open"></i>
+                <div class="${opacityClass} bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center justify-between h-full hover:shadow-md hover:border-brand/30 transition group">
+                    <div class="flex flex-col items-center w-full">
+                        <div class="${iconBg} w-10 h-10 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition">
+                            <i class="fa-solid fa-box-open"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-700 text-sm w-full break-words leading-tight">${pName}</h4>
                     </div>
-                    <h4 class="font-bold text-slate-700 text-sm truncate w-full" title="${pName}">${pName}</h4>
-                    <p class="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-wider">Total Sold</p>
-                    <p class="font-bold text-slate-800 text-xl mt-0.5">${displayQty} <span class="text-[10px] text-slate-500 font-normal">Units</span></p>
+                    
+                    <!-- NAYA: Cards ke andar ab QTY aur REVENUE (₹) dono dikhenge -->
+                    <div class="mt-3 w-full border-t border-slate-100 pt-2">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Total Sold</p>
+                        <p class="font-bold ${textQtyColor} text-lg mt-0.5">${displayQty} <span class="text-[10px] text-slate-500 font-normal">Units</span></p>
+                        <p class="text-xs font-bold text-emerald-500 mt-1">₹${displayRev}</p>
+                    </div>
                 </div>`;
         }).join('');
+    },
+
+    // --- NEW FUNCTION: Download Product Revenue PDF ---
+    downloadProductStatsPDF() {
+        if (!this.currentProductStats || this.currentProductStats.totalQty === 0) {
+            return window.Toast("No sales data available to download.", "error");
+        }
+
+        const { jsPDF } = window.jspdf;
+        if (!jsPDF) return window.Toast("PDF Library Error", "error");
+
+        const doc = new jsPDF();
+        
+        let monthLabel = "Overall / Lifetime";
+        const monthFilter = this.currentProductStats.monthFilter;
+        if (monthFilter) {
+            const [y, m] = monthFilter.split('-');
+            monthLabel = new Date(y, m - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+        }
+
+        // Header
+        doc.setFontSize(18);
+        doc.setTextColor(67, 56, 202);
+        doc.text("PRODUCT SALES & REVENUE REPORT", 14, 20);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Billing Period: ${monthLabel}`, 14, 26);
+        doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 14, 31);
+
+        // Table Data Tayyar Karna
+        const tableBody = [];
+        const stats = this.currentProductStats.stats;
+        
+        // NAYA LOGIC: Jo Product sabse zyada rupaye (revenue) ka bika hai, wo list me sabse upar aayega
+        const sortedProducts = Object.keys(stats).sort((a, b) => stats[b].revenue - stats[a].revenue);
+
+        let sNo = 1;
+        sortedProducts.forEach(pName => {
+            const data = stats[pName];
+            // Jo product nahi bika (qty = 0), usko report me jagah nahi denge taaki PDF clean rahe
+            if (data.qty > 0) {
+                tableBody.push([
+                    sNo++,
+                    pName,
+                    Number.isInteger(data.qty) ? data.qty : data.qty.toFixed(2),
+                    `Rs. ${data.revenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+                ]);
+            }
+        });
+
+        // PDF AutoTable Generate
+        doc.autoTable({
+            head: [['#', 'Product Name', 'Total Units Sold', 'Revenue Generated']],
+            body: tableBody,
+            startY: 40,
+            theme: 'grid',
+            headStyles: { fillColor: [67, 56, 202], textColor: [255, 255, 255], fontStyle: 'bold' },
+            columnStyles: {
+                0: { cellWidth: 15, halign: 'center' }, 
+                1: { cellWidth: 'auto' }, 
+                2: { cellWidth: 40, halign: 'center' }, 
+                3: { cellWidth: 45, halign: 'right', fontStyle: 'bold' }
+            },
+            styles: { fontSize: 10, cellPadding: 3 },
+            foot: [[
+                '', 
+                'GRAND TOTAL:', 
+                this.currentProductStats.totalQty.toString(), 
+                `Rs. ${this.currentProductStats.totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+            ]],
+            footStyles: { fillColor: [240, 253, 244], textColor: [21, 128, 61], fontStyle: 'bold', fontSize: 11, halign: 'right' },
+            didParseCell: function (data) {
+                if (data.section === 'foot' && data.column.index === 2) {
+                    data.cell.styles.halign = 'center';
+                }
+            }
+        });
+
+        doc.save(`Product_Revenue_Report_${monthLabel.replace(/\s+/g, '_')}.pdf`);
+        window.Toast("Product Sales Report Downloaded!");
     },
 
     calculateStats() {
@@ -1105,38 +1309,95 @@ window.Dashboard = {
         const tableBody = [];
         let grandTotal = 0;
 
-        // Iterate through each bill and each item to show "Kiss din kya gaya"
+        const dateMap = new Map();
+
         customerBills.forEach(bill => {
-            const billDate = bill.date || "N/A";
+            // --- NAYA LOGIC: Date ko DD-MM-YYYY format me convert karna ---
+            let displayDate = "N/A";
+            const ts = bill.details?.timestamp || bill.timestamp;
+            
+            if (ts && ts > 0) {
+                // Agar timestamp hai (jo humesha accurate hota hai)
+                const d = new Date(ts);
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const yyyy = d.getFullYear();
+                displayDate = `${dd}-${mm}-${yyyy}`;
+            } else if (bill.date) {
+                // Fallback: Agar purana string date save hai (MM-DD-YYYY ko DD-MM-YYYY me badalna)
+                const parts = bill.date.split('-');
+                if (parts.length === 3 && parts[2].length === 4) {
+                    displayDate = `${parts[1]}-${parts[0]}-${parts[2]}`; // Swap MM and DD
+                } else {
+                    displayDate = bill.date;
+                }
+            }
+            // -------------------------------------------------------------
+
+            if (!dateMap.has(displayDate)) {
+                dateMap.set(displayDate, new Map()); 
+            }
+            
+            const dateItems = dateMap.get(displayDate);
 
             if (bill.details && bill.details.items && Array.isArray(bill.details.items)) {
-                bill.details.items.forEach((item, index) => {
+                bill.details.items.forEach((item) => {
+                    const itemName = item.name || "Unknown";
                     const unitPrice = parseFloat(item.price || 0);
+                    const itemKey = `${itemName}_${unitPrice}`; 
+                    
                     const qty = parseFloat(item.qty || 0);
                     const lineTotal = unitPrice * qty;
-                    grandTotal += lineTotal;
 
-                    tableBody.push([
-                        index === 0 ? billDate : "", // Sirf pehle item ke liye date dikhayega agar ek bill me multiple items hain
-                        item.name || "Unknown",
-                        qty % 1 === 0 ? qty : qty.toFixed(2),
-                        `Rs. ${unitPrice.toLocaleString()}`,
-                        `Rs. ${lineTotal.toLocaleString()}`
-                    ]);
+                    if (!dateItems.has(itemKey)) {
+                        dateItems.set(itemKey, { name: itemName, price: unitPrice, qty: 0, total: 0 });
+                    }
+
+                    const existingItem = dateItems.get(itemKey);
+                    existingItem.qty += qty;
+                    existingItem.total += lineTotal;
+                    
+                    grandTotal += lineTotal;
                 });
             } else {
-                // Fallback agar items list nahi hai (Sirf total amount hai)
                 const amt = parseFloat(bill.amount || 0);
+                const itemKey = `Order Total_${amt}`;
+                
+                if (!dateItems.has(itemKey)) {
+                    dateItems.set(itemKey, { name: "Order Total (Details N/A)", price: amt, qty: 0, total: 0 });
+                }
+                const existingItem = dateItems.get(itemKey);
+                existingItem.qty += 1;
+                existingItem.total += amt;
+                
                 grandTotal += amt;
-                tableBody.push([billDate, "Order Total (Details N/A)", "1", `Rs. ${amt}`, `Rs. ${amt}`]);
             }
+        });
+
+        // Map data ko PDF table format me set karna
+        dateMap.forEach((itemsMap, dateStr) => {
+            let isFirstItemOfDate = true; 
+
+            itemsMap.forEach((item) => {
+                const displayQty = item.qty % 1 === 0 ? item.qty : item.qty.toFixed(2);
+                
+                tableBody.push([
+                    isFirstItemOfDate ? dateStr : "", 
+                    item.name,
+                    displayQty,
+                    `Rs. ${item.price.toLocaleString()}`,
+                    `Rs. ${item.total.toLocaleString()}`
+                ]);
+                
+                isFirstItemOfDate = false; 
+            });
         });
 
         const doc = new jsPDF();
 
         // Header
         doc.setFontSize(18);
-        doc.setTextColor(67, 56, 202); // Brand Indigo
+        doc.setTextColor(67, 56, 202);
         doc.text("DETAILED TRANSACTION STATEMENT", 14, 20);
 
         doc.setFontSize(10);
@@ -1478,14 +1739,12 @@ ${summarySheet}
     },
 
     sendWhatsApp(phone, name, totalGrand) {
-        const monthFilter = document.getElementById('quick-month-filter')?.value; // "2026-03"
+        const monthFilter = document.getElementById('quick-month-filter')?.value; 
         let customerBills = this.allBills.filter(b => b.phone === phone);
         let monthLabel = "OVERALL";
 
         if (monthFilter) {
-            const [fYear, fMonth] = monthFilter.split('-'); // ["2026", "03"]
-
-            // स्ट्रिक्ट फिल्टरिंग: केवल वही बिल लें जिनकी तारीख का महीना और साल मैच करे
+            const [fYear, fMonth] = monthFilter.split('-'); 
             customerBills = customerBills.filter(b => {
                 const my = Dashboard._getBillMonthYear(b);
                 return my && my.month === fMonth && my.year === fYear;
@@ -1495,9 +1754,15 @@ ${summarySheet}
             monthLabel = new Date(yyyy, mm - 1).toLocaleString('default', { month: 'long', year: 'numeric' }).toUpperCase();
         }
 
-        // अब जो बिल बचे हैं, केवल उनका सामान (Items) इकट्ठा करें
+        if (customerBills.length === 0) return window.Toast("No bills found for this month", "error");
+
+        // 1. --- PDF AUTO-DOWNLOAD KAREIN ---
+        // Puraana download function yahan call kar rahe hain taaki PDF turant download ho jaye
+        this.downloadCustomerStatement(phone, name);
+
+        // 2. --- WHATSAPP TEXT MESSAGE PREPARE KAREIN ---
         const itemSummary = {};
-        let finalTotal = 0; // दोबारा कैलकुलेट करें ताकि पुराने महीने का अमाउंट न जुड़े
+        let finalTotal = 0; 
 
         customerBills.forEach(bill => {
             if (bill.details && bill.details.items) {
@@ -1515,8 +1780,6 @@ ${summarySheet}
             }
         });
 
-        if (customerBills.length === 0) return window.Toast("No bills found for this month", "error");
-
         let itemDetailsStr = "";
         for (let prodName in itemSummary) {
             const data = itemSummary[prodName];
@@ -1525,6 +1788,8 @@ ${summarySheet}
         }
 
         const appLink = "https://userdaily-delivery-tracking-billing.vercel.app/";
+        
+        // Text me PDF ka zikr add kar diya gaya hai
         const text = `*BILL SUMMARY - ${monthLabel}* 🧾\n` +
             `Customer: ${name}\n` +
             `Phone: ${phone}\n\n` +
@@ -1532,13 +1797,18 @@ ${summarySheet}
             `----------------\n` +
             `*GRAND TOTAL: ₹${finalTotal.toLocaleString()}*\n` +
             `----------------\n\n` +
+            `📄 _Note: A detailed day-wise PDF statement is generated. Please see the attached PDF._\n\n` +
             `💸 *PAYMENT DETAILS:*\n` +
             `UPI: 9810017422\n` +
             `📸 Please make the online transaction and share the screenshot for confirmation.\n\n` +
             `👇 *Track your live bills here:*\n${appLink}\n\n` +
-            `_Generated by Anadi Billing System_`;
+            `_Generated by AdminOS_`;
 
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+        // 3. --- WHATSAPP OPEN KAREIN ---
+        // Thoda delay de rahe hain taaki PDF pehle smoothly download ho jaye
+        setTimeout(() => {
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+        }, 800);
     },
 
 
